@@ -1,19 +1,49 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
 
-function SentimentChart({ positive, neutral, negative }) {
-  const chartRef = useRef(null);
-  const chartInstance = useRef(null);
+function SentimentChart({ positive, neutral, negative, product }) {
+  const donutChartRef = useRef(null);
+  const heatmapChartRef = useRef(null);
+  const donutChartInstance = useRef(null);
+  const heatmapChartInstance = useRef(null);
+  const [activeTab, setActiveTab] = useState('donut');
+
+  // Generate heatmap data from reviews if available
+  const generateHeatmapData = () => {
+    if (!product || !product.reviews) return null;
+    
+    // Extract review sentiment data
+    return product.reviews.map((review, index) => {
+      const sentiment = review.sentiment || 0.5; // Default to neutral if not available
+      let color;
+      
+      if (sentiment >= 0.7) color = 'rgba(40, 167, 69, 0.8)'; // Strong positive
+      else if (sentiment >= 0.5) color = 'rgba(40, 167, 69, 0.5)'; // Positive
+      else if (sentiment >= 0.3) color = 'rgba(255, 193, 7, 0.7)'; // Neutral
+      else if (sentiment >= 0.2) color = 'rgba(220, 53, 69, 0.5)'; // Negative
+      else color = 'rgba(220, 53, 69, 0.8)'; // Strong negative
+      
+      return {
+        x: index,
+        y: 0,
+        v: sentiment,
+        color: color,
+        reviewText: review.text.substring(0, 60) + '...',
+        author: review.author,
+        date: review.date
+      };
+    });
+  };
 
   useEffect(() => {
-    // Clean up previous chart instance
-    if (chartInstance.current) {
-      chartInstance.current.destroy();
+    // Clean up previous chart instances
+    if (donutChartInstance.current) {
+      donutChartInstance.current.destroy();
     }
-
-    // Create new chart
-    const ctx = chartRef.current.getContext('2d');
-    chartInstance.current = new Chart(ctx, {
+    
+    // Create new donut chart
+    const donutCtx = donutChartRef.current.getContext('2d');
+    donutChartInstance.current = new Chart(donutCtx, {
       type: 'doughnut',
       data: {
         labels: ['Positive', 'Neutral', 'Negative'],
@@ -30,6 +60,13 @@ function SentimentChart({ positive, neutral, negative }) {
       options: {
         responsive: true,
         plugins: {
+          title: {
+            display: true,
+            text: 'Sentiment Distribution',
+            font: {
+              size: 16
+            }
+          },
           legend: {
             position: 'bottom',
             labels: {
@@ -50,17 +87,122 @@ function SentimentChart({ positive, neutral, negative }) {
       }
     });
 
-    // Cleanup chart when component unmounts
+    // Create heatmap chart if we have a product with reviews
+    if (heatmapChartRef.current && product && product.reviews) {
+      const heatmapData = generateHeatmapData();
+      
+      if (heatmapChartInstance.current) {
+        heatmapChartInstance.current.destroy();
+      }
+      
+      if (heatmapData && heatmapData.length > 0) {
+        const heatmapCtx = heatmapChartRef.current.getContext('2d');
+        
+        // Custom chart for heatmap-like visualization
+        heatmapChartInstance.current = new Chart(heatmapCtx, {
+          type: 'bar',
+          data: {
+            labels: heatmapData.map((d, i) => `Review ${i+1}`),
+            datasets: [{
+              label: 'Sentiment Score',
+              data: heatmapData.map(d => d.v),
+              backgroundColor: heatmapData.map(d => d.color),
+              borderColor: 'rgba(0, 0, 0, 0.1)',
+              borderWidth: 1,
+              barThickness: 30
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Amazon Review Sentiment Heatmap',
+                font: {
+                  size: 16
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(tooltipItems) {
+                    const index = tooltipItems[0].dataIndex;
+                    return `${heatmapData[index].author} (${heatmapData[index].date})`;
+                  },
+                  label: function(context) {
+                    const index = context.dataIndex;
+                    const score = Math.round(heatmapData[index].v * 100) / 100;
+                    let sentiment = 'Neutral';
+                    if (score >= 0.5) sentiment = 'Positive';
+                    if (score < 0.3) sentiment = 'Negative';
+                    return [`Sentiment: ${sentiment} (${score})`, `"${heatmapData[index].reviewText}"`];
+                  }
+                }
+              },
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Sentiment Score (0-1)'
+                },
+                min: 0,
+                max: 1,
+              },
+              y: {
+                ticks: {
+                  display: true
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Cleanup charts when component unmounts
     return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy();
+      if (donutChartInstance.current) {
+        donutChartInstance.current.destroy();
+      }
+      if (heatmapChartInstance.current) {
+        heatmapChartInstance.current.destroy();
       }
     };
-  }, [positive, neutral, negative]);
+  }, [positive, neutral, negative, product, activeTab]);
 
   return (
-    <div className="sentiment-chart-container">
-      <canvas ref={chartRef} height="200"></canvas>
+    <div className="sentiment-chart-container mb-4">
+      <ul className="nav nav-tabs mb-3">
+        <li className="nav-item">
+          <button 
+            className={`nav-link ${activeTab === 'donut' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('donut')}
+          >
+            Sentiment Distribution
+          </button>
+        </li>
+        <li className="nav-item">
+          <button 
+            className={`nav-link ${activeTab === 'heatmap' ? 'active' : ''}`}
+            onClick={() => setActiveTab('heatmap')}
+            disabled={!product || !product.reviews}
+          >
+            Review Heatmap
+          </button>
+        </li>
+      </ul>
+      
+      <div className={`chart-container ${activeTab === 'donut' ? 'd-block' : 'd-none'}`}>
+        <canvas ref={donutChartRef} height="200"></canvas>
+      </div>
+      
+      <div className={`chart-container ${activeTab === 'heatmap' ? 'd-block' : 'd-none'}`}>
+        <canvas ref={heatmapChartRef} height={product && product.reviews ? Math.max(200, product.reviews.length * 40) : 200}></canvas>
+      </div>
     </div>
   );
 }

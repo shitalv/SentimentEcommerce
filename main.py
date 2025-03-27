@@ -1,21 +1,18 @@
 import os
 import sys
 import logging
-import subprocess
-import signal
-import threading
-from flask import Flask, send_from_directory
-
-# Import the Flask app from backend
-sys.path.append('./backend')
-from app import app as backend_app
+from flask import send_from_directory
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
+# Import the Flask app from backend
+sys.path.append('./backend')
+from app import app
+
 # Serve React frontend static files
-@backend_app.route('/', defaults={'path': ''})
-@backend_app.route('/<path:path>')
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
 def serve(path):
     """Serve React frontend static files"""
     if path != "" and os.path.exists(os.path.join('frontend/build', path)):
@@ -25,4 +22,4 @@ def serve(path):
 
 if __name__ == "__main__":
     # Run the backend Flask app
-    backend_app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
