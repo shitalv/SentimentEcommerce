@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import nltk
-from flask import send_from_directory
+from flask import send_from_directory, request
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -22,10 +22,10 @@ from app import app
 @app.route('/<path:path>')
 def serve(path):
     """Serve React frontend static files"""
-    if path != "" and os.path.exists(os.path.join('frontend/build', path)):
-        return send_from_directory('frontend/build', path)
+    if path != "" and os.path.exists(os.path.join('frontend/public', path)):
+        return send_from_directory('frontend/public', path)
     else:
-        return send_from_directory('frontend/build', 'index.html')
+        return send_from_directory('frontend/public', 'index.html')
 
 if __name__ == "__main__":
     # Run the backend Flask app
