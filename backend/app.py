@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 # Enable CORS
 CORS(app, supports_credentials=True)
 
-@app.route('/')
+@app.route('/api')
 def home():
     return jsonify({"message": "Sentiment Analysis E-Commerce API"})
 
@@ -97,27 +97,31 @@ def login():
         return jsonify({"error": "Failed to log in"}), 500
 
 @app.route('/api/auth/logout', methods=['POST'])
-@login_required
 def logout():
     """Log out the current user"""
     try:
-        logout_user()
-        return jsonify({"message": "Logged out successfully"})
+        if current_user.is_authenticated:
+            logout_user()
+            return jsonify({"message": "Logged out successfully"})
+        else:
+            return jsonify({"message": "No user to log out"}), 200
     except Exception as e:
         logging.error(f"Error logging out: {str(e)}")
         return jsonify({"error": "Failed to log out"}), 500
 
 @app.route('/api/auth/user', methods=['GET'])
-@login_required
 def get_user():
     """Get the current user info"""
-    return jsonify({
-        "user": {
-            "id": current_user.id,
-            "username": current_user.username,
-            "email": current_user.email
-        }
-    })
+    if current_user.is_authenticated:
+        return jsonify({
+            "user": {
+                "id": current_user.id,
+                "username": current_user.username,
+                "email": current_user.email
+            }
+        })
+    else:
+        return jsonify({"error": "Not authenticated"}), 401
 
 @app.route('/api/products', methods=['GET'])
 def api_get_products():

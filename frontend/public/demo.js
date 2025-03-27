@@ -17,11 +17,13 @@ let selectedProduct = null;
 // Fetch all products
 async function fetchProducts() {
   try {
+    console.log("Fetching products...");
     const response = await fetch('/api/products');
     if (!response.ok) {
       throw new Error('Failed to fetch products');
     }
     products = await response.json();
+    console.log("Products fetched:", products);
     renderProductList();
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -154,14 +156,21 @@ async function analyzeText(text) {
 // Check current user
 async function checkCurrentUser() {
   try {
+    console.log("Checking current user...");
     const response = await fetch('/api/auth/user', {
       credentials: 'include'
+    })
+    .catch(err => {
+      console.log("Network error checking user:", err);
+      return { ok: false };
     });
     
     if (response.ok) {
       const data = await response.json();
       currentUser = data.user;
+      console.log("User logged in:", currentUser);
     } else {
+      console.log("No user logged in");
       currentUser = null;
     }
     
