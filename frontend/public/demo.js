@@ -191,21 +191,55 @@ async function checkCurrentUser() {
   }
 }
 
+// Filter products based on search and filter criteria
+function filterProducts() {
+  const searchText = document.getElementById('product-search')?.value.toLowerCase() || '';
+  const categoryFilter = document.getElementById('category-filter')?.value || '';
+  const sentimentFilter = document.getElementById('sentiment-filter')?.value || '';
+  
+  return products.filter(product => {
+    // Search by name or description
+    const matchesSearch = searchText === '' || 
+      product.name.toLowerCase().includes(searchText) || 
+      product.description.toLowerCase().includes(searchText);
+    
+    // Filter by category
+    const matchesCategory = categoryFilter === '' || product.category === categoryFilter;
+    
+    // Filter by sentiment
+    let matchesSentiment = true;
+    if (sentimentFilter !== '') {
+      if (sentimentFilter === 'positive' && product.sentiment_score < 0.6) {
+        matchesSentiment = false;
+      } else if (sentimentFilter === 'neutral' && (product.sentiment_score < 0.4 || product.sentiment_score > 0.6)) {
+        matchesSentiment = false;
+      } else if (sentimentFilter === 'negative' && product.sentiment_score > 0.4) {
+        matchesSentiment = false;
+      }
+    }
+    
+    return matchesSearch && matchesCategory && matchesSentiment;
+  });
+}
+
 // Render product list
 function renderProductList() {
   if (!productListEl) return;
   
   productListEl.innerHTML = '';
   
-  if (products.length === 0) {
-    productListEl.innerHTML = '<div class="alert alert-info">No products found.</div>';
+  // Apply filters
+  const filteredProducts = filterProducts();
+  
+  if (filteredProducts.length === 0) {
+    productListEl.innerHTML = '<div class="alert alert-info">No products found matching your criteria.</div>';
     return;
   }
   
   const row = document.createElement('div');
   row.className = 'row g-4';
   
-  products.forEach(product => {
+  filteredProducts.forEach(product => {
     // Calculate sentiment class
     let sentimentClass = 'bg-secondary';
     let sentimentText = 'Neutral';
