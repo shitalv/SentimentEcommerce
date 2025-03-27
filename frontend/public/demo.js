@@ -34,11 +34,20 @@ async function fetchProducts() {
 // Fetch product details
 async function fetchProductDetails(productId) {
   try {
-    const response = await fetch(`/api/products/${productId}`);
+    console.log(`Fetching details for product ID: ${productId}`);
+    const response = await fetch(`/api/products/${productId}`)
+      .catch(err => {
+        console.log("Network error fetching product details:", err);
+        throw new Error("Network error when fetching product details");
+      });
+    
     if (!response.ok) {
-      throw new Error('Failed to fetch product details');
+      console.error(`Failed to fetch product details: ${response.status}`);
+      throw new Error(`Failed to fetch product details: ${response.status}`);
     }
+    
     selectedProduct = await response.json();
+    console.log("Product details fetched:", selectedProduct);
     renderProductDetail();
   } catch (error) {
     console.error('Error fetching product details:', error);
