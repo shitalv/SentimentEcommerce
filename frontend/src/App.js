@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import ProductList from './components/ProductList';
 import ProductDetail from './components/ProductDetail';
 import SearchFilter from './components/SearchFilter';
+import { AuthPage } from './components/Auth';
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -15,6 +16,10 @@ function App() {
   const [sentimentFilter, setSentimentFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [categories, setCategories] = useState([]);
+  
+  // Authentication states
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showAuthPage, setShowAuthPage] = useState(false);
 
   // Fetch products from the backend
   useEffect(() => {
@@ -90,10 +95,57 @@ function App() {
   const handleBackToProducts = () => {
     setSelectedProduct(null);
   };
+  
+  // Authentication methods
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user);
+    setShowAuthPage(false);
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setCurrentUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+  
+  const handleLoginClick = () => {
+    setShowAuthPage(true);
+  };
+  
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/user', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        }
+      } catch (err) {
+        console.error('Error checking authentication status:', err);
+      }
+    };
+    
+    checkAuthStatus();
+  }, []);
 
   return (
     <div className="App">
-      <Navbar />
+      <Navbar 
+        currentUser={currentUser} 
+        onLogout={handleLogout} 
+        onLoginClick={handleLoginClick} 
+      />
+      
       <main className="container py-4">
         {error && (
           <div className="alert alert-danger" role="alert">
@@ -101,7 +153,9 @@ function App() {
           </div>
         )}
 
-        {selectedProduct ? (
+        {showAuthPage ? (
+          <AuthPage onAuthSuccess={handleAuthSuccess} />
+        ) : selectedProduct ? (
           <ProductDetail product={selectedProduct} onBack={handleBackToProducts} />
         ) : (
           <>

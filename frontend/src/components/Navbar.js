@@ -1,6 +1,6 @@
 import React from 'react';
 
-function Navbar() {
+function Navbar({ currentUser, onLogout, onLoginClick }) {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container">
@@ -35,9 +35,51 @@ function Navbar() {
             <button className="btn btn-outline-light me-2" type="button">
               <i className="fas fa-shopping-cart me-1"></i> Cart (0)
             </button>
-            <button className="btn btn-outline-secondary" type="button">
-              <i className="fas fa-user me-1"></i> Login
-            </button>
+            
+            {currentUser ? (
+              <div className="dropdown">
+                <button 
+                  className="btn btn-outline-success dropdown-toggle" 
+                  type="button" 
+                  id="userDropdown" 
+                  data-bs-toggle="dropdown" 
+                  aria-expanded="false"
+                >
+                  <i className="fas fa-user-circle me-1"></i>
+                  {currentUser.username}
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                  <li>
+                    <button className="dropdown-item" type="button">
+                      <i className="fas fa-cog me-2"></i>Profile
+                    </button>
+                  </li>
+                  <li>
+                    <button className="dropdown-item" type="button">
+                      <i className="fas fa-history me-2"></i>Order History
+                    </button>
+                  </li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li>
+                    <button 
+                      className="dropdown-item text-danger" 
+                      type="button"
+                      onClick={onLogout}
+                    >
+                      <i className="fas fa-sign-out-alt me-2"></i>Logout
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <button 
+                className="btn btn-outline-secondary" 
+                type="button"
+                onClick={onLoginClick}
+              >
+                <i className="fas fa-sign-in-alt me-1"></i> Login
+              </button>
+            )}
           </div>
         </div>
       </div>

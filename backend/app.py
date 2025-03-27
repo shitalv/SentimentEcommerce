@@ -1,23 +1,123 @@
-from flask import Flask, jsonify, request
+from flask import jsonify, request, session
 from flask_cors import CORS
+from flask_login import login_user, logout_user, login_required, current_user
 import logging
 import os
-from sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords, analyze_hype_vs_reality
-from product_data import get_products, get_product_by_id
+from backend.sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords, analyze_hype_vs_reality
+from backend.product_data import get_products, get_product_by_id
+
+# Get the Flask app from parent module
+from app import app, db
+from models import User
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Initialize Flask app if not imported
-if not 'app' in globals():
-    app = Flask(__name__)
-    app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key")
-    # Enable CORS
-    CORS(app)
+# Enable CORS
+CORS(app, supports_credentials=True)
 
 @app.route('/')
 def home():
     return jsonify({"message": "Sentiment Analysis E-Commerce API"})
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+            
+        # Check required fields
+        required_fields = ['username', 'email', 'password']
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Missing required fields"}), 400
+            
+        # Check if username or email already exists
+        if User.query.filter_by(username=data['username']).first():
+            return jsonify({"error": "Username already exists"}), 400
+            
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({"error": "Email already exists"}), 400
+            
+        # Create new user
+        user = User(username=data['username'], email=data['email'])
+        user.set_password(data['password'])
+        
+        # Add to database
+        db.session.add(user)
+        db.session.commit()
+        
+        # Log in the new user
+        login_user(user)
+        
+        return jsonify({
+            "message": "User registered successfully",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email
+            }
+        }), 201
+    except Exception as e:
+        logging.error(f"Error registering user: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to register user"}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Log in a user"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+            
+        # Check required fields
+        if 'username' not in data or 'password' not in data:
+            return jsonify({"error": "Missing username or password"}), 400
+            
+        # Find user by username
+        user = User.query.filter_by(username=data['username']).first()
+        if not user or not user.check_password(data['password']):
+            return jsonify({"error": "Invalid username or password"}), 401
+            
+        # Log in the user
+        login_user(user)
+        
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email
+            }
+        })
+    except Exception as e:
+        logging.error(f"Error logging in: {str(e)}")
+        return jsonify({"error": "Failed to log in"}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+@login_required
+def logout():
+    """Log out the current user"""
+    try:
+        logout_user()
+        return jsonify({"message": "Logged out successfully"})
+    except Exception as e:
+        logging.error(f"Error logging out: {str(e)}")
+        return jsonify({"error": "Failed to log out"}), 500
+
+@app.route('/api/auth/user', methods=['GET'])
+@login_required
+def get_user():
+    """Get the current user info"""
+    return jsonify({
+        "user": {
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email
+        }
+    })
 
 @app.route('/api/products', methods=['GET'])
 def api_get_products():

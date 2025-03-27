@@ -14,8 +14,7 @@ try:
 except Exception as e:
     logging.error(f"Error downloading NLTK data: {str(e)}")
 
-# Import the Flask app from backend
-sys.path.append('./backend')
+# Import the Flask app from app.py in the root directory
 from app import app
 
 # Serve React frontend static files
