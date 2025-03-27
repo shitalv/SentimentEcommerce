@@ -1,5 +1,6 @@
 import React from 'react';
 import SentimentChart from './SentimentChart';
+import HypeVsRealityCheck from './HypeVsRealityCheck';
 
 function ProductDetail({ product, onBack }) {
   const getSentimentClass = (score) => {
@@ -160,6 +161,9 @@ function ProductDetail({ product, onBack }) {
               </div>
             </div>
           </div>
+
+          {/* Hype vs Reality Check */}
+          {product.hype_vs_reality && <HypeVsRealityCheck hypeData={product.hype_vs_reality} />}
 
           <div className="card">
             <div className="card-header d-flex justify-content-between align-items-center">

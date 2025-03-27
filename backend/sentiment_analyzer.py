@@ -171,3 +171,125 @@ def get_sentiment_keywords(text, sentiment_class):
             seen.add(kw["keyword"])
     
     return unique_keywords
+
+def analyze_hype_vs_reality(product_description, reviews):
+    """
+    Compare marketing claims in product description against actual user experiences
+    Returns a dictionary with matching and contradicting claims
+    """
+    if not product_description or not reviews:
+        return {
+            "matches": [],
+            "contradictions": [],
+            "marketing_claims": []
+        }
+    
+    # Common marketing claim patterns
+    marketing_phrases = [
+        "best", "perfect", "ultimate", "revolutionary", "game-changing",
+        "innovative", "premium", "high-quality", "top-rated", "professional",
+        "durable", "long-lasting", "easy to use", "maintenance-free", "efficient",
+        "highest rated", "best-selling", "unmatched", "incomparable", "superior",
+        "advanced", "state-of-the-art", "cutting-edge", "next-generation",
+        "breakthrough", "world-class", "top-of-the-line", "industry-leading",
+        "reliable", "exceptional", "outstanding", "excellent"
+    ]
+    
+    # Extract marketing claims from product description
+    description_lower = product_description.lower()
+    marketing_claims = []
+    
+    for phrase in marketing_phrases:
+        if phrase in description_lower:
+            # Find the context (10 words around the marketing phrase)
+            words = description_lower.split()
+            if phrase in words:
+                try:
+                    idx = words.index(phrase)
+                    start = max(0, idx - 5)
+                    end = min(len(words), idx + 5)
+                    context = " ".join(words[start:end])
+                    marketing_claims.append({
+                        "claim": phrase,
+                        "context": context
+                    })
+                except ValueError:
+                    # Handle phrases with multiple words
+                    for i in range(len(words) - len(phrase.split()) + 1):
+                        if " ".join(words[i:i+len(phrase.split())]) == phrase:
+                            start = max(0, i - 5)
+                            end = min(len(words), i + len(phrase.split()) + 5)
+                            context = " ".join(words[start:end])
+                            marketing_claims.append({
+                                "claim": phrase,
+                                "context": context
+                            })
+                            break
+            else:
+                # Handle multi-word phrases
+                for i in range(len(words) - 1):
+                    if " ".join(words[i:i+2]) == phrase:
+                        start = max(0, i - 5)
+                        end = min(len(words), i + 7)
+                        context = " ".join(words[start:end])
+                        marketing_claims.append({
+                            "claim": phrase,
+                            "context": context
+                        })
+                        break
+    
+    # Check reviews for confirmation or contradiction of claims
+    matches = []
+    contradictions = []
+    
+    for claim in marketing_claims:
+        claim_phrase = claim["claim"]
+        
+        # Look for positive confirmations and negative contradictions
+        confirmations = 0
+        denials = 0
+        
+        for review in reviews:
+            review_text = review.get("text", "").lower()
+            sentiment = review.get("sentiment", 0.5)
+            
+            # Check if the claim phrase appears in the review
+            if claim_phrase in review_text:
+                if sentiment >= 0.5:  # Positive review
+                    confirmations += 1
+                else:  # Negative review
+                    denials += 1
+            
+            # Check for explicit contradictions (e.g., "not durable" if claim is "durable")
+            contradiction_patterns = [
+                f"not {claim_phrase}", f"isn't {claim_phrase}", f"isnt {claim_phrase}",
+                f"doesn't {claim_phrase}", f"doesnt {claim_phrase}", f"far from {claim_phrase}",
+                f"barely {claim_phrase}", f"hardly {claim_phrase}", f"wasn't {claim_phrase}",
+                f"wasnt {claim_phrase}", f"not very {claim_phrase}", f"not really {claim_phrase}"
+            ]
+            
+            for pattern in contradiction_patterns:
+                if pattern in review_text:
+                    denials += 1
+        
+        # Determine if the claim is matched or contradicted
+        if confirmations > 0 and confirmations > denials:
+            matches.append({
+                "claim": claim_phrase,
+                "context": claim["context"],
+                "confirmations": confirmations,
+                "denials": denials
+            })
+        elif denials > 0:
+            contradictions.append({
+                "claim": claim_phrase,
+                "context": claim["context"],
+                "confirmations": confirmations,
+                "denials": denials
+            })
+    
+    return {
+        "matches": matches,
+        "contradictions": contradictions,
+        "marketing_claims": marketing_claims
+    }

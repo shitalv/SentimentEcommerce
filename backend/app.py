@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import logging
 import os
-from sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords
+from sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords, analyze_hype_vs_reality
 from product_data import get_products, get_product_by_id
 
 # Set up logging
@@ -113,6 +113,9 @@ def api_get_product(product_id):
         
         # Add sentiment counts to the product
         product["sentiment_counts"] = sentiment_counts
+        
+        # Add "Hype vs Reality" analysis by comparing product description with reviews
+        product["hype_vs_reality"] = analyze_hype_vs_reality(product.get("description", ""), product["reviews"])
         
         return jsonify(product)
     except Exception as e:
