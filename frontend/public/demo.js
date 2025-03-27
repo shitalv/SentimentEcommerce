@@ -573,6 +573,50 @@ document.addEventListener('DOMContentLoaded', function() {
   // Fetch products
   fetchProducts();
   
+  // Search input - search as you type
+  const searchInput = document.getElementById('product-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      renderProductList();
+    });
+  }
+  
+  // Apply filters button
+  const applyFiltersBtn = document.getElementById('apply-filters');
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener('click', function() {
+      renderProductList();
+    });
+  }
+  
+  // Reset filters button
+  const resetFiltersBtn = document.getElementById('reset-filters');
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener('click', function() {
+      // Clear all filter inputs
+      document.getElementById('product-search').value = '';
+      document.getElementById('category-filter').value = '';
+      document.getElementById('sentiment-filter').value = '';
+      renderProductList();
+    });
+  }
+  
+  // Category and sentiment filter change events
+  const categoryFilter = document.getElementById('category-filter');
+  const sentimentFilter = document.getElementById('sentiment-filter');
+  
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', function() {
+      renderProductList();
+    });
+  }
+  
+  if (sentimentFilter) {
+    sentimentFilter.addEventListener('change', function() {
+      renderProductList();
+    });
+  }
+  
   // Register form
   if (registerFormEl) {
     registerFormEl.addEventListener('submit', function(event) {
