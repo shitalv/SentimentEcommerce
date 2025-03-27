@@ -83,18 +83,91 @@ def classify_sentiment(score):
 
 def get_sentiment_keywords(text, sentiment_class):
     """
-    Identify keywords contributing to sentiment
+    Identify keywords contributing to sentiment - Amazon review style analysis
     """
-    # This is a simplified implementation
-    # A more sophisticated approach would involve NLP techniques
-    # to identify influential words in sentiment determination
+    # Improved keyword extraction based on Amazon review analysis patterns
     words = text.lower().split()
     
+    # Common Amazon review sentiment keywords (extended for better coverage)
+    positive_keywords = {
+        # Product quality
+        "quality": ["high quality", "well made", "durable", "sturdy", "solid", "premium"],
+        
+        # Performance
+        "performance": ["fast", "smooth", "efficient", "effective", "powerful", "responsive"],
+        
+        # Value
+        "value": ["worth", "value", "bargain", "affordable", "reasonable price"],
+        
+        # User experience
+        "experience": ["easy to use", "user friendly", "intuitive", "convenient", "comfortable"],
+        
+        # Satisfaction
+        "satisfaction": ["love", "perfect", "excellent", "amazing", "awesome", "great", "fantastic", 
+                         "outstanding", "happy", "satisfied", "impressed", "recommend"]
+    }
+    
+    negative_keywords = {
+        # Product quality
+        "quality": ["poor quality", "cheaply made", "flimsy", "fragile", "broke", "low quality"],
+        
+        # Performance
+        "performance": ["slow", "sluggish", "lags", "underperforms", "weak", "unresponsive"],
+        
+        # Value
+        "value": ["overpriced", "expensive", "not worth", "waste of money", "pricey"],
+        
+        # User experience
+        "experience": ["difficult to use", "complicated", "confusing", "inconvenient", "uncomfortable"],
+        
+        # Dissatisfaction
+        "dissatisfaction": ["disappointed", "frustrating", "terrible", "horrible", "awful", "bad", 
+                            "poor", "worst", "hate", "annoying", "regret", "avoid", "return"]
+    }
+    
+    # Extract phrases, not just individual words
+    text_lower = text.lower()
+    
+    extracted_keywords = []
+    
     if sentiment_class == "positive":
-        positive_words = ["good", "great", "excellent", "amazing", "love", "best", "perfect"]
-        return [word for word in words if word in positive_words]
+        for category, keywords in positive_keywords.items():
+            for keyword in keywords:
+                if keyword in text_lower:
+                    # Find the context (5 words around the keyword)
+                    words = text_lower.split()
+                    if len(keyword.split()) == 1:  # Single word
+                        if keyword in words:
+                            idx = words.index(keyword)
+                            start = max(0, idx - 3)
+                            end = min(len(words), idx + 3)
+                            context = " ".join(words[start:end])
+                            extracted_keywords.append({"keyword": keyword, "category": category, "context": context})
+                    else:  # Multi-word phrase
+                        extracted_keywords.append({"keyword": keyword, "category": category})
+    
     elif sentiment_class == "negative":
-        negative_words = ["bad", "poor", "terrible", "worst", "hate", "disappointing", "failed"]
-        return [word for word in words if word in negative_words]
-    else:
-        return []
+        for category, keywords in negative_keywords.items():
+            for keyword in keywords:
+                if keyword in text_lower:
+                    # Find the context (5 words around the keyword)
+                    words = text_lower.split()
+                    if len(keyword.split()) == 1:  # Single word
+                        if keyword in words:
+                            idx = words.index(keyword)
+                            start = max(0, idx - 3)
+                            end = min(len(words), idx + 3)
+                            context = " ".join(words[start:end])
+                            extracted_keywords.append({"keyword": keyword, "category": category, "context": context})
+                    else:  # Multi-word phrase
+                        extracted_keywords.append({"keyword": keyword, "category": category})
+    
+    # Return unique keywords
+    unique_keywords = []
+    seen = set()
+    for kw in extracted_keywords:
+        if kw["keyword"] not in seen:
+            unique_keywords.append(kw)
+            seen.add(kw["keyword"])
+    
+    return unique_keywords

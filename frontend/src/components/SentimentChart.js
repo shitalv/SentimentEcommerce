@@ -8,29 +8,51 @@ function SentimentChart({ positive, neutral, negative, product }) {
   const heatmapChartInstance = useRef(null);
   const [activeTab, setActiveTab] = useState('donut');
 
-  // Generate heatmap data from reviews if available
+  // Generate heatmap data from reviews if available - Amazon style
   const generateHeatmapData = () => {
     if (!product || !product.reviews) return null;
     
-    // Extract review sentiment data
-    return product.reviews.map((review, index) => {
+    // Sort reviews by date (if available) to show trends over time
+    const sortedReviews = [...product.reviews];
+    if (sortedReviews[0].date) {
+      sortedReviews.sort((a, b) => {
+        // Try to parse dates, fall back to original order if can't parse
+        try {
+          return new Date(a.date) - new Date(b.date);
+        } catch (e) {
+          return 0;
+        }
+      });
+    }
+    
+    // Extract review sentiment data - Amazon style heatmap (more granular)
+    return sortedReviews.map((review, index) => {
       const sentiment = review.sentiment || 0.5; // Default to neutral if not available
       let color;
       
-      if (sentiment >= 0.7) color = 'rgba(40, 167, 69, 0.8)'; // Strong positive
-      else if (sentiment >= 0.5) color = 'rgba(40, 167, 69, 0.5)'; // Positive
-      else if (sentiment >= 0.3) color = 'rgba(255, 193, 7, 0.7)'; // Neutral
-      else if (sentiment >= 0.2) color = 'rgba(220, 53, 69, 0.5)'; // Negative
-      else color = 'rgba(220, 53, 69, 0.8)'; // Strong negative
+      // Amazon star-like coloring (5 levels)
+      if (sentiment >= 0.8) color = 'rgba(0, 128, 0, 0.95)';       // 5 stars (dark green)
+      else if (sentiment >= 0.6) color = 'rgba(40, 167, 69, 0.8)';  // 4 stars (green)
+      else if (sentiment >= 0.4) color = 'rgba(255, 193, 7, 0.8)';  // 3 stars (yellow)
+      else if (sentiment >= 0.2) color = 'rgba(255, 128, 0, 0.8)';  // 2 stars (orange)
+      else color = 'rgba(220, 53, 69, 0.8)';                        // 1 star (red)
+      
+      // Extract keywords for tooltip
+      const keywordText = review.keywords && review.keywords.length > 0 
+        ? review.keywords.slice(0, 3).map(k => k.keyword).join(', ')
+        : 'No specific keywords';
       
       return {
         x: index,
         y: 0,
         v: sentiment,
         color: color,
-        reviewText: review.text.substring(0, 60) + '...',
-        author: review.author,
-        date: review.date
+        reviewText: review.text.substring(0, 60) + (review.text.length > 60 ? '...' : ''),
+        author: review.author || 'Anonymous',
+        date: review.date || 'Unknown date',
+        keywords: keywordText,
+        // Calculate a star rating equivalent (Amazon style)
+        stars: Math.round(sentiment * 5 * 10) / 10
       };
     });
   };
@@ -118,9 +140,20 @@ function SentimentChart({ positive, neutral, negative, product }) {
             plugins: {
               title: {
                 display: true,
-                text: 'Amazon Review Sentiment Heatmap',
+                text: 'Amazon Review Sentiment Heatmap Analysis',
                 font: {
                   size: 16
+                }
+              },
+              subtitle: {
+                display: true,
+                text: 'Hover over bars to see review details and extracted keywords',
+                font: {
+                  size: 12,
+                  style: 'italic'
+                },
+                padding: {
+                  bottom: 10
                 }
               },
               tooltip: {
@@ -135,7 +168,17 @@ function SentimentChart({ positive, neutral, negative, product }) {
                     let sentiment = 'Neutral';
                     if (score >= 0.5) sentiment = 'Positive';
                     if (score < 0.3) sentiment = 'Negative';
-                    return [`Sentiment: ${sentiment} (${score})`, `"${heatmapData[index].reviewText}"`];
+                    
+                    // Amazon style stars rating
+                    const stars = heatmapData[index].stars;
+                    const starDisplay = '★'.repeat(Math.floor(stars)) + (stars % 1 >= 0.5 ? '½' : '');
+                    
+                    return [
+                      `Amazon Rating: ${starDisplay} (${stars}/5)`,
+                      `Sentiment: ${sentiment} (${score})`, 
+                      `Key aspects: ${heatmapData[index].keywords}`,
+                      `"${heatmapData[index].reviewText}"`
+                    ];
                   }
                 }
               },
@@ -191,7 +234,7 @@ function SentimentChart({ positive, neutral, negative, product }) {
             onClick={() => setActiveTab('heatmap')}
             disabled={!product || !product.reviews}
           >
-            Review Heatmap
+            Amazon Review Heatmap
           </button>
         </li>
       </ul>

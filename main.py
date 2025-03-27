@@ -1,10 +1,18 @@
 import os
 import sys
 import logging
+import nltk
 from flask import send_from_directory
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
+
+# Download NLTK data required for sentiment analysis
+try:
+    nltk.download('vader_lexicon')
+    logging.info("NLTK Vader lexicon downloaded successfully")
+except Exception as e:
+    logging.error(f"Error downloading NLTK data: {str(e)}")
 
 # Import the Flask app from backend
 sys.path.append('./backend')
