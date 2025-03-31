@@ -4,7 +4,10 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
-
+from config import Config
+import os
+# from dotenv import load_dotenv
+# load_dotenv() 
 class Base(DeclarativeBase):
     pass
 
@@ -12,16 +15,21 @@ db = SQLAlchemy(model_class=Base)
 
 # Create the app
 app = Flask(__name__)
+app.config.from_object(Config)
 app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key")
-
+app.config["SQLALCHEMY_DATABASE_URI"] ='postgresql://postgres:root@localhost:5432/sentiment_ecommerce'
 # Configure the database connection
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_DATABASE_URI"] ="postgresql://postgres:root@localhost:5432/sentiment_ecommerce"
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
 }
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
+# Add this before db.create_all()
+# with app.app_context():
+#     # Create a custom schema
+#     db.session.execute('CREATE SCHEMA IF NOT EXISTS myschema')
+#     db.session.commit()
 # Initialize the app with the extension
 db.init_app(app)
 
