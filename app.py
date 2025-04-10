@@ -25,7 +25,13 @@ if not database_url:
     database_url = "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce"
     logger.info(f"DATABASE_URL not set, using local PostgreSQL: {database_url}")
 else:
-    logger.info(f"Using database from environment: {database_url}")
+    # Check if this is a disabled Neon Tech endpoint
+    if "neon.tech" in database_url and "endpoint is disabled" in os.environ.get("DATABASE_ERROR", ""):
+        # Override with local PostgreSQL
+        database_url = "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce"
+        logger.warning(f"Detected disabled Neon Tech endpoint, using local PostgreSQL instead: {database_url}")
+    else:
+        logger.info(f"Using database from environment: {database_url}")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
