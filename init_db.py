@@ -9,15 +9,20 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# On Replit, DATABASE_URL is already set as an environment variable
-# We don't need to set it manually
-# If you're running this locally, you'll need to set the DATABASE_URL environment variable
-if not os.environ.get("DATABASE_URL"):
-    logger.warning("DATABASE_URL environment variable not set! Using Replit's DATABASE_URL...")
-# Set a default secret key
-os.environ["SESSION_SECRET"] = "development_secret_key_change_me_later"
+# Check for DATABASE_URL
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    # Will use the default in app.py (postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce)
+    logger.info("DATABASE_URL not set. Will use default local PostgreSQL configuration from app.py")
+else:
+    logger.info(f"Using database from environment: {database_url}")
 
-logger.info("Environment variables set")
+# Set a default secret key
+if not os.environ.get("SESSION_SECRET"):
+    os.environ["SESSION_SECRET"] = "development_secret_key_change_me_later"
+    logger.info("Using default development secret key")
+
+logger.info("Environment variables checked")
 
 # Import the Flask app after setting environment variables
 from app import app, db

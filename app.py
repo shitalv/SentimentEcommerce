@@ -5,6 +5,10 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 class Base(DeclarativeBase):
     pass
 
@@ -14,8 +18,16 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key")
 
-# Configure the database connection
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+# Configure database - use environment variable if set, otherwise use local PostgreSQL
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    # Default to local PostgreSQL for development
+    database_url = "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce"
+    logger.info(f"DATABASE_URL not set, using local PostgreSQL: {database_url}")
+else:
+    logger.info(f"Using database from environment: {database_url}")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -45,7 +57,11 @@ with app.app_context():
     db.create_all()
 
 # Import routes
-from backend.app import *  # noqa: F401
+try:
+    from backend.app import *  # noqa: F401
+    logger.info("Backend routes imported successfully")
+except ImportError as e:
+    logger.warning(f"Failed to import backend routes: {e}")
 
 # Development server
 if __name__ == "__main__":
