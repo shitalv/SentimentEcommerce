@@ -177,14 +177,24 @@ def get_products():
 
 def get_product_by_id(product_id):
     """
-    Return product by ID
+    Return product by ID with better error handling
     """
     try:
         # In a real application, this would query a database
         for product in products:
             if product["id"] == product_id:
                 return product
+        
+        # Product not found
+        logging.warning(f"Product with ID {product_id} not found")
         return None
     except Exception as e:
         logging.error(f"Error fetching product {product_id}: {str(e)}")
-        return None
+        # Return a basic product info with error message instead of failing completely
+        return {
+            "id": product_id,
+            "name": "Product Information Unavailable",
+            "error": str(e),
+            "reviews": [],
+            "sentiment_score": 0.5
+        }

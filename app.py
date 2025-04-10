@@ -4,6 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
+from config import get_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,44 +15,20 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 
-# Create the app
-app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key")
-
-# Configure database - use environment variable if set, otherwise use local PostgreSQL
-database_url = os.environ.get("DATABASE_URL")
-if not database_url:
-    # Default to local PostgreSQL for development
-    database_url = "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce"
-    logger.info(f"DATABASE_URL not set, using local PostgreSQL: {database_url}")
-else:
-    # Check if this is a disabled Neon Tech endpoint
-    if "neon.tech" in database_url and "endpoint is disabled" in os.environ.get("DATABASE_ERROR", ""):
-        # Override with local PostgreSQL
-        database_url = "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce"
-        logger.warning(f"Detected disabled Neon Tech endpoint, using local PostgreSQL instead: {database_url}")
-    else:
-        logger.info(f"Using database from environment: {database_url}")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# Initialize the app with the extension
-db.init_app(app)
-
-# Initialize login manager
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
-
-# Import models after db initialization
-with app.app_context():
-    # Import models to create tables
-    import models  # noqa: F401
+def create_app():
+    """Application factory pattern"""
+    app = Flask(__name__)
+    
+    # Load configuration based on environment
+    app.config.from_object(get_config())
+    
+    # Initialize extensions
+    db.init_app(app)
+    
+    # Initialize login manager
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'backend.login'
     
     # User loader function for Flask-Login
     @login_manager.user_loader
@@ -59,15 +36,27 @@ with app.app_context():
         from models import User
         return User.query.get(int(user_id))
     
-    # Create tables if they don't exist
-    db.create_all()
+    # Import and register blueprints
+    try:
+        from backend.app import bp as backend_bp
+        app.register_blueprint(backend_bp)
+        logger.info("Backend routes registered successfully")
+    except ImportError as e:
+        logger.warning(f"Failed to import backend routes: {e}")
+    
+    # Create database tables
+    with app.app_context():
+        import models  # noqa: F401
+        try:
+            db.create_all()
+            logger.info("Database tables created successfully!")
+        except Exception as e:
+            logger.error(f"Error creating database tables: {str(e)}")
+    
+    return app
 
-# Import routes
-try:
-    from backend.app import *  # noqa: F401
-    logger.info("Backend routes imported successfully")
-except ImportError as e:
-    logger.warning(f"Failed to import backend routes: {e}")
+# Create the Flask application instance
+app = create_app()
 
 # Development server
 if __name__ == "__main__":

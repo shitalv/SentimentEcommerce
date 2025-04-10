@@ -1,4 +1,4 @@
-from flask import jsonify, request, session
+from flask import Blueprint, jsonify, request, session
 from flask_cors import CORS
 from flask_login import login_user, logout_user, login_required, current_user
 import logging
@@ -6,21 +6,21 @@ import os
 from backend.sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords, analyze_hype_vs_reality
 from backend.product_data import get_products, get_product_by_id
 
-# Get the Flask app from parent module
-from app import app, db
+# Get the db from parent module
+from app import db
 from models import User
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Enable CORS
-CORS(app, supports_credentials=True)
+# Create blueprint
+bp = Blueprint('backend', __name__, url_prefix='/api')
 
-@app.route('/api')
+@bp.route('/')
 def home():
     return jsonify({"message": "Sentiment Analysis E-Commerce API"})
 
-@app.route('/api/auth/register', methods=['POST'])
+@bp.route('/auth/register', methods=['POST'])
 def register():
     """Register a new user"""
     try:
@@ -64,7 +64,7 @@ def register():
         db.session.rollback()
         return jsonify({"error": "Failed to register user"}), 500
 
-@app.route('/api/auth/login', methods=['POST'])
+@bp.route('/auth/login', methods=['POST'])
 def login():
     """Log in a user"""
     try:
@@ -96,7 +96,7 @@ def login():
         logging.error(f"Error logging in: {str(e)}")
         return jsonify({"error": "Failed to log in"}), 500
 
-@app.route('/api/auth/logout', methods=['POST'])
+@bp.route('/auth/logout', methods=['POST'])
 def logout():
     """Log out the current user"""
     try:
@@ -109,7 +109,7 @@ def logout():
         logging.error(f"Error logging out: {str(e)}")
         return jsonify({"error": "Failed to log out"}), 500
 
-@app.route('/api/auth/user', methods=['GET'])
+@bp.route('/auth/user', methods=['GET'])
 def get_user():
     """Get the current user info"""
     if current_user.is_authenticated:
@@ -123,7 +123,7 @@ def get_user():
     else:
         return jsonify({"error": "Not authenticated"}), 401
 
-@app.route('/api/products', methods=['GET'])
+@bp.route('/products', methods=['GET'])
 def api_get_products():
     """
     Get all products with sentiment analysis
@@ -150,7 +150,7 @@ def api_get_products():
         logging.error(f"Error fetching products: {str(e)}")
         return jsonify({"error": "Failed to fetch products"}), 500
 
-@app.route('/api/products/<int:product_id>', methods=['GET'])
+@bp.route('/products/<int:product_id>', methods=['GET'])
 def api_get_product(product_id):
     """
     Get product details with sentiment analysis
@@ -226,7 +226,7 @@ def api_get_product(product_id):
         logging.error(f"Error fetching product {product_id}: {str(e)}")
         return jsonify({"error": f"Failed to fetch product {product_id}"}), 500
 
-@app.route('/api/analyze', methods=['POST'])
+@bp.route('/analyze', methods=['POST'])
 def api_analyze_sentiment():
     """
     Analyze sentiment of provided text
@@ -249,6 +249,12 @@ def api_analyze_sentiment():
         logging.error(f"Error analyzing sentiment: {str(e)}")
         return jsonify({"error": "Failed to analyze sentiment"}), 500
 
+# Apply CORS to blueprint
+CORS(bp, supports_credentials=True)
+
+# This is only run when this file is executed directly (for development)
 if __name__ == "__main__":
-    # This is run when this file is executed directly (for development)
+    from flask import Flask
+    app = Flask(__name__)
+    app.register_blueprint(bp)
     app.run(host="0.0.0.0", port=8000, debug=True)
