@@ -166,21 +166,127 @@ products = [
 
 def get_products():
     """
-    Return all products
+    Return all products with basic sentiment analysis from database
     """
     try:
-        # In a real application, this would query a database
+        # Try to query products from database
+        from models import Product
+        
+        try:
+            # Query products from database
+            products_db = Product.query.all()
+            
+            if products_db:
+                # Database has products, return them
+                result = []
+                for product in products_db:
+                    # Convert product to dictionary
+                    product_dict = {
+                        "id": product.id,
+                        "asin": product.asin,
+                        "name": product.name,
+                        "price": product.price,
+                        "category": product.category,
+                        "description": product.description,
+                        "image_url": product.image_url,
+                        "sentiment_score": (product.positive_score * 1.0) + (product.neutral_score * 0.5),
+                        "reviews": []
+                    }
+                    
+                    # Add sample of reviews (limit to 3 for performance)
+                    reviews = product.reviews.limit(3).all()
+                    for review in reviews:
+                        review_dict = {
+                            "author": review.author,
+                            "date": review.date.strftime("%Y-%m-%d") if review.date else None,
+                            "text": review.text,
+                            "rating": review.rating
+                        }
+                        product_dict["reviews"].append(review_dict)
+                    
+                    result.append(product_dict)
+                
+                return result
+                
+        except Exception as db_error:
+            # Database error, log and fall back
+            logging.error(f"Database error: {str(db_error)}, falling back to sample data")
+            
+        # Return sample products if database is empty or unavailable
         return products
+            
     except Exception as e:
         logging.error(f"Error fetching products: {str(e)}")
         return []
 
 def get_product_by_id(product_id):
     """
-    Return product by ID with better error handling
+    Return product by ID with detailed sentiment analysis from database
     """
     try:
-        # In a real application, this would query a database
+        # Try to query from database first
+        from models import Product, Review
+        
+        try:
+            # Query product from database
+            product = Product.query.get(product_id)
+            
+            if product:
+                # Convert product to dictionary
+                product_data = {
+                    "id": product.id,
+                    "asin": product.asin,
+                    "name": product.name,
+                    "price": product.price,
+                    "category": product.category,
+                    "description": product.description,
+                    "image_url": product.image_url,
+                    "reviews": [],
+                    "sentiment_counts": {
+                        "positive": product.positive_score,
+                        "neutral": product.neutral_score,
+                        "negative": product.negative_score
+                    },
+                    "sentiment_score": (product.positive_score * 1.0) + (product.neutral_score * 0.5)
+                }
+                
+                # Add all reviews with sentiment analysis
+                reviews = product.reviews.all()
+                for review in reviews:
+                    review_dict = {
+                        "author": review.author,
+                        "date": review.date.strftime("%Y-%m-%d") if review.date else None,
+                        "text": review.text,
+                        "rating": review.rating,
+                        "sentiment": review.sentiment_score,
+                        "sentiment_class": review.sentiment_class,
+                    }
+                    
+                    # Parse keywords from JSON if available
+                    if review.sentiment_keywords:
+                        try:
+                            import json as json_module
+                            review_dict["keywords"] = json_module.loads(review.sentiment_keywords)
+                        except json_module.JSONDecodeError:
+                            review_dict["keywords"] = []
+                    
+                    product_data["reviews"].append(review_dict)
+                
+                # Add "Hype vs Reality" analysis if available
+                if product.description and product_data["reviews"]:
+                    from backend.sentiment_analyzer import analyze_hype_vs_reality
+                    product_data["hype_vs_reality"] = analyze_hype_vs_reality(
+                        product.description,
+                        [r["text"] for r in product_data["reviews"]]
+                    )
+                
+                return product_data
+        
+        except Exception as db_error:
+            # Database error, log and fall back
+            logging.error(f"Database error fetching product {product_id}: {str(db_error)}, falling back to sample data")
+        
+        # Fall back to sample data if database is unavailable
         for product in products:
             if product["id"] == product_id:
                 return product

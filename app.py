@@ -48,10 +48,19 @@ def create_app():
     with app.app_context():
         import models  # noqa: F401
         try:
+            # Check if we can connect to the database
+            db.engine.connect()
             db.create_all()
             logger.info("Database tables created successfully!")
         except Exception as e:
             logger.error(f"Error creating database tables: {str(e)}")
+            logger.warning("Database is unavailable. Running in limited mode with sample data.")
+            
+            # If this is a Neon database error about disabled endpoint, provide helpful message
+            if "endpoint is disabled" in str(e):
+                logger.error("Neon database endpoint is disabled. You may need to enable it through the Neon dashboard.")
+                # Set a flag to indicate we're using sample data
+                app.config['USING_SAMPLE_DATA'] = True
     
     return app
 
