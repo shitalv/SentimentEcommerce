@@ -16,8 +16,9 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    # Use local PostgreSQL for development
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce"
+    # Use environment variable DATABASE_URL for Replit (if available)
+    # Otherwise fall back to local PostgreSQL for local development
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/sentiment_ecommerce")
 
 class ProductionConfig(Config):
     """Production configuration"""
