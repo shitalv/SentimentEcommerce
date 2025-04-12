@@ -1,0 +1,133 @@
+Importing reviews:   0%|          | 0/5000 [00:00<?, ?it/s]2025-04-12 18:35:34,026 - amazon_importer - WARNING 
+- Missing required product data: {'\ufeffid': 'AVqVGZNvQMlgsOJE6eUY', 'dateAdded': '2017-03-03T16:56:05Z', 
+'dateUpdated': '2018-10-25T16:36:31Z', 'name': 'Amazon Kindle E-Reader 6" Wifi (8th Generation, 2016)', 
+'asins': 'B00ZV9PXP2', 'brand': 'Amazon', 'categories': 'Computers,Electronics 
+Features,Tablets,Electronics,iPad & Tablets,Kindle E-readers,iPad Accessories,Used:Tablets,E-Readers,E-Readers 
+& Accessories,Computers/Tablets & Networking,Used:Computers Accessories,iPads Tablets,All Tablets,Tablets & 
+E-readers,Computers & Tablets,Amazon,Tablets & eBook Readers', 'primaryCategories': 'Electronics', 
+'imageURLs': 'https://pisces.bbystatic.com/image2/BestBuy_US/images/products/5442/5442403_sd.jpg,https://c1.new
+eggimages.com/NeweggImage/ProductImage/A3FA_1_201801081360871160.jpg,https://i.ebayimg.com/thumbs/images/g/N4IA
+AOSwoA9Zgkso/s-l96.jpg,http://i.ebayimg.com/thumbs/images/g/dpkAAOSwfpVZFKHy/s-l200.jpg,http://i.ebayimg.com/th
+umbs/images/g/PJgAAOSwiDFYPE8h/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/m38AAOSwblZZEhFQ/s-l200.jpg,http
+s://c1.neweggimages.com/NeweggImage/ProductImage/A3FA_1_20180108629568651.jpg,http://i.ebayimg.com/thumbs/image
+s/g/UxgAAOSw9GhYiMDI/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/QtgAAOSwdmRZcgv2/s-l200.jpg,http://i.ebayi
+mg.com/images/g/naUAAOSw4CFY1Td7/s-l300.jpg,https://i5.walmartimages.com/asr/419af8c3-a9df-4d8b-abe4-233348661e
+30_1.c07bf5932d2786e31be6a32329d6323b.jpeg%25252525253FodnHeight%25252525253D450%252525252526odnWidth%252525252
+53D450%252525252526odnBg%25252525253DFFFFFF,http://i.ebayimg.com/thumbs/images/g/vykAAOSwmtJXYxpm/s-l200.jpg,ht
+tp://i.ebayimg.com/thumbs/images/g/b80AAOSw-0xYNxg~/s-l200.jpg,https://target.scene7.com/is/image/Target/GUEST_
+302b59ff-dc90-444b-aec7-cfc65dd08989,https://static.bhphoto.com/images/itemImgPlaceholder.jpg,http://i.ebayimg.
+com/thumbs/images/i/263085587688-0-1/s-l200.jpg,https://target.scene7.com/is/image/Target/GUEST_ccc6016d-0b26-4
+b28-9832-27a61855a4b4,https://www.barcodable.com/images/barcode/0848719083774.png,http://i.ebayimg.com/thumbs/i
+mages/g/aS4AAOSwYlRZHKCj/s-l200.jpg,https://pisces.bbystatic.com/image2/BestBuy_US/images/products/5442/5442403
+_rd.jpg,https://i.ebayimg.com/thumbs/images/g/XGMAAOSwqz9Z3EKW/s-l96.jpg,http://i.ebayimg.com/thumbs/images/g/5
+qkAAOSw5cNYblJ0/s-l200.jpg,https://pisces.bbystatic.com/image2/BestBuy_US/images/products/5442/5442403ld.jpg,ht
+tps://i5.walmartimages.com/asr/deaab745-3d31-4bab-a7ae-a350220642ef_1.f4e5e498dd67abc007e96b10b526ee2c.jpeg%252
+52525253FodnHeight%25252525253D450%252525252526odnWidth%25252525253D450%252525252526odnBg%25252525253DFFFFFF,ht
+tp://i.ebayimg.com/thumbs/images/g/rWAAAOSwEzxYRbeX/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/jC8AAOSwjXR
+Xb1Fd/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/680AAOSwOddYxwDE/s-l200.jpg,https://i.ebayimg.com/thumbs/
+images/g/w5QAAOSwdGFYtOqQ/s-l96.jpg,https://c1.neweggimages.com/NeweggImage/ProductImage/A3FA_1_201710025727861
+17.jpg,https://i5.walmartimages.com/asr/22eb9833-6712-4a63-a0fd-eb6b0f190cf9_1.240dfca5692826cd5320da084816ed6c
+.jpeg%25252525253FodnHeight%25252525253D450%252525252526odnWidth%25252525253D450%252525252526odnBg%25252525253D
+FFFFFF,https://i.ebayimg.com/thumbs/images/g/3xUAAOSwbihZzYuw/s-l96.jpg,http://i.ebayimg.com/thumbs/images/g/Gw
+cAAOSwaB5XwIFa/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/9xEAAOSwEHpZNH8N/s-l200.jpg,http://i.ebayimg.com
+/thumbs/images/g/TU0AAOSw5h5ZcLrr/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/d~EAAOSw4shX7Q8h/s-l200.jpg,h
+ttp://pisces.bbystatic.com/image2/BestBuy_US/images/products/5442/5442403_sa.jpg,http://i.ebayimg.com/thumbs/im
+ages/g/1WMAAOSwealY46XU/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/hgAAAOSwYmZXDmni/s-l200.jpg,http://i.eb
+ayimg.com/thumbs/images/g/~IQAAOSw8d5ZXPG3/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/oe8AAOSwjqVZNtPW/s-l
+200.jpg,http://i.ebayimg.com/thumbs/images/g/x2sAAOSwGIRXYwwD/s-l200.jpg,http://i.ebayimg.com/thumbs/images/g/i
+rIAAOSwc-tY4pWd/s-l200.jpg,https://i5.walmartimages.com/asr/61caa3ad-7f8f-4995-976f-28fc4891d9b3_1.0c01311e3eb1
+de12b06a1c8e81f7e826.jpeg%25252525253FodnHeight%25252525253D450%252525252526odnWidth%25252525253D450%2525252525
+26odnBg%25252525253DFFFFFF,https://i.ebayimg.com/images/g/XegAAOSwdPBZxE-P/s-l300.jpg,http://i.ebayimg.com/thum
+bs/images/g/1zUAAOSwiYFXDmhl/s-l200.jpg,https://i.ebayimg.com/images/g/4XUAAOSwzVxZb9k6/s-l300.jpg,https://i5.w
+almartimages.com/asr/7b8c6811-3157-42ad-bc93-e42c8b291a5c_1.55bde63a786be1cefa9af65c94a9cbd0.jpeg%25252525253Fo
+dnHeight%25252525253D450%252525252526odnWidth%25252525253D450%252525252526odnBg%25252525253DFFFFFF,https://i5.w
+almartimages.com/asr/65f9fb31-8338-40f7-acdd-894b5aa06be7_1.728b47c501e92a07eab8038ca7069204.jpeg%25252525253Fo
+dnHeight%25252525253D450%252525252526odnWidth%25252525253D450%252525252526odnBg%25252525253DFFFFFF,https://i5.w
+almartimages.com/asr/938638c0-dc7f-4b67-b256-f231047aca9d_1.73592e523332cdaba5cb0f6f1dcee325.jpeg%25252525253Fo
+dnHeight%25252525253D450%252525252526odnWidth%25252525253D450%252525252526odnBg%25252525253DFFFFFF,https://i.eb
+ayimg.com/thumbs/images/g/aS4AAOSwYlRZHKCj/s-l96.jpg,https://static.bhphoto.com/images/images500x500/kindle_b00
+zv9pxp2_kindle_6_ereader_special_1468510257000_1264068.jpg,https://images-na.ssl-images-amazon.com/images/I/51h
+rdzXLUHL.jpg,https://static.bhphoto.com/images/images500x500/kindle_b00zv9pxp2_6_ereader_special_offers_1468510
+257000_1264068.jpg,http://i.ebayimg.com/images/g/9xEAAOSwEHpZNH8N/s-l300.jpg,http://i.ebayimg.com/thumbs/images
+/g/ZJYAAOSwDKtY1CEd/s-l200.jpg,https://pisces.bbystatic.com/image2/BestBuy_US/images/products/5442/5442403_bd.j
+pg,https://www.upccodesearch.com/images/barcode/0848719083774.png,http://i.ebayimg.com/images/g/XegAAOSwdPBZxE-
+P/s-l64.jpg,http://i.ebayimg.com/images/g/p2wAAOSwe0NZ2l0G/s-l64.jpg,http://pisces.bbystatic.com/image2/BestBuy
+_US/images/products/5442/5442403_sd.jpg', 'keys': 'allnewkindleereaderblack6glarefreetouchscreendisplaywifiincl
+udesspecialoffers/b00zv9pxp2,allnewkindleereaderblack6glarefreetouchscreendisplaywifiincludesspecialoffers/9sia
+fvd7fk6707,0848719083774,848719083774,allnewkindleereaderblack6glarefreetouchscreendisplaywifiincludesspecialof
+fers/322538285013,allnewkindleereaderblack6glarefreetouchscreendisplaywifiincludesspecialoffers/5442403,allnewk
+indleereaderblack6glarefreetouchscreendisplaywifiincludesspecialoffers/kier2016bk,allnewkindleereaderblack6glar
+efreetouchscreendisplaywifiincludesspecialoffers/162691587356,allnewkindleereaderblack6glarefreetouchscreendisp
+laywifiincludesspecialoffers/391843532825,allnewkindleereaderblack6glarefreetouchscreendisplaywifiincludesspeci
+aloffers/252974470193,amazon/b00zv9pxp2,amazonkindleblack/5435001,amazonkindleblack/5442403,allnewkindleereader
+black6glarefreetouchscreendisplaywifiincludesspecialoffers/1631053', 'manufacturer': 'Amazon', 
+'manufacturerNumber': 'B00ZV9PXP2', 'reviews.date': '2017-09-03T00:00:00.000Z', 'reviews.dateAdded': '', 
+'reviews.dateSeen': '2018-05-27T00:00:00Z,2017-09-18T00:00:00Z,2017-09-06T00:00:00Z,2017-09-12T00:00:00Z', 
+'reviews.doRecommend': 'FALSE', 'reviews.id': '', 'reviews.numHelpful': '0', 'reviews.rating': '3', 
+'reviews.sourceURLs': 'http://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembed
+ded,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%2525252525
+2526page%2525252525253D20,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253De
+mbedded%252525252526page%25252525253D20', 'reviews.text': 'I thought it would be as big as small paper but 
+turn out to be just like my palm. I think it is too small to read on it... not very comfortable as regular 
+Kindle. Would definitely recommend a paperwhite instead.', 'reviews.title': 'Too small', 'reviews.username': 
+'llyyue', 'sourceURLs': 'https://www.newegg.com/Product/Product.aspx%25253FItem%25253D9SIAFVD7FK6707,https://re
+views.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526page%25252
+52525253D39,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25
+252525252526page%2525252525253D37,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%252
+5252525253Dembedded%25252525252526page%2525252525253D38,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25
+25252525253Fformat%2525252525253Dembedded%25252525252526page%2525252525253D35,https://reviews.bestbuy.com/3545/
+5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526page%2525252525253D36,https://rev
+iews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526page%252525
+2525253D33,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%252
+52525252526page%2525252525253D34,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525
+252525253Dembedded%25252525252526page%2525252525253D31,https://reviews.bestbuy.com/3545/5442403/reviews.htm%252
+5252525253Fformat%2525252525253Dembedded%25252525252526page%2525252525253D30,https://www.target.com/p/amazon-ki
+ndle-e-reader-6-wifi-8th-generation-2016/-/A-51467832,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525
+25253Fformat%252525253Dembedded,https://www.newegg.com/Product/Product.aspx%253FItem%253D9SIAFVD7FK6707,https:/
+/www.bhphotovideo.com/c/product/1264068-REG/kindle_b00zv9pxp2_kindle_6_ereader_special.html,https://reviews.bes
+tbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded,https://reviews.bestbuy.com/3545/5442
+403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526page%2525252525253D44,https://reviews
+.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526page%2525252525
+253D45,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%2525252
+5252526page%2525252525253D42,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%25252525
+25253Dembedded%25252525252526page%2525252525253D43,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252
+525253Fformat%2525252525253Dembedded%25252525252526page%2525252525253D40,https://www.upccodesearch.com/upc/8487
+19083774,https://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252
+525252526page%2525252525253D41,http://www.ebay.com/itm/NEW-SEALED-AMAZON-KINDLE-E-READER-BLACK-6-GLARE-FREE-WI-
+FI-8TH-GENERATION-/252974470193%25252525253Fhash%25252525253Ditem3ae6741431%25252525253Ag%25252525253A9xEAAOSwE
+HpZNH8N,http://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%25252525252
+6page%25252525253D6,http://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded
+%252525252526page%25252525253D5,http://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525
+253Dembedded%252525252526page%25252525253D4,http://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Ffor
+mat%25252525253Dembedded%252525252526page%25252525253D3,http://reviews.bestbuy.com/3545/5442403/reviews.htm%252
+52525253Fformat%25252525253Dembedded%252525252526page%25252525253D9,http://reviews.bestbuy.com/3545/5442403/rev
+iews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D8,http://reviews.bestbuy.com/3545
+/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D7,http://reviews.best
+buy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D2,https:/
+/www.bhphotovideo.com/c/product/801631053-USE/kindle_b00zv9pxp2_6_ereader_special_offers.html,https://redsky.ta
+rget.com/groot-domain-api/v1/reviews/51467832?sort=helpfulness_desc&limit=1000&offset=0,https://reviews.bestbuy
+.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526page%2525252525253D9,ht
+tps://reviews.bestbuy.com/3545/5442403/reviews.htm%2525252525253Fformat%2525252525253Dembedded%25252525252526pa
+ge%2525252525253D8,http://www.bestbuy.com/site/amazon-kindle-black/5442403.p%25252525253FskuId%25252525253D5442
+403,http://www.bestbuy.com/site/products/5442403.p,https://www.walmart.com/ip/All-New-Kindle-E-reader-Black-6-G
+lare-Free-Touchscreen-Display-Wi-Fi-Includes-Special-Offers/111152939,https://www.bestbuy.com/site/products/544
+2403.p,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%25252525252
+6page%25252525253D25,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedd
+ed%252525252526page%25252525253D24,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%2525
+2525253Dembedded%252525252526page%25252525253D23,https://reviews.bestbuy.com/3545/5442403/reviews.htm%252525252
+53Fformat%25252525253Dembedded%252525252526page%25252525253D22,https://reviews.bestbuy.com/3545/5442403/reviews
+.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D28,https://reviews.bestbuy.com/3545/5
+442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D27,https://reviews.best
+buy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D26,https:
+//reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%2525252
+5253D20,http://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded,https://www
+.barcodable.com/upc/848719083774,http://www.ebay.com/itm/Amazon-Kindle-E-reader-Tablet-Black-6-Wi-Fi-167-ppi-4G
+B-8th-Gen-SY69JL-/391843532825,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525
+253Dembedded%252525252526page%25252525253D19,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Ff
+ormat%25252525253Dembedded%252525252526page%25252525253D14,https://reviews.bestbuy.com/3545/5442403/reviews.htm
+%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D13,https://reviews.bestbuy.com/3545/54424
+03/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D12,https://reviews.bestbuy.
+com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253D11,https://re
+views.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526page%25252525253
+D9,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dembedded%252525252526pag
+e%25252525253D18,https://reviews.bestbuy.com/3545/5442403/reviews.htm%25252525253Fformat%25252525253Dem
