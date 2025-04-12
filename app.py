@@ -104,8 +104,17 @@ with app.app_context():
                 app.config['USING_SAMPLE_DATA'] = True
 
     def create_app():
-    # ... rest of the app configuration ...
-    return app
+        # Configure the app
+        app = Flask(__name__)
+        app.config.from_object(get_config())
+        db.init_app(app)
+        
+        # Initialize login manager
+        login_manager = LoginManager()
+        login_manager.init_app(app)
+        login_manager.login_view = 'backend.login'
+        
+        return app
 
 app = create_app()
 
