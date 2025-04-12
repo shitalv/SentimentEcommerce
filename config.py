@@ -46,6 +46,11 @@ config_dict = {
     "testing": TestingConfig
 }
 
+def get_config():
+    """Get configuration based on environment"""
+    env = os.environ.get("FLASK_ENV", "development")
+    return config_dict.get(env, DevelopmentConfig)
+
 # # Get configuration based on environment
 # def get_config():
 #     env = os.environ.get("FLASK_ENV", "development")
