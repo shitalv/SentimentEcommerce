@@ -103,7 +103,11 @@ with app.app_context():
                 # Set a flag to indicate we're using sample data
                 app.config['USING_SAMPLE_DATA'] = True
 
+    def create_app():
+    # ... rest of the app configuration ...
     return app
+
+app = create_app()
 
 # Create the Flask application instance
 app = create_app()
