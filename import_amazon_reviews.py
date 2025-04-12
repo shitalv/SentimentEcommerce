@@ -100,12 +100,16 @@ def import_reviews(reviews_data):
         # Process each review
         for review_data in tqdm(reviews_data, desc="Importing reviews"):
             try:
-                # Extract product data
-                asin = review_data.get('asin') or review_data.get('product_id')
-                product_title = review_data.get('product_title') or review_data.get('product_name') or review_data.get('title')
+                # Extract product data and handle BOM character
+                asin = review_data.get('asins') or review_data.get('\ufeffasins') or review_data.get('asin') or review_data.get('product_id')
+                product_title = review_data.get('name') or review_data.get('product_title') or review_data.get('product_name') or review_data.get('title')
+                
+                # Clean up ASIN if it's a list
+                if isinstance(asin, str) and ',' in asin:
+                    asin = asin.split(',')[0].strip()
                 
                 if not asin or not product_title:
-                    logger.warning(f"Missing required product data: {review_data}")
+                    logger.warning(f"Missing required product data. ASIN: {asin}, Title: {product_title}")
                     stats['errors'] += 1
                     continue
                 
