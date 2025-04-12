@@ -137,11 +137,11 @@ def import_reviews(reviews_data):
                 else:
                     stats['products_skipped'] += 1
                 
-                # Extract review data
-                review_text = review_data.get('review_text') or review_data.get('reviewText') or review_data.get('text')
-                reviewer_name = review_data.get('reviewer_name') or review_data.get('reviewerName') or review_data.get('author')
-                rating = float(review_data.get('rating') or review_data.get('star_rating') or 0)
-                review_date_str = review_data.get('review_date') or review_data.get('date')
+                # Extract review data from CSV structure
+                review_text = review_data.get('reviews.text')
+                reviewer_name = review_data.get('reviews.username')
+                rating = float(review_data.get('reviews.rating', 0))
+                review_date_str = review_data.get('reviews.date')
                 review_date = parse_date(review_date_str) if review_date_str else None
                 
                 if not review_text:
