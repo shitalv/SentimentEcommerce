@@ -5,10 +5,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
 
-from config import get_config
+from config import Config
 import os
-# from dotenv import load_dotenv
-# load_dotenv()
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,21 +18,6 @@ class Base(DeclarativeBase):
 
 
 db = SQLAlchemy(model_class=Base)
-
-# def create_app():
-#     """Application factory pattern"""
-#     app = Flask(__name__)
-
-#     # Load configuration based on environment
-#     app.config.from_object(get_config())
-
-#     # Initialize extensions
-#     db.init_app(app)
-
-#     # Initialize login manager
-#     login_manager = LoginManager()
-#     login_manager.init_app(app)
-#     login_manager.login_view = 'backend.login'
 
 # Create the app
 app = Flask(__name__)
@@ -103,23 +87,8 @@ with app.app_context():
                 # Set a flag to indicate we're using sample data
                 app.config['USING_SAMPLE_DATA'] = True
 
-    def create_app():
-        # Configure the app
-        app = Flask(__name__)
-        app.config.from_object(get_config())
-        db.init_app(app)
-        
-        # Initialize login manager
-        login_manager = LoginManager()
-        login_manager.init_app(app)
-        login_manager.login_view = 'backend.login'
-        
-        return app
-
-app = create_app()
-
-# Create the Flask application instance
-app = create_app()
+    # No need for create_app since we already created the app above
+    pass
 
 # Development server
 if __name__ == "__main__":
