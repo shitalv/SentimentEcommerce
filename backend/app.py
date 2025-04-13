@@ -5,6 +5,7 @@ import logging
 import os
 from backend.sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords, analyze_hype_vs_reality
 from backend.product_data import get_products, get_product_by_id
+from backend.recommendations import get_recommendations_for_product, get_top_rated_products
 
 # Get the db from parent module
 from app import db
@@ -309,6 +310,85 @@ def api_analyze_sentiment():
     except Exception as e:
         logging.error(f"Error analyzing sentiment: {str(e)}")
         return jsonify({"error": "Failed to analyze sentiment"}), 500
+
+@bp.route('/products/<int:product_id>/recommendations', methods=['GET'])
+def api_get_recommendations(product_id):
+    """
+    Get product recommendations based on sentiment analysis
+    """
+    try:
+        # Get the limit parameter from query string (default to 3)
+        limit = request.args.get('limit', default=3, type=int)
+        
+        # Get recommended products
+        recommended_products = get_recommendations_for_product(product_id, limit=limit)
+        
+        # Return as JSON
+        result = []
+        for product in recommended_products:
+            # Convert product model to dict
+            product_dict = {
+                "id": product.id,
+                "name": product.name,
+                "category": product.category,
+                "price": product.price,
+                "description": product.description,
+                "image_url": product.image_url,
+                "sentiment_scores": {
+                    "positive": product.positive_score,
+                    "neutral": product.neutral_score,
+                    "negative": product.negative_score
+                }
+            }
+            result.append(product_dict)
+            
+        return jsonify({
+            "product_id": product_id,
+            "recommendations": result
+        })
+    except Exception as e:
+        logging.error(f"Error getting recommendations for product {product_id}: {str(e)}")
+        return jsonify({"error": f"Failed to get recommendations for product {product_id}"}), 500
+
+@bp.route('/recommendations/top-rated', methods=['GET'])
+def api_get_top_rated():
+    """
+    Get top rated products based on sentiment score
+    """
+    try:
+        # Get the category and limit parameters from query string
+        category = request.args.get('category', default=None, type=str)
+        limit = request.args.get('limit', default=5, type=int)
+        
+        # Get top rated products
+        top_products = get_top_rated_products(category=category, limit=limit)
+        
+        # Return as JSON
+        result = []
+        for product in top_products:
+            # Convert product model to dict
+            product_dict = {
+                "id": product.id,
+                "name": product.name,
+                "category": product.category,
+                "price": product.price,
+                "description": product.description,
+                "image_url": product.image_url,
+                "sentiment_scores": {
+                    "positive": product.positive_score,
+                    "neutral": product.neutral_score,
+                    "negative": product.negative_score
+                }
+            }
+            result.append(product_dict)
+            
+        return jsonify({
+            "category": category,
+            "top_rated": result
+        })
+    except Exception as e:
+        logging.error(f"Error getting top rated products: {str(e)}")
+        return jsonify({"error": "Failed to get top rated products"}), 500
 
 # Apply CORS to blueprint
 CORS(bp, supports_credentials=True)
