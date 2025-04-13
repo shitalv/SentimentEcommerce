@@ -101,7 +101,11 @@ def import_csv_reviews(file_path, limit=None):
                 # Skip if essential fields are missing
                 if not review['asin'] or not review['product_title'] or not review['review_text']:
                     continue
-            reviews.append(review)
+                    
+                reviews.append(review)
+            except Exception as e:
+                logger.error(f"Error processing row: {str(e)}")
+                continue
     
     import_reviews(reviews)
 
