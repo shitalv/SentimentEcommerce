@@ -80,17 +80,27 @@ def import_csv_reviews(file_path, limit=None):
             if limit and i >= limit:
                 break
             # Format review data from the Datafiniti CSV structure
-            review = {
-                'asin': row.get('asins', '').split(',')[0].strip(),  # Get first ASIN if multiple
-                'product_title': row.get('name', ''),
-                'product_description': '',  # Not available in this dataset
-                'price': float(row.get('price', 0)) if row.get('price') else None,
-                'category': row.get('categories', '').split(',')[0].strip(),  # Get first category
-                'review_text': row.get('reviews.text', ''),
-                'reviewer_name': row.get('reviews.username', ''),
-                'rating': float(row.get('reviews.rating', 0)),
-                'review_date': row.get('reviews.date', '')
-            }
+            try:
+                # Validate required fields
+                if not row.get('reviews.text'):
+                    logger.warning(f"Skipping review - missing review text for ASIN: {row.get('asins', 'unknown')}")
+                    continue
+
+                review = {
+                    'asin': row.get('asins', '').split(',')[0].strip() if row.get('asins') else 'unknown',
+                    'product_title': row.get('name', 'Untitled Product'),
+                    'product_description': row.get('description', ''),
+                    'price': float(row.get('price', 0)) if row.get('price') and row.get('price').strip() else None,
+                    'category': row.get('categories', '').split(',')[0].strip() if row.get('categories') else 'Uncategorized',
+                    'review_text': row.get('reviews.text', '').strip(),
+                    'reviewer_name': row.get('reviews.username', 'Anonymous'),
+                    'rating': float(row.get('reviews.rating', 3.0)),  # Default to neutral rating
+                    'review_date': row.get('reviews.date', None)
+                }
+
+                # Skip if essential fields are missing
+                if not review['asin'] or not review['product_title'] or not review['review_text']:
+                    continue
             reviews.append(review)
     
     import_reviews(reviews)
