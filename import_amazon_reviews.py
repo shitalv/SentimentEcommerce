@@ -18,10 +18,12 @@ import csv
 import logging
 import sys
 import os
+import re
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm  # For progress bar
 import pandas as pd
+import html
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -109,6 +111,69 @@ def import_csv_reviews(file_path, limit=None):
     
     import_reviews(reviews)
 
+def clean_text(text):
+    """Clean text data from common issues in Amazon reviews datasets"""
+    if not text:
+        return ""
+    
+    # Make sure we're working with a string
+    if not isinstance(text, str):
+        try:
+            text = str(text)
+        except:
+            return ""
+    
+    # Decode HTML entities
+    text = html.unescape(text)
+    
+    # Remove HTML tags
+    text = re.sub(r'<[^>]+>', ' ', text)
+    
+    # Replace multiple spaces, newlines, and tabs with a single space
+    text = re.sub(r'\s+', ' ', text)
+    
+    # Remove BOM character
+    text = text.replace('\ufeff', '')
+    
+    # Remove non-breaking spaces and other invisible characters
+    text = text.replace('\xa0', ' ')
+    
+    # Remove leading/trailing whitespace
+    text = text.strip()
+    
+    # Replace escaped quotes
+    text = text.replace('\\"', '"')
+    
+    # Remove excessive punctuation repetition
+    text = re.sub(r'([!?.])\\1+', r'\1', text)
+    
+    # Remove weird control characters
+    text = ''.join(c if ord(c) >= 32 else ' ' for c in text)
+    
+    return text
+
+def clean_number(value):
+    """Clean and convert numeric values"""
+    if not value:
+        return None
+        
+    if isinstance(value, (int, float)):
+        return float(value)
+        
+    if isinstance(value, str):
+        # Remove currency symbols and commas
+        value = re.sub(r'[$,£€]', '', value)
+        
+        # Extract the first number found
+        match = re.search(r'([-+]?\d*\.?\d+)', value)
+        if match:
+            try:
+                return float(match.group(1))
+            except ValueError:
+                return None
+    
+    return None
+
 def import_reviews(reviews_data):
     """Process and import reviews into the database"""
     logger.info(f"Processing {len(reviews_data)} reviews")
@@ -119,7 +184,8 @@ def import_reviews(reviews_data):
         'products_skipped': 0,
         'reviews_created': 0,
         'reviews_skipped': 0,
-        'errors': 0
+        'errors': 0,
+        'cleaned_data': 0
     }
     
     with app.app_context():
@@ -134,6 +200,14 @@ def import_reviews(reviews_data):
                 if isinstance(asin, str) and ',' in asin:
                     asin = asin.split(',')[0].strip()
                 
+                # Clean up data
+                if asin:
+                    asin = asin.strip().upper()  # ASINs are typically uppercase
+                
+                # Clean product title and description
+                product_title = clean_text(product_title)
+                product_description = clean_text(review_data.get('product_description') or review_data.get('description') or '')
+                
                 if not asin or not product_title:
                     logger.warning(f"Missing required product data. ASIN: {asin}, Title: {product_title}")
                     stats['errors'] += 1
@@ -147,9 +221,9 @@ def import_reviews(reviews_data):
                     product = Product(
                         asin=asin,
                         name=product_title,
-                        description=review_data.get('product_description', ''),
-                        price=float(review_data.get('price', 0)) if review_data.get('price') else None,
-                        category=review_data.get('category', '')
+                        description=product_description,
+                        price=clean_number(review_data.get('price')),
+                        category=clean_text(review_data.get('category') or '')
                     )
                     db.session.add(product)
                     try:
@@ -163,17 +237,30 @@ def import_reviews(reviews_data):
                 else:
                     stats['products_skipped'] += 1
                 
-                # Extract review data from CSV structure
-                review_text = review_data.get('reviews.text')
-                reviewer_name = review_data.get('reviews.username')
-                rating = float(review_data.get('reviews.rating', 0))
-                review_date_str = review_data.get('reviews.date')
+                # Extract and clean review data from various formats
+                review_text = clean_text(review_data.get('reviews.text') or review_data.get('review_text') or review_data.get('reviewText') or review_data.get('text') or '')
+                reviewer_name = clean_text(review_data.get('reviews.username') or review_data.get('reviewer_name') or review_data.get('reviewerName') or review_data.get('author') or 'Anonymous')
+                
+                # Clean rating value (1-5 stars)
+                raw_rating = review_data.get('reviews.rating') or review_data.get('rating') or review_data.get('star_rating') or review_data.get('overall') or 0
+                rating = clean_number(raw_rating)
+                if rating is not None:
+                    # Ensure rating is between 1-5
+                    rating = max(1, min(5, rating))
+                else:
+                    rating = 3.0  # Default to neutral rating
+                
+                # Clean and parse review date
+                review_date_str = review_data.get('reviews.date') or review_data.get('review_date') or review_data.get('reviewTime') or review_data.get('date')
                 review_date = parse_date(review_date_str) if review_date_str else None
                 
-                if not review_text:
-                    logger.warning(f"Missing required review data: {review_data}")
+                if not review_text or len(review_text) < 5:  # Skip very short reviews
+                    logger.warning(f"Missing or too short review text for product {asin}")
                     stats['errors'] += 1
                     continue
+                    
+                # Log that we cleaned some data
+                stats['cleaned_data'] += 1
                 
                 # Check if review already exists (simple check - real implementation might be more complex)
                 existing_review = Review.query.filter_by(
@@ -220,6 +307,40 @@ def import_reviews(reviews_data):
     
     logger.info(f"Import complete. Stats: {stats}")
     return stats
+
+def normalize_reviews_text():
+    """Clean and normalize existing review text in the database"""
+    logger.info("Normalizing existing review text...")
+    
+    with app.app_context():
+        reviews = Review.query.all()
+        
+        updated_count = 0
+        for review in tqdm(reviews, desc="Normalizing reviews"):
+            # Clean text and check if anything changed
+            original_text = review.text
+            cleaned_text = clean_text(original_text)
+            
+            if original_text != cleaned_text:
+                review.text = cleaned_text
+                
+                # Recalculate sentiment with cleaned text
+                sentiment_score = analyze_sentiment(cleaned_text)
+                sentiment_class = classify_sentiment(sentiment_score)
+                sentiment_keywords = get_sentiment_keywords(cleaned_text, sentiment_class)
+                
+                review.sentiment_score = sentiment_score
+                review.sentiment_class = sentiment_class
+                review.sentiment_keywords = json.dumps(sentiment_keywords)
+                
+                db.session.add(review)
+                updated_count += 1
+        
+        if updated_count > 0:
+            db.session.commit()
+            logger.info(f"Normalized text for {updated_count} reviews")
+        else:
+            logger.info("No reviews needed text normalization")
 
 def update_sentiment_scores():
     """Update sentiment score caches for all products"""
@@ -276,6 +397,9 @@ if __name__ == '__main__':
         import_json_reviews(args.file_path, args.limit)
     else:
         import_csv_reviews(args.file_path, args.limit)
+    
+    # Clean and normalize review text
+    normalize_reviews_text()
     
     # Update sentiment scores
     update_sentiment_scores()
