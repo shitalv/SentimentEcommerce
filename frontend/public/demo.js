@@ -40,12 +40,12 @@ async function fetchProductDetails(productId) {
         console.log("Network error fetching product details:", err);
         throw new Error("Network error when fetching product details");
       });
-    
+
     if (!response.ok) {
       console.error(`Failed to fetch product details: ${response.status}`);
       throw new Error(`Failed to fetch product details: ${response.status}`);
     }
-    
+
     selectedProduct = await response.json();
     console.log("Product details fetched:", selectedProduct);
     renderProductDetail();
@@ -66,16 +66,16 @@ async function registerUser(username, email, password) {
       body: JSON.stringify({ username, email, password }),
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.error || 'Registration failed');
     }
-    
+
     const data = await response.json();
     currentUser = data.user;
     updateAuthUI();
-    
+
     // Show success message
     showSuccess('Registration successful! You are now logged in.');
   } catch (error) {
@@ -95,16 +95,16 @@ async function loginUser(username, password) {
       body: JSON.stringify({ username, password }),
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.error || 'Login failed');
     }
-    
+
     const data = await response.json();
     currentUser = data.user;
     updateAuthUI();
-    
+
     // Show success message
     showSuccess('Login successful!');
   } catch (error) {
@@ -120,15 +120,15 @@ async function logoutUser() {
       method: 'POST',
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.error || 'Logout failed');
     }
-    
+
     currentUser = null;
     updateAuthUI();
-    
+
     // Show success message
     showSuccess('You have been logged out successfully.');
   } catch (error) {
@@ -148,12 +148,12 @@ async function analyzeText(text) {
       body: JSON.stringify({ text }),
       credentials: 'include'
     });
-    
+
     if (!response.ok) {
       const data = await response.json();
       throw new Error(data.error || 'Analysis failed');
     }
-    
+
     const data = await response.json();
     renderAnalysisResult(data);
   } catch (error) {
@@ -173,7 +173,7 @@ async function checkCurrentUser() {
       console.log("Network error checking user:", err);
       return { ok: false };
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       currentUser = data.user;
@@ -182,7 +182,7 @@ async function checkCurrentUser() {
       console.log("No user logged in");
       currentUser = null;
     }
-    
+
     updateAuthUI();
   } catch (error) {
     console.error('Error checking current user:', error);
@@ -196,16 +196,16 @@ function filterProducts() {
   const searchText = document.getElementById('product-search')?.value.toLowerCase() || '';
   const categoryFilter = document.getElementById('category-filter')?.value || '';
   const sentimentFilter = document.getElementById('sentiment-filter')?.value || '';
-  
+
   return products.filter(product => {
     // Search by name or description
     const matchesSearch = searchText === '' || 
       product.name.toLowerCase().includes(searchText) || 
       product.description.toLowerCase().includes(searchText);
-    
+
     // Filter by category
     const matchesCategory = categoryFilter === '' || product.category === categoryFilter;
-    
+
     // Filter by sentiment
     let matchesSentiment = true;
     if (sentimentFilter !== '') {
@@ -217,7 +217,7 @@ function filterProducts() {
         matchesSentiment = false;
       }
     }
-    
+
     return matchesSearch && matchesCategory && matchesSentiment;
   });
 }
@@ -225,25 +225,25 @@ function filterProducts() {
 // Render product list
 function renderProductList() {
   if (!productListEl) return;
-  
+
   productListEl.innerHTML = '';
-  
+
   // Apply filters
   const filteredProducts = filterProducts();
-  
+
   if (filteredProducts.length === 0) {
     productListEl.innerHTML = '<div class="alert alert-info">No products found matching your criteria.</div>';
     return;
   }
-  
+
   const row = document.createElement('div');
   row.className = 'row g-4';
-  
+
   filteredProducts.forEach(product => {
     // Calculate sentiment class
     let sentimentClass = 'bg-secondary';
     let sentimentText = 'Neutral';
-    
+
     if (product.sentiment_score >= 0.6) {
       sentimentClass = 'bg-success';
       sentimentText = 'Positive';
@@ -251,7 +251,7 @@ function renderProductList() {
       sentimentClass = 'bg-danger';
       sentimentText = 'Negative';
     }
-    
+
     const col = document.createElement('div');
     col.className = 'col-md-4';
     col.innerHTML = `
@@ -262,7 +262,7 @@ function renderProductList() {
         </div>
         <div class="card-body">
           <p class="card-text">${product.description}</p>
-          <p class="card-text"><strong>Price:</strong> $${product.price.toFixed(2)}</p>
+          <p class="card-text"><strong>Price:</strong> $${product.price ? product.price.toFixed(2) : 'N/A'}</p>
           <p class="card-text"><strong>Category:</strong> ${product.category}</p>
           <p class="card-text"><strong>Reviews:</strong> ${product.reviews ? product.reviews.length : 0}</p>
         </div>
@@ -271,12 +271,12 @@ function renderProductList() {
         </div>
       </div>
     `;
-    
+
     row.appendChild(col);
   });
-  
+
   productListEl.appendChild(row);
-  
+
   // Add event listeners to view product buttons
   document.querySelectorAll('.view-product').forEach(button => {
     button.addEventListener('click', function() {
@@ -289,38 +289,38 @@ function renderProductList() {
 // Render product detail
 function renderProductDetail() {
   if (!productDetailEl || !selectedProduct) return;
-  
+
   // Show product detail section and hide product list
   productListEl.style.display = 'none';
   productDetailEl.style.display = 'block';
-  
+
   // Sentiment counts
   const sentimentCounts = selectedProduct.sentiment_counts || {
     positive: 0,
     neutral: 0,
     negative: 0
   };
-  
+
   const totalReviews = sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative;
-  
+
   // Calculate percentages
   const positivePercent = totalReviews > 0 ? Math.round((sentimentCounts.positive / totalReviews) * 100) : 0;
   const neutralPercent = totalReviews > 0 ? Math.round((sentimentCounts.neutral / totalReviews) * 100) : 0;
   const negativePercent = totalReviews > 0 ? Math.round((sentimentCounts.negative / totalReviews) * 100) : 0;
-  
+
   // Format hype vs reality data
   let hypeRealityHTML = '<p>No hype vs reality analysis available.</p>';
-  
+
   if (selectedProduct.hype_vs_reality) {
     const { matching_claims, contradicting_claims } = selectedProduct.hype_vs_reality;
-    
+
     hypeRealityHTML = `
       <div class="mt-4">
         <h5>Claims Supported by Reviews:</h5>
         ${matching_claims.length > 0 
           ? `<ul>${matching_claims.map(claim => `<li>${claim}</li>`).join('')}</ul>` 
           : '<p>No supported claims found.</p>'}
-        
+
         <h5 class="mt-3">Claims Contradicted by Reviews:</h5>
         ${contradicting_claims.length > 0 
           ? `<ul>${contradicting_claims.map(claim => `<li>${claim}</li>`).join('')}</ul>`
@@ -328,13 +328,13 @@ function renderProductDetail() {
       </div>
     `;
   }
-  
+
   // Render key aspects
   let keyAspectsHTML = '<p>No key aspects available.</p>';
-  
+
   if (selectedProduct.key_aspects) {
     const { positive, negative } = selectedProduct.key_aspects;
-    
+
     keyAspectsHTML = `
       <div class="row">
         <div class="col-md-6">
@@ -352,10 +352,10 @@ function renderProductDetail() {
       </div>
     `;
   }
-  
+
   // Render reviews with sentiment
   let reviewsHTML = '<p>No reviews available.</p>';
-  
+
   if (selectedProduct.reviews && selectedProduct.reviews.length > 0) {
     reviewsHTML = `
       <div class="mt-4">
@@ -364,7 +364,7 @@ function renderProductDetail() {
           ${selectedProduct.reviews.map(review => {
             let sentimentClass = 'bg-secondary';
             let sentimentText = 'Neutral';
-            
+
             if (review.sentiment >= 0.6) {
               sentimentClass = 'bg-success';
               sentimentText = 'Positive';
@@ -372,7 +372,7 @@ function renderProductDetail() {
               sentimentClass = 'bg-danger';
               sentimentText = 'Negative';
             }
-            
+
             return `
               <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-center">
@@ -392,23 +392,23 @@ function renderProductDetail() {
       </div>
     `;
   }
-  
+
   productDetailEl.innerHTML = `
     <div class="mb-4">
       <button id="back-to-products" class="btn btn-secondary mb-4">
         <i class="fas fa-arrow-left"></i> Back to Products
       </button>
-      
+
       <div class="card">
         <div class="card-header">
           <h3>${selectedProduct.name}</h3>
         </div>
         <div class="card-body">
           <p class="lead">${selectedProduct.description}</p>
-          
+
           <div class="row mb-4">
             <div class="col-md-6">
-              <p><strong>Price:</strong> $${selectedProduct.price.toFixed(2)}</p>
+              <p><strong>Price:</strong> $${selectedProduct.price ? selectedProduct.price.toFixed(2) : 'N/A'}</p>
               <p><strong>Category:</strong> ${selectedProduct.category}</p>
             </div>
             <div class="col-md-6">
@@ -430,7 +430,7 @@ function renderProductDetail() {
               <p><small class="text-muted">Based on ${totalReviews} reviews</small></p>
             </div>
           </div>
-          
+
           <div class="card mb-4">
             <div class="card-header bg-info text-white">
               <h4>Key Aspects</h4>
@@ -439,7 +439,7 @@ function renderProductDetail() {
               ${keyAspectsHTML}
             </div>
           </div>
-          
+
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <h4>Hype vs. Reality Check</h4>
@@ -448,13 +448,13 @@ function renderProductDetail() {
               ${hypeRealityHTML}
             </div>
           </div>
-          
+
           ${reviewsHTML}
         </div>
       </div>
     </div>
   `;
-  
+
   // Add event listener to back button
   document.getElementById('back-to-products').addEventListener('click', function() {
     productDetailEl.style.display = 'none';
@@ -465,10 +465,10 @@ function renderProductDetail() {
 // Render analysis result
 function renderAnalysisResult(data) {
   if (!analysisResultEl) return;
-  
+
   let sentimentClass = 'bg-secondary';
   let sentimentText = 'Neutral';
-  
+
   if (data.sentiment_score >= 0.6) {
     sentimentClass = 'bg-success';
     sentimentText = 'Positive';
@@ -476,7 +476,7 @@ function renderAnalysisResult(data) {
     sentimentClass = 'bg-danger';
     sentimentText = 'Negative';
   }
-  
+
   analysisResultEl.innerHTML = `
     <div class="card mt-3">
       <div class="card-header ${sentimentClass.replace('bg-', 'bg-')} text-white">
@@ -516,7 +516,7 @@ function updateAuthUI() {
           </div>
         </div>
       `;
-      
+
       // Add event listener to logout button
       document.getElementById('logout-btn').addEventListener('click', logoutUser);
     }
@@ -536,9 +536,9 @@ function showError(message) {
     ${message}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   `;
-  
+
   document.querySelector('.alerts-container').appendChild(alertEl);
-  
+
   // Auto dismiss after 5 seconds
   setTimeout(() => {
     alertEl.classList.remove('show');
@@ -555,9 +555,9 @@ function showSuccess(message) {
     ${message}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   `;
-  
+
   document.querySelector('.alerts-container').appendChild(alertEl);
-  
+
   // Auto dismiss after 5 seconds
   setTimeout(() => {
     alertEl.classList.remove('show');
@@ -569,10 +569,10 @@ function showSuccess(message) {
 document.addEventListener('DOMContentLoaded', function() {
   // Check current user
   checkCurrentUser();
-  
+
   // Fetch products
   fetchProducts();
-  
+
   // Search input - search as you type
   const searchInput = document.getElementById('product-search');
   if (searchInput) {
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
       renderProductList();
     });
   }
-  
+
   // Apply filters button
   const applyFiltersBtn = document.getElementById('apply-filters');
   if (applyFiltersBtn) {
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
       renderProductList();
     });
   }
-  
+
   // Reset filters button
   const resetFiltersBtn = document.getElementById('reset-filters');
   if (resetFiltersBtn) {
@@ -600,71 +600,71 @@ document.addEventListener('DOMContentLoaded', function() {
       renderProductList();
     });
   }
-  
+
   // Category and sentiment filter change events
   const categoryFilter = document.getElementById('category-filter');
   const sentimentFilter = document.getElementById('sentiment-filter');
-  
+
   if (categoryFilter) {
     categoryFilter.addEventListener('change', function() {
       renderProductList();
     });
   }
-  
+
   if (sentimentFilter) {
     sentimentFilter.addEventListener('change', function() {
       renderProductList();
     });
   }
-  
+
   // Register form
   if (registerFormEl) {
     registerFormEl.addEventListener('submit', function(event) {
       event.preventDefault();
-      
+
       const username = document.getElementById('register-username').value;
       const email = document.getElementById('register-email').value;
       const password = document.getElementById('register-password').value;
-      
+
       registerUser(username, email, password);
     });
   }
-  
+
   // Login form
   if (loginFormEl) {
     loginFormEl.addEventListener('submit', function(event) {
       event.preventDefault();
-      
+
       const username = document.getElementById('login-username').value;
       const password = document.getElementById('login-password').value;
-      
+
       loginUser(username, password);
     });
   }
-  
+
   // Analyze form
   if (analyzeFormEl) {
     analyzeFormEl.addEventListener('submit', function(event) {
       event.preventDefault();
-      
+
       const text = document.getElementById('analyze-text').value;
-      
+
       if (text.trim() === '') {
         showError('Please enter some text to analyze.');
         return;
       }
-      
+
       analyzeText(text);
     });
   }
-  
+
   // Switch between login and register forms
   document.getElementById('switch-to-register')?.addEventListener('click', function(event) {
     event.preventDefault();
     document.getElementById('login-container').style.display = 'none';
     document.getElementById('register-container').style.display = 'block';
   });
-  
+
   document.getElementById('switch-to-login')?.addEventListener('click', function(event) {
     event.preventDefault();
     document.getElementById('register-container').style.display = 'none';
