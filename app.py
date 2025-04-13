@@ -23,11 +23,8 @@ db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 app.config.from_object(Config)
 app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key")
-app.config[
-    "SQLALCHEMY_DATABASE_URI"] = 'postgresql://postgres:root@localhost:5432/sentiment_ecommerce'
-# Configure the database connection
-app.config[
-    "SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:root@localhost:5432/sentiment_ecommerce"
+# Use environment variable for database connection
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL', 'postgresql://postgres:root@localhost:5432/sentiment_ecommerce')
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
