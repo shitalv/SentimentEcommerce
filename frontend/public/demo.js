@@ -13,6 +13,7 @@ const analysisResultEl = document.getElementById('analysis-result');
 let currentUser = null;
 let products = [];
 let selectedProduct = null;
+let productRecommendations = [];
 
 // Fetch all products
 async function fetchProducts() {
@@ -48,10 +49,42 @@ async function fetchProductDetails(productId) {
 
     selectedProduct = await response.json();
     console.log("Product details fetched:", selectedProduct);
+    
+    // Also fetch recommendations for this product
+    fetchProductRecommendations(productId);
+    
     renderProductDetail();
   } catch (error) {
     console.error('Error fetching product details:', error);
     showError('Failed to load product details. Please try again later.');
+  }
+}
+
+// Fetch product recommendations
+async function fetchProductRecommendations(productId) {
+  try {
+    console.log(`Fetching recommendations for product ID: ${productId}`);
+    const response = await fetch(`/api/products/${productId}/recommendations?limit=4`)
+      .catch(err => {
+        console.log("Network error fetching recommendations:", err);
+        throw new Error("Network error when fetching recommendations");
+      });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch recommendations: ${response.status}`);
+      throw new Error(`Failed to fetch recommendations: ${response.status}`);
+    }
+
+    const data = await response.json();
+    productRecommendations = data.recommendations || [];
+    console.log("Recommendations fetched:", productRecommendations);
+    
+    // Update recommendations section if it exists
+    renderProductRecommendations();
+  } catch (error) {
+    console.error('Error fetching recommendations:', error);
+    productRecommendations = [];
+    renderProductRecommendations();
   }
 }
 
@@ -459,6 +492,8 @@ function renderProductDetail() {
   document.getElementById('back-to-products').addEventListener('click', function() {
     productDetailEl.style.display = 'none';
     productListEl.style.display = 'block';
+    // Reset recommendations when going back to product list
+    productRecommendations = [];
   });
 }
 
@@ -527,7 +562,115 @@ function updateAuthUI() {
   }
 }
 
-// Show error message
+// Render product recommendations
+function renderProductRecommendations() {
+  const recommendationsContainer = document.getElementById('product-recommendations');
+  if (!recommendationsContainer) {
+    // Create recommendations container if it doesn't exist
+    const container = document.createElement('div');
+    container.id = 'product-recommendations';
+    container.className = 'card mb-4';
+    
+    if (productDetailEl) {
+      // Find a good place to insert the recommendations
+      const cards = productDetailEl.querySelectorAll('.card');
+      if (cards.length > 0) {
+        // Insert after the first card
+        cards[0].parentNode.insertBefore(container, cards[0].nextSibling);
+      } else {
+        // Append to the product detail element
+        productDetailEl.appendChild(container);
+      }
+    }
+    
+    renderProductRecommendations();
+    return;
+  }
+  
+  // Render recommendations
+  if (productRecommendations.length === 0) {
+    recommendationsContainer.innerHTML = `
+      <div class="card-header bg-light">
+        <h4>Similar Products You Might Like</h4>
+      </div>
+      <div class="card-body text-center py-4">
+        <p class="text-muted">No recommendations available for this product.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Render recommendation list
+  let recommendationsHTML = `
+    <div class="card-header bg-success text-white">
+      <h4><i class="fas fa-thumbs-up me-2"></i>Recommended Products Based on Sentiment Analysis</h4>
+    </div>
+    <div class="card-body">
+      <p class="text-muted mb-3">
+        These product recommendations are generated based on sentiment analysis of reviews and product characteristics.
+      </p>
+      <div class="row">
+  `;
+  
+  // Add each recommendation
+  productRecommendations.forEach(product => {
+    // Determine sentiment color
+    let sentimentColor = 'secondary';
+    
+    if (product.sentiment_scores) {
+      const { positive, neutral, negative } = product.sentiment_scores;
+      if (positive > neutral && positive > negative) {
+        sentimentColor = 'success';
+      } else if (negative > positive && negative > neutral) {
+        sentimentColor = 'danger';
+      } else {
+        sentimentColor = 'warning';
+      }
+    }
+    
+    recommendationsHTML += `
+      <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-header text-center bg-light">
+            <span class="badge bg-${sentimentColor} position-absolute top-0 end-0 mt-2 me-2">
+              <i class="fas fa-star me-1"></i>
+              ${product.sentiment_scores?.positive ? (product.sentiment_scores.positive * 10).toFixed(1) : 'N/A'}
+            </span>
+            <div class="text-center py-3 bg-light">
+              <svg class="bd-placeholder-img" width="100" height="100" xmlns="http://www.w3.org/2000/svg" 
+                role="img" preserveAspectRatio="xMidYMid slice" focusable="false">
+                <title>${product.name}</title>
+                <rect width="100%" height="100%" fill="#55595c"/>
+                <text x="50%" y="50%" fill="#eceeef" dy=".3em">${product.name.substring(0, 5)}</text>
+              </svg>
+            </div>
+          </div>
+          <div class="card-body">
+            <h6 class="card-title">${product.name}</h6>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="badge bg-secondary">${product.category || 'Unknown'}</span>
+              <span class="price">$${product.price ? product.price.toFixed(2) : 'N/A'}</span>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top-0">
+            <button class="btn btn-outline-primary btn-sm w-100" 
+              onclick="fetchProductDetails(${product.id})">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  recommendationsHTML += `
+      </div>
+    </div>
+  `;
+  
+  recommendationsContainer.innerHTML = recommendationsHTML;
+}
+
 function showError(message) {
   const alertEl = document.createElement('div');
   alertEl.className = 'alert alert-danger alert-dismissible fade show';
