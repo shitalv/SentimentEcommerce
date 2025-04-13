@@ -160,47 +160,82 @@ def api_get_product(product_id):
         if not product:
             return jsonify({"error": "Product not found"}), 404
         
-        # Calculate sentiment for each review
-        sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+        # Check if we need to process reviews
+        if "sentiment_counts" not in product and "reviews" in product and product["reviews"]:
+            # Initialize sentiment counts
+            sentiment_counts = {"positive": 0, "neutral": 0, "negative": 0}
+            
+            for review in product["reviews"]:
+                # Skip processing if review already has sentiment
+                if "sentiment" not in review:
+                    # Analyze sentiment of the review
+                    sentiment_score = analyze_sentiment(review["text"])
+                    review["sentiment"] = sentiment_score
+                    
+                    # Classify sentiment for counting
+                    sentiment_class = classify_sentiment(sentiment_score)
+                    
+                    # Extract keywords that contribute to the sentiment (if not already present)
+                    if "keywords" not in review:
+                        review["keywords"] = get_sentiment_keywords(review["text"], sentiment_class)
+                else:
+                    # Use existing sentiment class
+                    sentiment_score = review["sentiment"]
+                    sentiment_class = classify_sentiment(sentiment_score)
+                
+                # Count the sentiment classes
+                sentiment_counts[sentiment_class] += 1
+            
+            # Add sentiment counts to the response if not already present
+            if "sentiment_counts" not in product:
+                product["sentiment_counts"] = sentiment_counts
         
-        for review in product["reviews"]:
-            # Analyze sentiment of each review
-            sentiment_score = analyze_sentiment(review["text"])
-            review["sentiment"] = sentiment_score
+        # Initialize sentiment_counts if not done already
+        if "sentiment_counts" not in product:
+            product["sentiment_counts"] = {"positive": 0, "neutral": 0, "negative": 0}
             
-            # Classify sentiment for counting
-            sentiment_class = classify_sentiment(sentiment_score)
-            sentiment_counts[sentiment_class] += 1
-            
-            # Extract keywords that contribute to the sentiment (Amazon review analysis)
-            review["keywords"] = get_sentiment_keywords(review["text"], sentiment_class)
+            # If we have reviews, count sentiments
+            if "reviews" in product and product["reviews"]:
+                for review in product["reviews"]:
+                    if "sentiment" in review:
+                        sentiment_class = classify_sentiment(review["sentiment"])
+                        product["sentiment_counts"][sentiment_class] += 1
         
         # Calculate overall sentiment score (weighted average based on Amazon review methodology)
-        # Process reviews in chronological order (newer reviews have more weight)
-        sorted_reviews = sorted(product["reviews"], key=lambda x: x.get("date", ""), reverse=True)
-        
-        # Amazon style weighting - more weight to recent and longer reviews
-        if sorted_reviews:
-            # Apply weighted averaging giving more weight to recent reviews
-            review_weights = []
-            review_scores = []
+        # Only do this if we need to and if there are reviews to process
+        if "sentiment_score" not in product and "reviews" in product and product["reviews"]:
+            # Only consider reviews that have sentiment scores
+            valid_reviews = [r for r in product["reviews"] if "sentiment" in r]
             
-            for i, review in enumerate(sorted_reviews):
-                # Weight based on recency (higher index = older review)
-                recency_weight = max(0.5, 1.0 - (i * 0.1))
+            if valid_reviews:
+                # Process reviews in chronological order (newer reviews have more weight)
+                sorted_reviews = sorted(valid_reviews, key=lambda x: x.get("date", ""), reverse=True)
                 
-                # Weight based on review length (longer reviews get more weight)
-                length_weight = min(1.5, max(0.5, len(review["text"]) / 100))
+                # Apply weighted averaging giving more weight to recent reviews
+                review_weights = []
+                review_scores = []
                 
-                total_weight = recency_weight * length_weight
-                review_weights.append(total_weight)
-                review_scores.append(review["sentiment"])
-            
-            # Calculate weighted average
-            weighted_score = sum(w * s for w, s in zip(review_weights, review_scores)) / sum(review_weights)
-            product["sentiment_score"] = weighted_score
-        else:
-            product["sentiment_score"] = 0.5  # Neutral if no reviews
+                for i, review in enumerate(sorted_reviews):
+                    # Weight based on recency (higher index = older review)
+                    recency_weight = max(0.5, 1.0 - (i * 0.1))
+                    
+                    # Weight based on review length (longer reviews get more weight)
+                    length_weight = min(1.5, max(0.5, len(review["text"]) / 100))
+                    
+                    total_weight = recency_weight * length_weight
+                    review_weights.append(total_weight)
+                    review_scores.append(review["sentiment"])
+                
+                # Calculate weighted average
+                if review_weights and review_scores:
+                    weighted_score = sum(w * s for w, s in zip(review_weights, review_scores)) / sum(review_weights)
+                    product["sentiment_score"] = weighted_score
+                else:
+                    product["sentiment_score"] = 0.5  # Neutral if no valid reviews
+            else:
+                product["sentiment_score"] = 0.5  # Neutral if no valid reviews
+        elif "sentiment_score" not in product:
+            product["sentiment_score"] = 0.5  # Neutral if no reviews or sentiment_score
             
         # Add keyword extraction for key aspects of sentiment
         product["key_aspects"] = {
@@ -209,17 +244,43 @@ def api_get_product(product_id):
         }
         
         # Extract key aspects from positive and negative reviews
-        for review in product["reviews"]:
-            if review["sentiment"] >= 0.7:  # Strongly positive
-                product["key_aspects"]["positive"].extend(review.get("keywords", []))
-            elif review["sentiment"] <= 0.3:  # Strongly negative
-                product["key_aspects"]["negative"].extend(review.get("keywords", []))
+        if "reviews" in product:
+            for review in product["reviews"]:
+                if "sentiment" in review:
+                    if review["sentiment"] >= 0.7:  # Strongly positive
+                        product["key_aspects"]["positive"].extend(review.get("keywords", []))
+                    elif review["sentiment"] <= 0.3:  # Strongly negative
+                        product["key_aspects"]["negative"].extend(review.get("keywords", []))
         
-        # Add sentiment counts to the product
-        product["sentiment_counts"] = sentiment_counts
+        # Ensure sentiment counts is initialized
+        if "sentiment_counts" not in product:
+            product["sentiment_counts"] = {"positive": 0, "neutral": 0, "negative": 0}
         
         # Add "Hype vs Reality" analysis by comparing product description with reviews
-        product["hype_vs_reality"] = analyze_hype_vs_reality(product.get("description", ""), product["reviews"])
+        if "reviews" in product and product["reviews"]:
+            review_texts = [r.get("text", "") for r in product["reviews"] if "text" in r]
+            if review_texts and product.get("description"):
+                try:
+                    product["hype_vs_reality"] = analyze_hype_vs_reality(
+                        product.get("description", ""), 
+                        review_texts
+                    )
+                except Exception as hype_error:
+                    logging.error(f"Error in hype vs reality analysis: {str(hype_error)}")
+                    product["hype_vs_reality"] = {
+                        "matching_claims": [],
+                        "contradicting_claims": []
+                    }
+            else:
+                product["hype_vs_reality"] = {
+                    "matching_claims": [],
+                    "contradicting_claims": []
+                }
+        else:
+            product["hype_vs_reality"] = {
+                "matching_claims": [],
+                "contradicting_claims": []
+            }
         
         return jsonify(product)
     except Exception as e:
