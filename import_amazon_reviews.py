@@ -79,7 +79,19 @@ def import_csv_reviews(file_path, limit=None):
         for i, row in enumerate(reader):
             if limit and i >= limit:
                 break
-            reviews.append(row)
+            # Format review data from the Datafiniti CSV structure
+            review = {
+                'asin': row.get('asins', '').split(',')[0].strip(),  # Get first ASIN if multiple
+                'product_title': row.get('name', ''),
+                'product_description': '',  # Not available in this dataset
+                'price': float(row.get('price', 0)) if row.get('price') else None,
+                'category': row.get('categories', '').split(',')[0].strip(),  # Get first category
+                'review_text': row.get('reviews.text', ''),
+                'reviewer_name': row.get('reviews.username', ''),
+                'rating': float(row.get('reviews.rating', 0)),
+                'review_date': row.get('reviews.date', '')
+            }
+            reviews.append(review)
     
     import_reviews(reviews)
 
