@@ -7,9 +7,9 @@ from backend.sentiment_analyzer import analyze_sentiment, classify_sentiment, ge
 from backend.product_data import get_products, get_product_by_id
 from backend.recommendations import get_recommendations_for_product, get_top_rated_products
 
-# Get the db from parent module
-from app import db
-from models import User
+# Get the MongoDB instance from mongo_config
+from mongo_config import get_db
+from models_mongo import User
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -35,10 +35,10 @@ def register():
             return jsonify({"error": "Missing required fields"}), 400
             
         # Check if username or email already exists
-        if User.query.filter_by(username=data['username']).first():
+        if User.get_by_username(data['username']):
             return jsonify({"error": "Username already exists"}), 400
             
-        if User.query.filter_by(email=data['email']).first():
+        if User.get_by_email(data['email']):
             return jsonify({"error": "Email already exists"}), 400
             
         # Create new user
@@ -46,8 +46,7 @@ def register():
         user.set_password(data['password'])
         
         # Add to database
-        db.session.add(user)
-        db.session.commit()
+        user.save()
         
         # Log in the new user
         login_user(user)
@@ -62,7 +61,6 @@ def register():
         }), 201
     except Exception as e:
         logging.error(f"Error registering user: {str(e)}")
-        db.session.rollback()
         return jsonify({"error": "Failed to register user"}), 500
 
 @bp.route('/auth/login', methods=['POST'])
@@ -78,7 +76,7 @@ def login():
             return jsonify({"error": "Missing username or password"}), 400
             
         # Find user by username
-        user = User.query.filter_by(username=data['username']).first()
+        user = User.get_by_username(data['username'])
         if not user or not user.check_password(data['password']):
             return jsonify({"error": "Invalid username or password"}), 401
             

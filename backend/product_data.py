@@ -170,11 +170,12 @@ def get_products():
     """
     try:
         # Try to query products from database
-        from models import Product
+        from models_mongo import Product, Review
+        from mongo_config import get_db
 
         try:
             # Query products from database
-            products_db = Product.query.all()
+            products_db = Product.get_all()
 
             if products_db:
                 # Database has products, return them
@@ -182,7 +183,7 @@ def get_products():
                 for product in products_db:
                     # Convert product to dictionary
                     product_dict = {
-                        "id": product.id,
+                        "id": product.id(),
                         "asin": product.asin,
                         "name": product.name,
                         "price": product.price,
@@ -194,11 +195,11 @@ def get_products():
                     }
 
                     # Add sample of reviews (limit to 3 for performance)
-                    reviews = product.reviews.limit(3).all()
+                    reviews = product.get_reviews()[:3]  # Get first 3 reviews
                     for review in reviews:
                         review_dict = {
                             "author": review.author,
-                            "date": review.date.strftime("%Y-%m-%d") if review.date else None,
+                            "date": review.date,
                             "text": review.text,
                             "rating": review.rating
                         }
@@ -225,16 +226,18 @@ def get_product_by_id(product_id):
     """
     try:
         # Try to query from database first
-        from models import Product, Review
+        from models_mongo import Product, Review
+        from mongo_config import get_db
+        import json as json_module
 
         try:
             # Query product from database
-            product = Product.query.get(product_id)
+            product = Product.get_by_id(product_id)
 
             if product:
                 # Convert product to dictionary
                 product_data = {
-                    "id": product.id,
+                    "id": product.id(),
                     "asin": product.asin,
                     "name": product.name,
                     "price": product.price if product.price is not None else 0.0,
@@ -251,11 +254,11 @@ def get_product_by_id(product_id):
                 }
 
                 # Add all reviews with sentiment analysis
-                reviews = product.reviews.all()
+                reviews = product.get_reviews()
                 for review in reviews:
                     review_dict = {
                         "author": review.author,
-                        "date": review.date.strftime("%Y-%m-%d") if review.date else None,
+                        "date": review.date,
                         "text": review.text,
                         "rating": review.rating,
                         "sentiment": review.sentiment_score,
@@ -265,7 +268,6 @@ def get_product_by_id(product_id):
                     # Parse keywords from JSON if available
                     if review.sentiment_keywords:
                         try:
-                            import json as json_module
                             review_dict["keywords"] = json_module.loads(review.sentiment_keywords)
                         except json_module.JSONDecodeError:
                             review_dict["keywords"] = []
