@@ -67,9 +67,9 @@ function HypeVsRealityCheck({ hypeData }) {
                 </h6>
               </div>
               <div className="card-body">
-                {hypeData.matches.length > 0 ? (
+                {normalizedData.matches.length > 0 ? (
                   <ul className="list-group list-group-flush">
-                    {hypeData.matches.map((match, idx) => (
+                    {normalizedData.matches.map((match, idx) => (
                       <li key={idx} className="list-group-item d-flex justify-content-between align-items-start">
                         <div className="ms-2 me-auto">
                           <div className="fw-bold">{match.claim}</div>
@@ -100,9 +100,9 @@ function HypeVsRealityCheck({ hypeData }) {
                 </h6>
               </div>
               <div className="card-body">
-                {hypeData.contradictions.length > 0 ? (
+                {normalizedData.contradictions.length > 0 ? (
                   <ul className="list-group list-group-flush">
-                    {hypeData.contradictions.map((contradiction, idx) => (
+                    {normalizedData.contradictions.map((contradiction, idx) => (
                       <li key={idx} className="list-group-item d-flex justify-content-between align-items-start">
                         <div className="ms-2 me-auto">
                           <div className="fw-bold text-danger">{contradiction.claim}</div>
@@ -125,12 +125,12 @@ function HypeVsRealityCheck({ hypeData }) {
         </div>
         
         {/* Reality Score */}
-        {(hypeData.matches.length > 0 || hypeData.contradictions.length > 0) && (
+        {(normalizedData.matches.length > 0 || normalizedData.contradictions.length > 0) && (
           <div className="mt-3 text-center">
             <h6>Reality Score</h6>
             {(() => {
-              const totalClaims = hypeData.matches.length + hypeData.contradictions.length;
-              const confirmationRate = totalClaims > 0 ? (hypeData.matches.length / totalClaims) * 100 : 0;
+              const totalClaims = normalizedData.matches.length + normalizedData.contradictions.length;
+              const confirmationRate = totalClaims > 0 ? (normalizedData.matches.length / totalClaims) * 100 : 0;
               
               let badgeClass = "bg-danger";
               let badgeText = "Poor";

@@ -14,12 +14,13 @@ import json
 logger = logging.getLogger(__name__)
 
 # MongoDB connection configuration - using MongoDB Atlas
-# Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+# Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/dbname?retryWrites=true&w=majority
 MONGO_URI = os.environ.get('MONGODB_URI')
+logger.info("Using MongoDB connection string from environment variable")
+
+# We don't have a fallback connection string in the code as it's not secure to include credentials
 if not MONGO_URI:
-    # Use the connection string format that was verified to work
-    MONGO_URI = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    logger.info("Using working MongoDB connection string from verification")
+    logger.warning("No MongoDB URI found in environment variables. Application will run in sample data mode.")
 # Extract database name from the URI or use default
 if MONGO_URI and '/' in MONGO_URI:
     parts = MONGO_URI.split('/')
