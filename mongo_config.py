@@ -68,23 +68,29 @@ def init_mongo(app):
         return None
     
     try:
-        # First try direct connection method which is known to work
-        logger.info("Trying direct MongoDB connection first")
-        client = MongoClient(MONGO_URI)
-        db = client[DB_NAME]
-        # Test connection
-        db.command('ping')
+        # Use the same direct connection method that works in test_mongo_connection.py
+        logger.info("Trying direct MongoDB connection using test script approach")
         
-        # If direct connection works, then configure PyMongo
-        app.config["MONGO_URI"] = MONGO_URI
+        # Use exact same connection string as in test_mongo_connection.py
+        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+        client = MongoClient(test_mongo_uri)
+        
+        # Verify connection works
+        client.admin.command('ping')
+        
+        # Get database
+        db = client[DB_NAME]
+        
+        # Store the working client and db in app config
+        app.config['MONGO_CLIENT'] = client
+        app.config['MONGO_DB'] = db
+        
+        # Configure Flask-PyMongo too, for compatibility
+        app.config["MONGO_URI"] = test_mongo_uri
         app.config["MONGO_DBNAME"] = DB_NAME
         
         # Initialize PyMongo with the app
         mongo.init_app(app)
-        
-        # Store the working client and db in app config for fallback access
-        app.config['MONGO_CLIENT'] = client
-        app.config['MONGO_DB'] = db
         
         logger.info(f"MongoDB connected successfully to {DB_NAME} database")
         return mongo
@@ -274,7 +280,9 @@ def get_mongo_client():
         return None, mock_db
         
     try:
-        client = MongoClient(MONGO_URI)
+        # Use the same direct connection method that works in test_mongo_connection.py
+        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+        client = MongoClient(test_mongo_uri)
         db = client[DB_NAME]
         return client, db
     except Exception as e:
