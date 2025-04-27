@@ -140,8 +140,15 @@ async function fetchProductDetails(productId) {
       selectedProduct.key_aspects = extractKeyAspectsFromReviews(selectedProduct.reviews || []);
     }
     
+    // Generate Hype vs. Reality analysis if not already provided
+    if (!selectedProduct.hype_vs_reality) {
+      console.log("Generating Hype vs. Reality analysis");
+      selectedProduct.hype_vs_reality = analyzeHypeVsReality(selectedProduct.description, selectedProduct.reviews || []);
+    }
+    
     console.log("IMPORTANT - Raw sentiment data:", selectedProduct.sentiment);
     console.log("Key aspects:", selectedProduct.key_aspects);
+    console.log("Hype vs. Reality:", selectedProduct.hype_vs_reality);
     
     // If we have a review count but all sentiment scores are 0, adjust sentiment to reflect reviews
     if (selectedProduct.review_count > 0 && 
@@ -378,6 +385,142 @@ async function checkCurrentUser() {
     currentUser = null;
     updateAuthUI();
   }
+}
+
+// Analyze product description vs review sentiment
+function analyzeHypeVsReality(description, reviews) {
+  // Default return structure
+  const result = {
+    matching_claims: [],
+    contradicting_claims: []
+  };
+  
+  // Exit early if there's no description or no reviews
+  if (!description || !reviews || reviews.length === 0) {
+    return result;
+  }
+  
+  // Normalize description to lowercase
+  const desc = description ? description.toLowerCase() : "";
+  if (desc === "") {
+    return result;
+  }
+  
+  // Set of marketing claim phrases to look for
+  const marketingClaims = [
+    { term: "best", context: null },
+    { term: "perfect", context: null },
+    { term: "excellent", context: null },
+    { term: "amazing", context: null },
+    { term: "outstanding", context: null },
+    { term: "revolutionary", context: null },
+    { term: "innovative", context: null },
+    { term: "premium", context: null },
+    { term: "high-quality", context: null },
+    { term: "top-rated", context: null },
+    { term: "professional", context: null },
+    { term: "durable", context: null },
+    { term: "long-lasting", context: null },
+    { term: "easy to use", context: null },
+    { term: "efficient", context: null },
+    { term: "fastest", context: null },
+    { term: "finest", context: null },
+    { term: "superior", context: null },
+    { term: "advanced", context: null },
+    { term: "state-of-the-art", context: null },
+    { term: "cutting-edge", context: null },
+    { term: "reliable", context: null },
+    { term: "exceptional", context: null }
+  ];
+  
+  // Extract context for each claim from the description
+  marketingClaims.forEach(claim => {
+    if (desc.includes(claim.term)) {
+      // Get surrounding context
+      const words = desc.split(/\s+/);
+      for (let i = 0; i < words.length; i++) {
+        if (words[i].includes(claim.term) || (i < words.length - 1 && `${words[i]} ${words[i+1]}`.includes(claim.term))) {
+          const start = Math.max(0, i - 4);
+          const end = Math.min(words.length, i + 5);
+          claim.context = words.slice(start, end).join(" ");
+          break;
+        }
+      }
+    }
+  });
+  
+  // Only keep claims that were found in the description
+  const foundClaims = marketingClaims.filter(claim => claim.context !== null);
+  
+  // Analyze each review to see if it supports or contradicts the claims
+  foundClaims.forEach(claim => {
+    let supporting = 0;
+    let contradicting = 0;
+    
+    reviews.forEach(review => {
+      const reviewText = review.text ? review.text.toLowerCase() : "";
+      
+      // Skip empty reviews
+      if (!reviewText) return;
+      
+      // Get review sentiment
+      let sentiment;
+      if (review.sentiment && typeof review.sentiment === 'object' && review.sentiment.score !== undefined) {
+        sentiment = review.sentiment.score;
+      } else if (review.sentiment && typeof review.sentiment === 'number') {
+        sentiment = review.sentiment;
+      } else if (review.rating && typeof review.rating === 'number') {
+        sentiment = Math.min(1, Math.max(0, review.rating / 5));
+      } else {
+        sentiment = 0.5;  // Default neutral
+      }
+      
+      const isPositive = sentiment >= 0.6;
+      const isNegative = sentiment <= 0.4;
+      
+      // Check if the review mentions the claim term
+      if (reviewText.includes(claim.term)) {
+        // If review directly mentions the claim term, categorize by sentiment
+        if (isPositive) {
+          supporting++;
+        } else if (isNegative) {
+          contradicting++;
+        }
+      }
+      
+      // Check for negations of claim term
+      const negationPatterns = [
+        `not ${claim.term}`, 
+        `isn't ${claim.term}`, 
+        `isnt ${claim.term}`,
+        `doesn't ${claim.term}`, 
+        `doesnt ${claim.term}`, 
+        `far from ${claim.term}`,
+        `barely ${claim.term}`, 
+        `hardly ${claim.term}`
+      ];
+      
+      for (const pattern of negationPatterns) {
+        if (reviewText.includes(pattern)) {
+          contradicting++;
+          break;
+        }
+      }
+    });
+    
+    // Categorize claim as matched or contradicted based on review evidence
+    const claimText = `"${claim.term}" (in context: "${claim.context}")`;
+    
+    if (supporting > contradicting && supporting > 0) {
+      result.matching_claims.push(claimText);
+    } else if (contradicting > 0) {
+      result.contradicting_claims.push(claimText);
+    } else if (supporting === 0 && contradicting === 0) {
+      // If there's no evidence either way, don't include the claim
+    }
+  });
+  
+  return result;
 }
 
 // Extract key aspects from reviews
@@ -635,24 +778,54 @@ function renderProductDetail() {
   console.log(`Final percentages for display: Positive=${positivePercent}%, Neutral=${neutralPercent}%, Negative=${negativePercent}%`);
 
   // Format hype vs reality data
-  let hypeRealityHTML = '<p>No hype vs reality analysis available.</p>';
+  let hypeRealityHTML = '<p>No marketing claims found in product description to analyze.</p>';
 
   if (selectedProduct.hype_vs_reality) {
     const { matching_claims, contradicting_claims } = selectedProduct.hype_vs_reality;
-
-    hypeRealityHTML = `
-      <div class="mt-4">
-        <h5>Claims Supported by Reviews:</h5>
-        ${matching_claims.length > 0 
-          ? `<ul>${matching_claims.map(claim => `<li>${claim}</li>`).join('')}</ul>` 
-          : '<p>No supported claims found.</p>'}
-
-        <h5 class="mt-3">Claims Contradicted by Reviews:</h5>
-        ${contradicting_claims.length > 0 
-          ? `<ul>${contradicting_claims.map(claim => `<li>${claim}</li>`).join('')}</ul>`
-          : '<p>No contradicted claims found.</p>'}
-      </div>
-    `;
+    
+    // If we have any claims to display
+    if (matching_claims.length > 0 || contradicting_claims.length > 0) {
+      hypeRealityHTML = `
+        <div class="mt-4">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card bg-success-subtle mb-3">
+                <div class="card-header bg-success text-white">
+                  <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Claims Supported by Reviews</h5>
+                </div>
+                <div class="card-body">
+                  ${matching_claims.length > 0 
+                    ? `<ul class="list-group list-group-flush">
+                        ${matching_claims.map(claim => `
+                          <li class="list-group-item bg-success-subtle">
+                            <i class="fas fa-thumbs-up text-success me-2"></i>${claim}
+                          </li>`).join('')}
+                      </ul>` 
+                    : '<p class="card-text">No marketing claims were supported by customer reviews.</p>'}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-danger-subtle mb-3">
+                <div class="card-header bg-danger text-white">
+                  <h5 class="mb-0"><i class="fas fa-exclamation-circle me-2"></i>Claims Contradicted by Reviews</h5>
+                </div>
+                <div class="card-body">
+                  ${contradicting_claims.length > 0 
+                    ? `<ul class="list-group list-group-flush">
+                        ${contradicting_claims.map(claim => `
+                          <li class="list-group-item bg-danger-subtle">
+                            <i class="fas fa-thumbs-down text-danger me-2"></i>${claim}
+                          </li>`).join('')}
+                      </ul>`
+                    : '<p class="card-text">No marketing claims were contradicted by customer reviews.</p>'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // Render key aspects
