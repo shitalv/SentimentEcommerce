@@ -90,10 +90,10 @@ def add_product_descriptions():
             product_id = product.get('_id')
             product_name = product.get('name', '').lower()
             
-            # Skip if product already has a description
-            if product.get('description') not in [None, '', 'No description available']:
-                logger.info(f"Product '{product.get('name')}' already has a description, skipping")
-                continue
+            # Check if product has a description
+            has_description = product.get('description') not in [None, '', 'No description available']
+            if has_description:
+                logger.info(f"Product '{product.get('name')}' already has a description, replacing it")
             
             # Determine which description to use based on product name
             description_key = 'default'
