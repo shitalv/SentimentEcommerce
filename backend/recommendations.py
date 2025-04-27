@@ -11,7 +11,7 @@ This module provides functions to recommend products based on:
 import logging
 import re
 from collections import Counter
-from models import Product, Review
+from models_mongo import Product, Review
 from backend.sentiment_analyzer import analyze_sentiment, classify_sentiment
 
 logger = logging.getLogger(__name__)
@@ -29,14 +29,15 @@ def get_recommendations_for_product(product_id, limit=3):
     """
     try:
         # Get the base product
-        base_product = Product.query.get(product_id)
+        base_product = Product.get_by_id(product_id)
         
         if not base_product:
             logger.warning(f"Cannot recommend products: Product {product_id} not found")
             return []
             
         # Get all other products (excluding the current one)
-        all_other_products = Product.query.filter(Product.id != product_id).all()
+        all_other_products = Product.get_all()
+        all_other_products = [p for p in all_other_products if p.id() != product_id]
         
         if not all_other_products:
             logger.warning("No other products available for recommendations")
@@ -102,7 +103,7 @@ def get_recommendations_for_product(product_id, limit=3):
         # Get the top N recommended products
         recommended_products = []
         for pid in sorted_product_ids[:limit]:
-            product = Product.query.get(pid)
+            product = Product.get_by_id(pid)
             if product:
                 recommended_products.append(product)
                 
@@ -133,7 +134,7 @@ def extract_product_features(product):
         features.extend(desc_words)
     
     # Extract features from positive reviews
-    reviews = Review.query.filter_by(product_id=product.id).all()
+    reviews = product.get_reviews()
     
     for review in reviews:
         if review.sentiment_class == 'positive':

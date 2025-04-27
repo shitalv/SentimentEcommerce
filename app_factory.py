@@ -62,13 +62,37 @@ def create_app():
 
 def register_routes(app):
     """Register all routes with the app"""
-    # Import backend routes
-    try:
-        from backend.routes import bp as backend_bp
-        app.register_blueprint(backend_bp)
-        logger.info("Backend routes registered successfully")
-    except ImportError as e:
-        logger.warning(f"Failed to import backend routes: {e}")
+    # Define and create the backend blueprint
+    from flask import Blueprint, jsonify, request, session
+    from flask_login import login_user, logout_user, login_required, current_user
+    import logging
+    
+    # Create the backend routes blueprint
+    backend_bp = Blueprint('backend', __name__, url_prefix='/api')
+    
+    # Import backend routes functions
+    from backend.routes import (
+        home, register, login, logout, get_user,
+        api_get_products, api_get_product, 
+        api_analyze_sentiment, api_get_recommendations,
+        api_get_top_rated
+    )
+    
+    # Register route functions with the blueprint
+    backend_bp.route('/')(home)
+    backend_bp.route('/auth/register', methods=['POST'])(register)
+    backend_bp.route('/auth/login', methods=['POST'])(login)
+    backend_bp.route('/auth/logout', methods=['POST'])(logout_user)
+    backend_bp.route('/auth/user', methods=['GET'])(get_user)
+    backend_bp.route('/products', methods=['GET'])(api_get_products)
+    backend_bp.route('/products/<product_id>', methods=['GET'])(api_get_product)
+    backend_bp.route('/analyze', methods=['POST'])(api_analyze_sentiment)
+    backend_bp.route('/recommendations/<product_id>', methods=['GET'])(api_get_recommendations)
+    backend_bp.route('/top-rated', methods=['GET'])(api_get_top_rated)
+    
+    # Register the blueprint with the app
+    app.register_blueprint(backend_bp)
+    logger.info("Backend routes registered successfully")
     
     # Serve React frontend
     @app.route('/', defaults={'path': ''})

@@ -1,10 +1,10 @@
 """
 Backend routes for the Sentiment E-commerce API.
 
-This module contains API routes for handling backend operations.
+This module contains API route functions for the app_factory to import.
 """
 
-from flask import Blueprint, jsonify, request, session
+from flask import jsonify, request, session
 from flask_cors import CORS
 from flask_login import login_user, logout_user, login_required, current_user
 import logging
@@ -19,14 +19,10 @@ from models_mongo import User
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Create blueprint
-bp = Blueprint('backend', __name__, url_prefix='/api')
-
-@bp.route('/')
 def home():
+    """Home endpoint"""
     return jsonify({"message": "Sentiment Analysis E-Commerce API"})
 
-@bp.route('/auth/register', methods=['POST'])
 def register():
     """Register a new user"""
     try:
@@ -64,7 +60,6 @@ def register():
         logger.error(f"Error registering user: {str(e)}")
         return jsonify({"error": "An error occurred while registering"}), 500
 
-@bp.route('/auth/login', methods=['POST'])
 def login():
     """Log in a user"""
     try:
@@ -101,7 +96,6 @@ def login():
         logger.error(f"Error logging in: {str(e)}")
         return jsonify({"error": "An error occurred while logging in"}), 500
 
-@bp.route('/auth/logout', methods=['POST'])
 @login_required
 def logout():
     """Log out the current user"""
@@ -112,7 +106,6 @@ def logout():
         logger.error(f"Error logging out: {str(e)}")
         return jsonify({"error": "An error occurred while logging out"}), 500
 
-@bp.route('/auth/user', methods=['GET'])
 def get_user():
     """Get the current user info"""
     try:
@@ -129,7 +122,6 @@ def get_user():
         logger.error(f"Error getting user: {str(e)}")
         return jsonify({"error": "An error occurred while getting user info"}), 500
 
-@bp.route('/products', methods=['GET'])
 def api_get_products():
     """
     Get all products with sentiment analysis
@@ -154,7 +146,6 @@ def api_get_products():
         logger.error(f"Error getting products: {str(e)}")
         return jsonify({"error": "An error occurred while fetching products"}), 500
 
-@bp.route('/products/<product_id>', methods=['GET'])
 def api_get_product(product_id):
     """
     Get product details with sentiment analysis
@@ -169,7 +160,6 @@ def api_get_product(product_id):
         logger.error(f"Error getting product {product_id}: {str(e)}")
         return jsonify({"error": "An error occurred while fetching product"}), 500
 
-@bp.route('/analyze', methods=['POST'])
 def api_analyze_sentiment():
     """
     Analyze sentiment of provided text
@@ -196,7 +186,6 @@ def api_analyze_sentiment():
         logger.error(f"Error analyzing sentiment: {str(e)}")
         return jsonify({"error": "An error occurred while analyzing sentiment"}), 500
 
-@bp.route('/recommendations/<product_id>', methods=['GET'])
 def api_get_recommendations(product_id):
     """
     Get product recommendations based on sentiment analysis
@@ -210,7 +199,6 @@ def api_get_recommendations(product_id):
         logger.error(f"Error getting recommendations for product {product_id}: {str(e)}")
         return jsonify({"error": "An error occurred while fetching recommendations"}), 500
 
-@bp.route('/top-rated', methods=['GET'])
 def api_get_top_rated():
     """
     Get top rated products based on sentiment score
