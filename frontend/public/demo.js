@@ -24,21 +24,43 @@ async function fetchProducts() {
       throw new Error('Failed to fetch products');
     }
     const data = await response.json();
-    products = data.products || [];
+    
+    // Ensure we have the correct data structure
+    console.log("Raw product data received:", data);
+    
+    // Handle both formats: If products is a property or if the response directly contains the array
+    products = data.products || data || [];
+    
+    // Add detailed logging for debugging undefined values
+    if (products.length > 0) {
+      console.log("First product sample:", JSON.stringify(products[0]));
+    }
     
     // Update the product data structure to include sentiment score property
-    // to work with existing filtering and rendering code
+    // and ensure no undefined values appear in the UI
     products = products.map(product => {
-      if (product.sentiment) {
-        // Create a simplified sentiment_score from the sentiment object
-        product.sentiment_score = product.sentiment.positive;
-      } else {
-        product.sentiment_score = 0.5; // Default neutral
-      }
-      return product;
+      // Ensure product has all required fields with defaults if missing
+      const enhancedProduct = {
+        // Basic properties with defaults
+        id: product.id || "unknown",
+        name: product.name || "Unknown Product",
+        description: product.description || "No description available",
+        price: product.price || 0,
+        category: product.category || "Uncategorized",
+        image_url: product.image_url || "/placeholder.jpg",
+        reviews: product.reviews || [],
+        
+        // Ensure sentiment data is always present
+        sentiment: product.sentiment || { positive: 0.5, neutral: 0.3, negative: 0.2 }
+      };
+      
+      // Add sentiment_score for compatibility with filtering
+      enhancedProduct.sentiment_score = enhancedProduct.sentiment.positive;
+      
+      return enhancedProduct;
     });
     
-    console.log("Products fetched:", products);
+    console.log("Enhanced products:", products);
     renderProductList();
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -49,8 +71,29 @@ async function fetchProducts() {
 // Fetch product details
 async function fetchProductDetails(productId) {
   try {
-    console.log(`Fetching details for product ID: ${productId}`);
-    const response = await fetch(`/api/products/${productId}`)
+    // Extract full ID from productId if it's a partial ID
+    // The frontend might be receiving just the first few characters
+    console.log(`Fetching details for product ID (Original): ${productId}`);
+    
+    // Find the full product ID from our products list if we have a partial ID
+    let fullProductId = productId;
+    
+    // Try to find the product with full ID in our existing products array
+    if (products && products.length > 0) {
+      const matchingProduct = products.find(p => p.id === productId);
+      
+      if (!matchingProduct && productId.length < 24) {
+        // Look for a product whose ID starts with the partial ID
+        const matchByPartial = products.find(p => p.id.startsWith(productId));
+        if (matchByPartial) {
+          fullProductId = matchByPartial.id;
+          console.log(`Found matching product with full ID: ${fullProductId}`);
+        }
+      }
+    }
+    
+    console.log(`Using full product ID for fetch: ${fullProductId}`);
+    const response = await fetch(`/api/products/${fullProductId}`)
       .catch(err => {
         console.log("Network error fetching product details:", err);
         throw new Error("Network error when fetching product details");
@@ -62,24 +105,46 @@ async function fetchProductDetails(productId) {
     }
 
     const data = await response.json();
+    console.log("Raw product detail data:", data);
+    
     selectedProduct = data.product || {};
     
-    // Add sentiment_score property for compatibility with existing code
-    if (selectedProduct.sentiment) {
-      selectedProduct.sentiment_score = selectedProduct.sentiment.positive;
-      
-      // Create sentiment_counts for the product detail view
-      selectedProduct.sentiment_counts = {
-        positive: Math.round(selectedProduct.sentiment.positive * 100),
-        neutral: Math.round(selectedProduct.sentiment.neutral * 100),
-        negative: Math.round(selectedProduct.sentiment.negative * 100)
-      };
+    // In case the response doesn't have product wrapped, try the direct data
+    if (Object.keys(selectedProduct).length === 0 && data) {
+      // Check if data itself is the product
+      if (data.id || data.name) {
+        selectedProduct = data;
+      }
     }
     
-    console.log("Product details fetched:", selectedProduct);
+    console.log("Selected product after unwrapping:", selectedProduct);
+    
+    // Add defaults for any missing fields to prevent undefined in UI
+    selectedProduct = {
+      id: selectedProduct.id || fullProductId,
+      name: selectedProduct.name || "Unknown Product",
+      description: selectedProduct.description || "No description available",
+      price: selectedProduct.price || 0,
+      category: selectedProduct.category || "Uncategorized",
+      image_url: selectedProduct.image_url || "/placeholder.jpg",
+      reviews: selectedProduct.reviews || [],
+      sentiment: selectedProduct.sentiment || { positive: 0.5, neutral: 0.3, negative: 0.2 }
+    };
+    
+    // Add sentiment_score property for compatibility with existing code
+    selectedProduct.sentiment_score = selectedProduct.sentiment.positive;
+    
+    // Create sentiment_counts for the product detail view
+    selectedProduct.sentiment_counts = {
+      positive: Math.round(selectedProduct.sentiment.positive * 100),
+      neutral: Math.round(selectedProduct.sentiment.neutral * 100),
+      negative: Math.round(selectedProduct.sentiment.negative * 100)
+    };
+    
+    console.log("Final product details with defaults:", selectedProduct);
     
     // Also fetch recommendations for this product
-    fetchProductRecommendations(productId);
+    fetchProductRecommendations(fullProductId);
     
     renderProductDetail();
   } catch (error) {
@@ -352,7 +417,9 @@ function renderProductList() {
   // Add event listeners to view product buttons
   document.querySelectorAll('.view-product').forEach(button => {
     button.addEventListener('click', function() {
-      const productId = parseInt(this.getAttribute('data-product-id'));
+      // Get product ID as string (MongoDB ObjectIDs are strings)
+      const productId = this.getAttribute('data-product-id');
+      console.log(`View product button clicked for ID: ${productId}`);
       fetchProductDetails(productId);
     });
   });
