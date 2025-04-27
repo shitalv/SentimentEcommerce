@@ -1,7 +1,16 @@
 import React from 'react';
 
 function HypeVsRealityCheck({ hypeData }) {
-  if (!hypeData || (!hypeData.contradictions.length && !hypeData.matches.length)) {
+  // Normalize the data structure to handle both naming conventions
+  // Backend sends: contradicting_claims and matching_claims
+  // But component expects: contradictions and matches
+  const normalizedData = {
+    contradictions: hypeData?.contradicting_claims || hypeData?.contradictions || [],
+    matches: hypeData?.matching_claims || hypeData?.matches || [],
+    marketing_claims: hypeData?.marketing_claims || []
+  };
+
+  if (!normalizedData || (!normalizedData.contradictions.length && !normalizedData.matches.length)) {
     return (
       <div className="card mb-4">
         <div className="card-header">
@@ -28,20 +37,20 @@ function HypeVsRealityCheck({ hypeData }) {
         </p>
         
         {/* Marketing Claims Alert */}
-        {hypeData.marketing_claims.length > 0 && (
+        {normalizedData.marketing_claims.length > 0 && (
           <div className="alert alert-secondary mb-3">
             <h6 className="mb-2">
               <i className="fas fa-bullhorn me-2"></i>
               Marketing Claims Detected:
             </h6>
             <ul className="mb-0">
-              {hypeData.marketing_claims.map((claim, idx) => (
+              {normalizedData.marketing_claims.map((claim, idx) => (
                 <li key={idx}>
                   "<strong>{claim.claim}</strong>" - <span className="text-muted fst-italic">"{claim.context}"</span>
                 </li>
               )).slice(0, 5)}
-              {hypeData.marketing_claims.length > 5 && (
-                <li className="text-muted">...and {hypeData.marketing_claims.length - 5} more</li>
+              {normalizedData.marketing_claims.length > 5 && (
+                <li className="text-muted">...and {normalizedData.marketing_claims.length - 5} more</li>
               )}
             </ul>
           </div>
