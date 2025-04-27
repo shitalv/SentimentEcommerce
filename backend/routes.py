@@ -13,7 +13,6 @@ import os
 from backend.sentiment_analyzer import analyze_sentiment, classify_sentiment, get_sentiment_keywords, analyze_hype_vs_reality
 from backend.product_data import get_products, get_product_by_id
 from backend.recommendations import get_recommendations_for_product, get_top_rated_products
-from mongo_config import get_db
 from models_mongo import User
 
 # Set up logging
@@ -50,12 +49,7 @@ def register():
         # Create new user
         user = User(username=data['username'], email=data['email'])
         user.set_password(data['password'])
-        
-        # Add to database
         user.save()
-        
-        # Log in the new user
-        login_user(user)
         
         return jsonify({
             "message": "User registered successfully",
@@ -65,9 +59,10 @@ def register():
                 "email": user.email
             }
         }), 201
+        
     except Exception as e:
         logger.error(f"Error registering user: {str(e)}")
-        return jsonify({"error": "Failed to register user"}), 500
+        return jsonify({"error": "An error occurred while registering"}), 500
 
 @bp.route('/auth/login', methods=['POST'])
 def login():
@@ -78,15 +73,19 @@ def login():
             return jsonify({"error": "No data provided"}), 400
             
         # Check required fields
-        if 'username' not in data or 'password' not in data:
+        if not all(field in data for field in ['username', 'password']):
             return jsonify({"error": "Missing username or password"}), 400
             
-        # Find user by username
+        # Get user by username
         user = User.get_by_username(data['username'])
-        if not user or not user.check_password(data['password']):
+        if not user:
             return jsonify({"error": "Invalid username or password"}), 401
             
-        # Log in the user
+        # Check password
+        if not user.check_password(data['password']):
+            return jsonify({"error": "Invalid username or password"}), 401
+            
+        # Log in user using Flask-Login
         login_user(user)
         
         return jsonify({
@@ -97,36 +96,38 @@ def login():
                 "email": user.email
             }
         })
+        
     except Exception as e:
         logger.error(f"Error logging in: {str(e)}")
-        return jsonify({"error": "Failed to log in"}), 500
+        return jsonify({"error": "An error occurred while logging in"}), 500
 
 @bp.route('/auth/logout', methods=['POST'])
+@login_required
 def logout():
     """Log out the current user"""
     try:
-        if current_user.is_authenticated:
-            logout_user()
-            return jsonify({"message": "Logged out successfully"})
-        else:
-            return jsonify({"message": "No user to log out"}), 200
+        logout_user()
+        return jsonify({"message": "Logged out successfully"})
     except Exception as e:
         logger.error(f"Error logging out: {str(e)}")
-        return jsonify({"error": "Failed to log out"}), 500
+        return jsonify({"error": "An error occurred while logging out"}), 500
 
 @bp.route('/auth/user', methods=['GET'])
 def get_user():
     """Get the current user info"""
-    if current_user.is_authenticated:
-        return jsonify({
-            "user": {
-                "id": current_user.id(),
-                "username": current_user.username,
-                "email": current_user.email
-            }
-        })
-    else:
-        return jsonify({"error": "Not authenticated"}), 401
+    try:
+        if current_user.is_authenticated:
+            return jsonify({
+                "user": {
+                    "id": current_user.id(),
+                    "username": current_user.username,
+                    "email": current_user.email
+                }
+            })
+        return jsonify({"user": None})
+    except Exception as e:
+        logger.error(f"Error getting user: {str(e)}")
+        return jsonify({"error": "An error occurred while getting user info"}), 500
 
 @bp.route('/products', methods=['GET'])
 def api_get_products():
@@ -134,11 +135,24 @@ def api_get_products():
     Get all products with sentiment analysis
     """
     try:
-        products = get_products()
-        return jsonify(products)
+        category = request.args.get('category')
+        query = request.args.get('query')
+        min_sentiment = request.args.get('min_sentiment')
+        max_sentiment = request.args.get('max_sentiment')
+        
+        # Convert sentiment scores to float if provided
+        if min_sentiment:
+            min_sentiment = float(min_sentiment)
+        if max_sentiment:
+            max_sentiment = float(max_sentiment)
+            
+        # Get products with filters
+        products = get_products(query, category, min_sentiment, max_sentiment)
+        
+        return jsonify({"products": products})
     except Exception as e:
-        logger.error(f"Error fetching products: {str(e)}")
-        return jsonify({"error": "Failed to fetch products"}), 500
+        logger.error(f"Error getting products: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching products"}), 500
 
 @bp.route('/products/<product_id>', methods=['GET'])
 def api_get_product(product_id):
@@ -149,10 +163,11 @@ def api_get_product(product_id):
         product = get_product_by_id(product_id)
         if not product:
             return jsonify({"error": "Product not found"}), 404
-        return jsonify(product)
+        
+        return jsonify({"product": product})
     except Exception as e:
-        logger.error(f"Error fetching product {product_id}: {str(e)}")
-        return jsonify({"error": f"Failed to fetch product {product_id}"}), 500
+        logger.error(f"Error getting product {product_id}: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching product"}), 500
 
 @bp.route('/analyze', methods=['POST'])
 def api_analyze_sentiment():
@@ -161,100 +176,52 @@ def api_analyze_sentiment():
     """
     try:
         data = request.get_json()
-        if not data or "text" not in data:
+        if not data or 'text' not in data:
             return jsonify({"error": "No text provided"}), 400
-        
-        text = data["text"]
-        sentiment = analyze_sentiment(text)
-        sentiment_class = classify_sentiment(sentiment)
+            
+        text = data['text']
+        sentiment_score = analyze_sentiment(text)
+        sentiment_class = classify_sentiment(sentiment_score)
+        keywords = get_sentiment_keywords(text, sentiment_class)
         
         return jsonify({
             "text": text,
-            "sentiment_score": sentiment,
-            "sentiment_class": sentiment_class
+            "sentiment": {
+                "score": sentiment_score,
+                "class": sentiment_class,
+                "keywords": keywords
+            }
         })
     except Exception as e:
         logger.error(f"Error analyzing sentiment: {str(e)}")
-        return jsonify({"error": "Failed to analyze sentiment"}), 500
+        return jsonify({"error": "An error occurred while analyzing sentiment"}), 500
 
-@bp.route('/products/<product_id>/recommendations', methods=['GET'])
+@bp.route('/recommendations/<product_id>', methods=['GET'])
 def api_get_recommendations(product_id):
     """
     Get product recommendations based on sentiment analysis
     """
     try:
-        # Get the limit parameter from query string (default to 3)
         limit = request.args.get('limit', default=3, type=int)
+        recommendations = get_recommendations_for_product(product_id, limit)
         
-        # Get recommended products
-        recommended_products = get_recommendations_for_product(product_id, limit=limit)
-        
-        # Return as JSON
-        result = []
-        for product in recommended_products:
-            # Convert product model to dict
-            product_dict = {
-                "id": product.id(),
-                "name": product.name,
-                "category": product.category,
-                "price": product.price,
-                "description": product.description,
-                "image_url": product.image_url,
-                "sentiment_scores": {
-                    "positive": product.positive_score,
-                    "neutral": product.neutral_score,
-                    "negative": product.negative_score
-                }
-            }
-            result.append(product_dict)
-            
-        return jsonify({
-            "product_id": product_id,
-            "recommendations": result
-        })
+        return jsonify({"recommendations": recommendations})
     except Exception as e:
         logger.error(f"Error getting recommendations for product {product_id}: {str(e)}")
-        return jsonify({"error": f"Failed to get recommendations for product {product_id}"}), 500
+        return jsonify({"error": "An error occurred while fetching recommendations"}), 500
 
-@bp.route('/recommendations/top-rated', methods=['GET'])
+@bp.route('/top-rated', methods=['GET'])
 def api_get_top_rated():
     """
     Get top rated products based on sentiment score
     """
     try:
-        # Get the category and limit parameters from query string
-        category = request.args.get('category', default=None, type=str)
+        category = request.args.get('category')
         limit = request.args.get('limit', default=5, type=int)
         
-        # Get top rated products
-        top_products = get_top_rated_products(category=category, limit=limit)
+        top_products = get_top_rated_products(category, limit)
         
-        # Return as JSON
-        result = []
-        for product in top_products:
-            # Convert product model to dict
-            product_dict = {
-                "id": product.id(),
-                "name": product.name,
-                "category": product.category,
-                "price": product.price,
-                "description": product.description,
-                "image_url": product.image_url,
-                "sentiment_scores": {
-                    "positive": product.positive_score,
-                    "neutral": product.neutral_score,
-                    "negative": product.negative_score
-                }
-            }
-            result.append(product_dict)
-            
-        return jsonify({
-            "category": category,
-            "top_rated": result
-        })
+        return jsonify({"products": top_products})
     except Exception as e:
         logger.error(f"Error getting top rated products: {str(e)}")
-        return jsonify({"error": "Failed to get top rated products"}), 500
-
-# Apply CORS to blueprint
-CORS(bp, supports_credentials=True)
+        return jsonify({"error": "An error occurred while fetching top products"}), 500

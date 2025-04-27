@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from bson import ObjectId  # Use ObjectId from bson
+from bson.objectid import ObjectId  # Use ObjectId from bson.objectid
 from mongo_config import mongo, USE_MOCK_DB, mock_db
 
 

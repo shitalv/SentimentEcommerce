@@ -20,6 +20,6 @@ dependencies = [
     "pandas>=2.2.3",
     "tqdm>=4.67.1",
     "openai>=1.73.0",
-    "pymongo==4.3.3",
+    "pymongo==4.6.1",
     "flask-pymongo==2.3.0",
 ]
