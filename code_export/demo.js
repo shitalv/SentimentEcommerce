@@ -134,14 +134,7 @@ async function fetchProductDetails(productId) {
       sentiment: selectedProduct.sentiment || { positive: 0, neutral: 0, negative: 0 }
     };
     
-    // Extract key aspects from reviews if not already provided
-    if (!selectedProduct.key_aspects) {
-      console.log("Generating key aspects from reviews");
-      selectedProduct.key_aspects = extractKeyAspectsFromReviews(selectedProduct.reviews || []);
-    }
-    
     console.log("IMPORTANT - Raw sentiment data:", selectedProduct.sentiment);
-    console.log("Key aspects:", selectedProduct.key_aspects);
     
     // If we have a review count but all sentiment scores are 0, adjust sentiment to reflect reviews
     if (selectedProduct.review_count > 0 && 
@@ -378,118 +371,6 @@ async function checkCurrentUser() {
     currentUser = null;
     updateAuthUI();
   }
-}
-
-// Extract key aspects from reviews
-function extractKeyAspectsFromReviews(reviews) {
-  // Exit early if there are no reviews
-  if (!reviews || reviews.length === 0) {
-    return { positive: [], negative: [] };
-  }
-  
-  console.log("Extracting key aspects from", reviews.length, "reviews");
-  
-  // Categories of aspects we want to extract
-  const aspectCategories = {
-    quality: ["quality", "build", "material", "construction", "durability", "sturdy", "solid"],
-    performance: ["performance", "speed", "fast", "slow", "response", "responsive", "lag"],
-    features: ["feature", "functionality", "function", "capability"],
-    usability: ["easy", "intuitive", "simple", "user-friendly", "difficult", "complicated", "confusing"],
-    value: ["price", "value", "worth", "expensive", "cheap", "cost", "affordable", "overpriced"],
-    design: ["design", "look", "appearance", "style", "aesthetic", "color", "size", "weight"],
-    reliability: ["reliable", "consistent", "dependable", "unreliable", "issue", "problem", "fail"]
-  };
-  
-  // Initialize arrays to store positive and negative aspects
-  const positiveAspects = new Map();
-  const negativeAspects = new Map();
-  
-  // Process each review
-  reviews.forEach(review => {
-    // Get review text and sentiment
-    const text = review.text ? review.text.toLowerCase() : "";
-    
-    // Skip empty reviews
-    if (!text) return;
-    
-    // Determine if the review is positive or negative
-    let sentiment;
-    if (review.sentiment && typeof review.sentiment === 'object' && review.sentiment.score !== undefined) {
-      sentiment = review.sentiment.score;
-    } else if (review.sentiment && typeof review.sentiment === 'number') {
-      sentiment = review.sentiment;
-    } else if (review.rating && typeof review.rating === 'number') {
-      // Convert 5-star rating to sentiment score (0-1)
-      sentiment = Math.min(1, Math.max(0, review.rating / 5));
-    } else {
-      // Default to neutral
-      sentiment = 0.5;
-    }
-    
-    const isPositive = sentiment >= 0.5;
-    
-    // Look for aspect keywords in the review
-    Object.entries(aspectCategories).forEach(([category, keywords]) => {
-      keywords.forEach(keyword => {
-        if (text.includes(keyword)) {
-          // Find the surrounding context (3 words before and after)
-          const words = text.split(/\s+/);
-          let context = "";
-          
-          for (let i = 0; i < words.length; i++) {
-            if (words[i].includes(keyword)) {
-              // Get context (3 words before and after the keyword)
-              const start = Math.max(0, i - 3);
-              const end = Math.min(words.length, i + 4);
-              context = words.slice(start, end).join(" ");
-              break;
-            }
-          }
-          
-          // Create aspect entry with category and context
-          const aspect = {
-            keyword: keyword,
-            category: category,
-            context: context || `${keyword} mentioned`,
-            count: 1
-          };
-          
-          // Add to appropriate map based on sentiment
-          if (isPositive) {
-            if (positiveAspects.has(keyword)) {
-              const existing = positiveAspects.get(keyword);
-              existing.count += 1;
-              positiveAspects.set(keyword, existing);
-            } else {
-              positiveAspects.set(keyword, aspect);
-            }
-          } else {
-            if (negativeAspects.has(keyword)) {
-              const existing = negativeAspects.get(keyword);
-              existing.count += 1;
-              negativeAspects.set(keyword, existing);
-            } else {
-              negativeAspects.set(keyword, aspect);
-            }
-          }
-        }
-      });
-    });
-  });
-  
-  // Convert maps to arrays and sort by count
-  const positiveArray = Array.from(positiveAspects.values())
-    .sort((a, b) => b.count - a.count)
-    .map(aspect => `${aspect.keyword} (${aspect.context})`);
-    
-  const negativeArray = Array.from(negativeAspects.values())
-    .sort((a, b) => b.count - a.count)
-    .map(aspect => `${aspect.keyword} (${aspect.context})`);
-  
-  return {
-    positive: positiveArray,
-    negative: negativeArray
-  };
 }
 
 // Filter products based on search and filter criteria

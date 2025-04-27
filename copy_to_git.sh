@@ -11,6 +11,10 @@ cp check_mongo_data.py code_export/
 cp test_mongo_connection.py code_export/
 cp fix_mongo_connection.py code_export/
 cp mongo_config.py code_export/
+cp frontend/public/demo.js code_export/
+cp create_diverse_products.py code_export/
+cp enhanced_import.py code_export/
+cp fix_product_data.py code_export/
 
 # Create a README file with instructions
 cat > code_export/README.md << 'EOF'
