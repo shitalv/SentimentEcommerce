@@ -128,6 +128,7 @@ async function fetchProductDetails(productId) {
       category: selectedProduct.category || "Uncategorized",
       image_url: selectedProduct.image_url || "/placeholder.jpg",
       reviews: selectedProduct.reviews || [],
+      review_count: selectedProduct.review_count || (selectedProduct.reviews ? selectedProduct.reviews.length : 0),
       sentiment: selectedProduct.sentiment || { positive: 0.5, neutral: 0.3, negative: 0.2 }
     };
     
@@ -446,10 +447,44 @@ function renderProductDetail() {
                       (selectedProduct.reviews ? selectedProduct.reviews.length : 
                       (sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative));
 
-  // Calculate percentages
-  const positivePercent = totalReviews > 0 ? Math.round((sentimentCounts.positive / totalReviews) * 100) : 0;
-  const neutralPercent = totalReviews > 0 ? Math.round((sentimentCounts.neutral / totalReviews) * 100) : 0;
-  const negativePercent = totalReviews > 0 ? Math.round((sentimentCounts.negative / totalReviews) * 100) : 0;
+  // Calculate percentages - handle both actual counts and ratios (0-1)
+  let positivePercent = 0;
+  let neutralPercent = 0;
+  let negativePercent = 0;
+  
+  // If we have review counts but all sentiment values are 0, set all to neutral
+  if (totalReviews > 0 && 
+      sentimentCounts.positive === 0 && 
+      sentimentCounts.neutral === 0 && 
+      sentimentCounts.negative === 0) {
+    // When we have reviews but no sentiment distribution, default to neutral
+    neutralPercent = 100;
+  } 
+  // If the sentiment values are between 0-1 (ratios)
+  else if (sentimentCounts.positive <= 1 && sentimentCounts.neutral <= 1 && sentimentCounts.negative <= 1) {
+    // Convert ratios directly to percentages
+    positivePercent = Math.round(sentimentCounts.positive * 100);
+    neutralPercent = Math.round(sentimentCounts.neutral * 100);
+    negativePercent = Math.round(sentimentCounts.negative * 100);
+    
+    // Handle case where percentages don't add up to 100%
+    const total = positivePercent + neutralPercent + negativePercent;
+    if (total !== 100 && total !== 0) {
+      // Normalize to ensure they add up to 100%
+      positivePercent = Math.round((positivePercent / total) * 100);
+      neutralPercent = Math.round((neutralPercent / total) * 100);
+      negativePercent = 100 - positivePercent - neutralPercent;
+    }
+  } 
+  // Otherwise, treat as actual counts
+  else {
+    const total = sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative;
+    if (total > 0) {
+      positivePercent = Math.round((sentimentCounts.positive / total) * 100);
+      neutralPercent = Math.round((sentimentCounts.neutral / total) * 100);
+      negativePercent = Math.round((sentimentCounts.negative / total) * 100);
+    }
+  }
 
   // Format hype vs reality data
   let hypeRealityHTML = '<p>No hype vs reality analysis available.</p>';
@@ -507,11 +542,16 @@ function renderProductDetail() {
           ${selectedProduct.reviews.map(review => {
             let sentimentClass = 'bg-secondary';
             let sentimentText = 'Neutral';
-
-            if (review.sentiment >= 0.6) {
+            
+            // Handle both direct sentiment score and nested sentiment object
+            const sentimentScore = review.sentiment && review.sentiment.score !== undefined 
+                                 ? review.sentiment.score 
+                                 : (typeof review.sentiment === 'number' ? review.sentiment : 0.5);
+                                 
+            if (sentimentScore >= 0.6) {
               sentimentClass = 'bg-success';
               sentimentText = 'Positive';
-            } else if (review.sentiment <= 0.4) {
+            } else if (sentimentScore <= 0.4) {
               sentimentClass = 'bg-danger';
               sentimentText = 'Negative';
             }
@@ -524,10 +564,19 @@ function renderProductDetail() {
                 </div>
                 <p>${review.text}</p>
                 ${review.date ? `<small class="text-muted">Date: ${review.date}</small>` : ''}
-                ${review.keywords && review.keywords.length > 0 ? 
-                  `<div class="mt-2">
-                    <small class="text-muted">Key points: ${review.keywords.join(', ')}</small>
-                  </div>` : ''}
+                ${(() => {
+                  // Handle both direct keywords array and nested keywords in sentiment
+                  const keywords = review.keywords || 
+                                  (review.sentiment && review.sentiment.keywords ? 
+                                   review.sentiment.keywords : null);
+                                   
+                  if (keywords && Array.isArray(keywords) && keywords.length > 0) {
+                    return `<div class="mt-2">
+                      <small class="text-muted">Key points: ${keywords.join(', ')}</small>
+                    </div>`;
+                  }
+                  return '';
+                })()}
               </div>
             `;
           }).join('')}
