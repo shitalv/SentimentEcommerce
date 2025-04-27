@@ -13,9 +13,9 @@ import json
 # Create a logger
 logger = logging.getLogger(__name__)
 
-# MongoDB connection configuration - using MongoDB Atlas by default
+# MongoDB connection configuration - using MongoDB Atlas
 # Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
-MONGO_URI = os.environ.get('MONGODB_URI', None)
+MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 DB_NAME = os.environ.get('MONGODB_NAME', 'sentiment_ecommerce')
 
 # We'll use a mock database if MongoDB is not available
@@ -59,12 +59,14 @@ def init_mongo(app):
 
 def get_db():
     """Get the MongoDB database instance"""
+    global USE_MOCK_DB
     if USE_MOCK_DB:
         return mock_db
     return mongo.db
 
 def create_indexes():
     """Create necessary indexes for performance"""
+    global USE_MOCK_DB
     if USE_MOCK_DB:
         logger.info("Skipping index creation in sample data mode")
         return
@@ -91,6 +93,7 @@ def create_indexes():
 
 def setup_db():
     """Set up database with initial collections if they don't exist"""
+    global USE_MOCK_DB
     if USE_MOCK_DB:
         logger.info("Setting up sample data mode")
         # Load sample data
