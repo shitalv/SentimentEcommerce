@@ -51,7 +51,9 @@ async function fetchProducts() {
         reviews: product.reviews || [],
         
         // Ensure sentiment data is always present
-        sentiment: product.sentiment || { positive: 0.5, neutral: 0.3, negative: 0.2 }
+        sentiment: product.sentiment || { positive: 0.5, neutral: 0.3, negative: 0.2 },
+        // Make sure review_count is always included
+        review_count: product.review_count || 0
       };
       
       // Add sentiment_score for compatibility with filtering
