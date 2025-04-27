@@ -135,7 +135,7 @@ def import_csv_reviews(file_path, limit=None):
     
     # Get MongoDB client
     mongo_client, db = get_mongo_client()
-    if not db:
+    if db is None:
         logger.error("Failed to connect to MongoDB")
         return stats
     
