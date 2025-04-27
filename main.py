@@ -1,31 +1,29 @@
+"""
+Main entry point for the Sentiment E-commerce Application
+
+This module sets up the application and serves as the entry point.
+"""
+
 import os
 import sys
 import logging
 import nltk
-from flask import send_from_directory, request
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Download NLTK data required for sentiment analysis
+logger.info("Downloading VADER lexicon for sentiment analysis")
 try:
     nltk.download('vader_lexicon')
-    logging.info("NLTK Vader lexicon downloaded successfully")
+    logger.info("NLTK Vader lexicon downloaded successfully")
 except Exception as e:
-    logging.error(f"Error downloading NLTK data: {str(e)}")
+    logger.error(f"Error downloading NLTK data: {str(e)}")
 
 # Import the Flask app from app.py in the root directory
+# The app itself handles frontend routes
 from app import app
-
-# Serve React frontend static files
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    """Serve React frontend static files"""
-    if path != "" and os.path.exists(os.path.join('frontend/public', path)):
-        return send_from_directory('frontend/public', path)
-    else:
-        return send_from_directory('frontend/public', 'index.html')
 
 if __name__ == "__main__":
     # Run the backend Flask app

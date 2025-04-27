@@ -1,91 +1,75 @@
+"""
+Main Flask application for Sentiment E-commerce Platform
+
+This module sets up the Flask application, MongoDB, and handles routes.
+"""
+
 import os
 import logging
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
+from flask import Flask, jsonify, send_from_directory
 from flask_login import LoginManager
-
-from config import Config
-import os
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-class Base(DeclarativeBase):
-    pass
-
-
-db = SQLAlchemy(model_class=Base)
-
-# Create the app
+# Create the Flask app
 app = Flask(__name__)
-app.config.from_object(Config)
-app.secret_key = os.environ.get("SESSION_SECRET", "default_secret_key")
-# Use environment variable for database connection
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL', 'postgresql://postgres:root@localhost:5432/sentiment_ecommerce')
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# Add this before db.create_all()
-# with app.app_context():
-#     # Create a custom schema
-#     db.session.execute('CREATE SCHEMA IF NOT EXISTS myschema')
-#     db.session.commit()
-# Initialize the app with the extension
-db.init_app(app)
+CORS(app)
 
-# Initialize login manager
+# Set app configuration
+app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "default_secret_key")
+app.config["MONGO_URI"] = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/sentiment_ecommerce")
+app.config["MONGO_DBNAME"] = os.environ.get("MONGODB_NAME", "sentiment_ecommerce")
+
+# Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Import models after db initialization
+# Import and initialize MongoDB after app creation but before model imports
+from mongo_config import init_mongo, setup_db
 with app.app_context():
-    # Import models to create tables
-    import models  # noqa: F401
+    init_mongo(app)
+    setup_db()
+    logger.info("MongoDB setup completed")
 
-    # User loader function for Flask-Login
-    @login_manager.user_loader
-    def load_user(user_id):
-        from models import User
-        return User.query.get(int(user_id))
+# Import models after MongoDB initialization
+from models_mongo import User, Product, Review, UserSavedProduct
 
-    # Import and register blueprints
-    try:
-        from backend.app import bp as backend_bp
-        app.register_blueprint(backend_bp)
-        logger.info("Backend routes registered successfully")
-    except ImportError as e:
-        logger.warning(f"Failed to import backend routes: {e}")
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get_by_id(user_id)
 
-    # Create database tables
-    with app.app_context():
-        import models  # noqa: F401
-        try:
-            # Check if we can connect to the database
-            db.engine.connect()
-            db.create_all()
-            logger.info("Database tables created successfully!")
-        except Exception as e:
-            logger.error(f"Error creating database tables: {str(e)}")
-            logger.warning(
-                "Database is unavailable. Running in limited mode with sample data."
-            )
+# Import backend routes
+try:
+    from backend.app import bp as backend_bp
+    app.register_blueprint(backend_bp)
+    logger.info("Backend routes registered successfully")
+except ImportError as e:
+    logger.warning(f"Failed to import backend routes: {e}")
 
-            # If this is a Neon database error about disabled endpoint, provide helpful message
-            if "endpoint is disabled" in str(e):
-                logger.error(
-                    "Neon database endpoint is disabled. You may need to enable it through the Neon dashboard."
-                )
-                # Set a flag to indicate we're using sample data
-                app.config['USING_SAMPLE_DATA'] = True
+# Serve React frontend
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    """Serve React frontend static files"""
+    if path != "" and os.path.exists(os.path.join('frontend/public', path)):
+        return send_from_directory('frontend/public', path)
+    else:
+        return send_from_directory('frontend/public', 'index.html')
 
-    # No need for create_app since we already created the app above
-    pass
+# Basic API endpoints (will be moved to backend blueprint later)
+@app.route('/api/status')
+def api_status():
+    """API status check endpoint"""
+    return jsonify({
+        "status": "ok",
+        "database": "mongodb",
+        "message": "Sentiment E-commerce API is running"
+    })
 
 # Development server
 if __name__ == "__main__":
