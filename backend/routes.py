@@ -151,10 +151,33 @@ def api_get_product(product_id):
     Get product details with sentiment analysis
     """
     try:
+        logger.info(f"API get_product called with product_id: {product_id}")
+        
+        # Get the product details
         product = get_product_by_id(product_id)
+        
+        # If exact product ID not found, try checking if it's a partial ID
+        if not product and len(product_id) < 24:
+            logger.info(f"Handling partial product ID: {product_id}")
+            # Get all products
+            from mongo_config import get_mongo_client
+            mongo_client, db = get_mongo_client()
+            
+            if db:
+                # Find products where the ID starts with the provided partial ID
+                products = list(db.products.find())
+                for p in products:
+                    if str(p["_id"]).startswith(product_id):
+                        # Found a match, get the full product
+                        logger.info(f"Found product with matching ID start: {p['_id']}")
+                        product = get_product_by_id(str(p["_id"]))
+                        break
+        
         if not product:
+            logger.error(f"Product not found for ID: {product_id}")
             return jsonify({"error": "Product not found"}), 404
         
+        logger.info(f"Returning product: {product.get('name', 'Unknown')} for ID: {product_id}")
         return jsonify({"product": product})
     except Exception as e:
         logger.error(f"Error getting product {product_id}: {str(e)}")
