@@ -112,7 +112,8 @@ class User(UserMixin):
                         email=user_data["email"],
                         password_hash=user_data["password_hash"],
                         _id=user_data["_id"],
-                        created_at=user_data.get("created_at")
+                        created_at=user_data.get("created_at"),
+                        is_admin=user_data.get("is_admin", False)
                     )
             return None
         else:
@@ -125,7 +126,8 @@ class User(UserMixin):
                 email=user_data["email"],
                 password_hash=user_data["password_hash"],
                 _id=str(user_data["_id"]),
-                created_at=user_data.get("created_at", datetime.utcnow())
+                created_at=user_data.get("created_at", datetime.utcnow()),
+                is_admin=user_data.get("is_admin", False)
             )
     
     @staticmethod
@@ -140,7 +142,8 @@ class User(UserMixin):
                         email=user_data["email"],
                         password_hash=user_data["password_hash"],
                         _id=user_data["_id"],
-                        created_at=user_data.get("created_at")
+                        created_at=user_data.get("created_at"),
+                        is_admin=user_data.get("is_admin", False)
                     )
             return None
         else:
@@ -153,7 +156,8 @@ class User(UserMixin):
                 email=user_data["email"],
                 password_hash=user_data["password_hash"],
                 _id=str(user_data["_id"]),
-                created_at=user_data.get("created_at", datetime.utcnow())
+                created_at=user_data.get("created_at", datetime.utcnow()),
+                is_admin=user_data.get("is_admin", False)
             )
     
     def get_saved_products(self):
