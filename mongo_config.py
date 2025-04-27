@@ -16,7 +16,31 @@ logger = logging.getLogger(__name__)
 # MongoDB connection configuration - using MongoDB Atlas
 # Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
 MONGO_URI = os.environ.get('MONGODB_URI')
-DB_NAME = os.environ.get('MONGODB_NAME', 'sentiment_ecommerce')
+if not MONGO_URI:
+    # As a fallback, use the connection string directly
+    # This is temporary and should be replaced with proper environment variable configuration
+    MONGO_URI = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+    logger.info("Using fallback MongoDB connection string with database name")
+# Extract database name from the URI or use default
+if MONGO_URI and '/' in MONGO_URI:
+    parts = MONGO_URI.split('/')
+    if len(parts) > 3:
+        # Handle path portion that might contain the database name
+        path_part = parts[3]
+        if '?' in path_part:
+            DB_NAME = path_part.split('?')[0]
+        else:
+            DB_NAME = path_part
+    else:
+        DB_NAME = 'sentiment_ecommerce'
+else:
+    DB_NAME = os.environ.get('MONGODB_NAME', 'sentiment_ecommerce')
+
+# If DB_NAME is empty, set to default
+if not DB_NAME:
+    DB_NAME = 'sentiment_ecommerce'
+    
+logger.info(f"Using database name: {DB_NAME}")
 
 # We'll use a mock database if MongoDB is not available
 USE_MOCK_DB = False
@@ -34,7 +58,7 @@ mock_db = {
 
 def init_mongo(app):
     """Initialize MongoDB with the Flask app"""
-    global USE_MOCK_DB
+    global USE_MOCK_DB, mongo
     
     # Check if we have a MongoDB URI
     if not MONGO_URI:
@@ -44,22 +68,29 @@ def init_mongo(app):
         return None
     
     try:
-        # Set up connection with PyMongo
+        # First try direct connection method which is known to work
+        logger.info("Trying direct MongoDB connection first")
+        client = MongoClient(MONGO_URI)
+        db = client[DB_NAME]
+        # Test connection
+        db.command('ping')
+        
+        # If direct connection works, then configure PyMongo
         app.config["MONGO_URI"] = MONGO_URI
         app.config["MONGO_DBNAME"] = DB_NAME
         
         # Initialize PyMongo with the app
         mongo.init_app(app)
         
-        # Test connection with direct client to avoid NoneType error
-        client = MongoClient(MONGO_URI)
-        db = client[DB_NAME]
-        db.command('ping')
+        # Store the working client and db in app config for fallback access
+        app.config['MONGO_CLIENT'] = client
+        app.config['MONGO_DB'] = db
         
         logger.info(f"MongoDB connected successfully to {DB_NAME} database")
         return mongo
     except Exception as e:
-        logger.error(f"Error connecting to MongoDB: {str(e)}")
+        full_error = getattr(e, 'details', {})
+        logger.error(f"Error connecting to MongoDB: {str(e)}, full error: {full_error}")
         logger.warning("Falling back to sample data mode")
         USE_MOCK_DB = True
         app.config['USING_SAMPLE_DATA'] = True
@@ -70,7 +101,24 @@ def get_db():
     global USE_MOCK_DB
     if USE_MOCK_DB:
         return mock_db
-    return mongo.db
+    
+    from flask import current_app
+    
+    # Try to use PyMongo connection
+    try:
+        # First try the flask-pymongo connection
+        return mongo.db
+    except Exception as e:
+        logger.warning(f"PyMongo connection failed: {str(e)}")
+        
+        # Fall back to the direct client if PyMongo fails
+        if 'MONGO_DB' in current_app.config:
+            logger.info("Using fallback direct MongoDB connection")
+            return current_app.config['MONGO_DB']
+        else:
+            logger.error("No fallback MongoDB connection available")
+            USE_MOCK_DB = True
+            return mock_db
 
 def create_indexes():
     """Create necessary indexes for performance"""
