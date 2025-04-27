@@ -72,9 +72,9 @@ function ProductList({ products, onSelectProduct }) {
               </div>
             </div>
             <h5 className="card-title">{product.name}</h5>
-            <p className="card-text text-truncate">{product.description}</p>
+            <p className="card-text text-truncate">{product.description || 'No description available'}</p>
             <div className="d-flex justify-content-between align-items-center">
-              <span className="h5 mb-0">${product.price.toFixed(2)}</span>
+              <span className="h5 mb-0">${(product.price || 0).toFixed(2)}</span>
               <button 
                 className="btn btn-primary"
                 onClick={() => onSelectProduct(product.id)}

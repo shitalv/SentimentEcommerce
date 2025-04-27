@@ -23,7 +23,21 @@ async function fetchProducts() {
     if (!response.ok) {
       throw new Error('Failed to fetch products');
     }
-    products = await response.json();
+    const data = await response.json();
+    products = data.products || [];
+    
+    // Update the product data structure to include sentiment score property
+    // to work with existing filtering and rendering code
+    products = products.map(product => {
+      if (product.sentiment) {
+        // Create a simplified sentiment_score from the sentiment object
+        product.sentiment_score = product.sentiment.positive;
+      } else {
+        product.sentiment_score = 0.5; // Default neutral
+      }
+      return product;
+    });
+    
     console.log("Products fetched:", products);
     renderProductList();
   } catch (error) {
@@ -47,7 +61,21 @@ async function fetchProductDetails(productId) {
       throw new Error(`Failed to fetch product details: ${response.status}`);
     }
 
-    selectedProduct = await response.json();
+    const data = await response.json();
+    selectedProduct = data.product || {};
+    
+    // Add sentiment_score property for compatibility with existing code
+    if (selectedProduct.sentiment) {
+      selectedProduct.sentiment_score = selectedProduct.sentiment.positive;
+      
+      // Create sentiment_counts for the product detail view
+      selectedProduct.sentiment_counts = {
+        positive: Math.round(selectedProduct.sentiment.positive * 100),
+        neutral: Math.round(selectedProduct.sentiment.neutral * 100),
+        negative: Math.round(selectedProduct.sentiment.negative * 100)
+      };
+    }
+    
     console.log("Product details fetched:", selectedProduct);
     
     // Also fetch recommendations for this product
@@ -77,6 +105,17 @@ async function fetchProductRecommendations(productId) {
 
     const data = await response.json();
     productRecommendations = data.recommendations || [];
+    
+    // Add sentiment_score for compatibility with existing code
+    productRecommendations = productRecommendations.map(product => {
+      if (product.sentiment) {
+        product.sentiment_score = product.sentiment.positive;
+      } else {
+        product.sentiment_score = 0.5; // Default neutral
+      }
+      return product;
+    });
+    
     console.log("Recommendations fetched:", productRecommendations);
     
     // Update recommendations section if it exists
