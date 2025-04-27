@@ -176,20 +176,20 @@ def get_top_rated_products(category=None, limit=5):
         List of top-rated product objects
     """
     try:
-        # Query base
-        query = Product.query
+        # Get all products
+        all_products = Product.get_all(category=category)
         
-        # Apply category filter if specified
-        if category:
-            query = query.filter_by(category=category)
-        
-        # Order by positive sentiment
-        query = query.order_by(Product.positive_score.desc())
+        # Sort by positive sentiment score
+        sorted_products = sorted(
+            all_products, 
+            key=lambda p: p.positive_score if hasattr(p, 'positive_score') else 0, 
+            reverse=True
+        )
         
         # Get top N products
-        products = query.limit(limit).all()
+        top_products = sorted_products[:limit]
         
-        return products
+        return top_products
     except Exception as e:
         logger.error(f"Error getting top-rated products: {str(e)}")
         return []
