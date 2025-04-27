@@ -273,10 +273,28 @@ class Product:
         else:
             # Use real MongoDB
             try:
-                product_data = mongo.db.products.find_one({"_id": ObjectId(product_id)})
+                # Handle partial ObjectId by first trying to find by exact ID
+                # then by partial ID match if necessary
+                try:
+                    # First try with the exact ObjectId
+                    product_data = mongo.db.products.find_one({"_id": ObjectId(product_id)})
+                except (TypeError, ValueError) as e:
+                    print(f"Invalid ObjectId format: {product_id}, trying to find a matching ID")
+                    # If the ID is not a valid ObjectId, try to find by partial ID match
+                    products = list(mongo.db.products.find())
+                    for product in products:
+                        # Check if the provided ID is contained in the product's ID
+                        if product_id in str(product["_id"]):
+                            product_data = product
+                            break
+                    else:
+                        # If no match found, return None
+                        print(f"No product found with ID containing: {product_id}")
+                        return None
+                
                 if not product_data:
                     return None
-                    
+                
                 return Product(
                     name=product_data["name"],
                     description=product_data.get("description"),
