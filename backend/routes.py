@@ -153,28 +153,37 @@ def api_get_product(product_id):
     try:
         logger.info(f"API get_product called with product_id: {product_id}")
         
-        # Get the product details
-        product = get_product_by_id(product_id)
+        # Try to get the product directly first
+        try:
+            product = get_product_by_id(product_id)
+        except Exception as e:
+            logger.info(f"Error getting product by ID: {str(e)}")
+            product = None
         
         # If exact product ID not found, try checking if it's a partial ID
         if not product and len(product_id) < 24:
             logger.info(f"Handling partial product ID: {product_id}")
-            # Get all products
-            from mongo_config import get_mongo_client
-            mongo_client, db = get_mongo_client()
             
-            if db:
-                # Find products where the ID starts with the provided partial ID
-                products = list(db.products.find())
-                for p in products:
-                    if str(p["_id"]).startswith(product_id):
-                        # Found a match, get the full product
-                        logger.info(f"Found product with matching ID start: {p['_id']}")
-                        product = get_product_by_id(str(p["_id"]))
+            try:
+                # Get all products and find a match by ID prefix
+                from backend.product_data import get_products
+                all_products = get_products()
+                
+                matching_product = None
+                for p in all_products:
+                    # Compare string representation of IDs
+                    if str(p.get('id', '')).startswith(product_id):
+                        logger.info(f"Found product with matching ID start: {p.get('id', 'unknown')}")
+                        matching_product = p
                         break
+                
+                if matching_product:
+                    product = matching_product
+            except Exception as partial_id_error:
+                logger.error(f"Error handling partial ID: {str(partial_id_error)}")
         
         if not product:
-            logger.error(f"Product not found for ID: {product_id}")
+            logger.warning(f"Product not found for ID: {product_id}")
             return jsonify({"error": "Product not found"}), 404
         
         logger.info(f"Returning product: {product.get('name', 'Unknown')} for ID: {product_id}")
