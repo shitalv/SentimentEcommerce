@@ -44,11 +44,19 @@ def init_mongo(app):
         return None
     
     try:
+        # Set up connection with PyMongo
         app.config["MONGO_URI"] = MONGO_URI
+        app.config["MONGO_DBNAME"] = DB_NAME
+        
+        # Initialize PyMongo with the app
         mongo.init_app(app)
-        # Test connection
-        mongo.db.command('ping')
-        logger.info(f"MongoDB connected successfully")
+        
+        # Test connection with direct client to avoid NoneType error
+        client = MongoClient(MONGO_URI)
+        db = client[DB_NAME]
+        db.command('ping')
+        
+        logger.info(f"MongoDB connected successfully to {DB_NAME} database")
         return mongo
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {str(e)}")
