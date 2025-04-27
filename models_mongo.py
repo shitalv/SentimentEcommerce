@@ -21,12 +21,13 @@ class User(UserMixin):
             return mock_db["users"]
         return mongo.db.users
     
-    def __init__(self, username, email, password_hash=None, _id=None, created_at=None):
+    def __init__(self, username, email, password_hash=None, _id=None, created_at=None, is_admin=False):
         self.username = username
         self.email = email
         self.password_hash = password_hash
         self._id = _id if _id else str(ObjectId())
         self.created_at = created_at if created_at else datetime.utcnow()
+        self.is_admin = is_admin
         
     def set_password(self, password):
         """Set password hash"""
@@ -46,7 +47,8 @@ class User(UserMixin):
             "username": self.username,
             "email": self.email,
             "password_hash": self.password_hash,
-            "created_at": self.created_at
+            "created_at": self.created_at,
+            "is_admin": getattr(self, 'is_admin', False)
         }
         
         if USE_MOCK_DB:
@@ -91,7 +93,8 @@ class User(UserMixin):
                     email=user_data["email"],
                     password_hash=user_data["password_hash"],
                     _id=str(user_data["_id"]),
-                    created_at=user_data.get("created_at", datetime.utcnow())
+                    created_at=user_data.get("created_at", datetime.utcnow()),
+                    is_admin=user_data.get("is_admin", False)
                 )
             except Exception as e:
                 print(f"Error getting user by ID: {str(e)}")

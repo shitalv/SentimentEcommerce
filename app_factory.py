@@ -92,6 +92,19 @@ def register_routes(app):
     
     # Register the blueprint with the app
     app.register_blueprint(backend_bp)
+    
+    # Import and register admin routes
+    try:
+        from backend.admin import admin_bp, add_admin_field_to_users
+        app.register_blueprint(admin_bp)
+        
+        # Add admin field to users
+        with app.app_context():
+            add_admin_field_to_users()
+        logger.info("Admin routes registered successfully")
+    except Exception as e:
+        logger.error(f"Failed to register admin routes: {str(e)}")
+    
     logger.info("Backend routes registered successfully")
     
     # Serve React frontend
