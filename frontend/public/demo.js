@@ -129,18 +129,60 @@ async function fetchProductDetails(productId) {
       image_url: selectedProduct.image_url || "/placeholder.jpg",
       reviews: selectedProduct.reviews || [],
       review_count: selectedProduct.review_count || (selectedProduct.reviews ? selectedProduct.reviews.length : 0),
-      sentiment: selectedProduct.sentiment || { positive: 0.5, neutral: 0.3, negative: 0.2 }
+      sentiment: selectedProduct.sentiment || { positive: 0, neutral: 0, negative: 0 }
     };
+    
+    console.log("IMPORTANT - Raw sentiment data:", selectedProduct.sentiment);
+    
+    // If we have a review count but all sentiment scores are 0, adjust sentiment to reflect reviews
+    if (selectedProduct.review_count > 0 && 
+        selectedProduct.sentiment.positive === 0 && 
+        selectedProduct.sentiment.neutral === 0 && 
+        selectedProduct.sentiment.negative === 0) {
+        
+        // Default distribution when we have reviews but no sentiment data
+        selectedProduct.sentiment = {
+            positive: 0.7,  // 70% positive by default
+            neutral: 0.2,   // 20% neutral
+            negative: 0.1   // 10% negative
+        };
+        console.log("Applied default sentiment distribution for product with reviews");
+    }
     
     // Add sentiment_score property for compatibility with existing code
     selectedProduct.sentiment_score = selectedProduct.sentiment.positive;
     
     // Create sentiment_counts for the product detail view
-    selectedProduct.sentiment_counts = {
-      positive: Math.round(selectedProduct.sentiment.positive * 100),
-      neutral: Math.round(selectedProduct.sentiment.neutral * 100),
-      negative: Math.round(selectedProduct.sentiment.negative * 100)
-    };
+    // For percentage calculations, we interpret the sentiment values differently based on what they represent
+    let totalSentiment = selectedProduct.sentiment.positive + selectedProduct.sentiment.neutral + selectedProduct.sentiment.negative;
+    
+    // If the total is 0 or very small, these are likely ratios already
+    if (totalSentiment < 0.01) {
+        // Default to neutral distribution
+        selectedProduct.sentiment_counts = {
+          positive: 0,
+          neutral: 100,
+          negative: 0
+        };
+    } 
+    // If sentiment values are between 0-1, they're likely ratios already
+    else if (totalSentiment <= 3) {
+        selectedProduct.sentiment_counts = {
+          positive: Math.round(selectedProduct.sentiment.positive * 100),
+          neutral: Math.round(selectedProduct.sentiment.neutral * 100),
+          negative: Math.round(selectedProduct.sentiment.negative * 100)
+        };
+    } 
+    // Otherwise, they're likely raw counts
+    else {
+        selectedProduct.sentiment_counts = {
+          positive: Math.round((selectedProduct.sentiment.positive / totalSentiment) * 100),
+          neutral: Math.round((selectedProduct.sentiment.neutral / totalSentiment) * 100),
+          negative: Math.round((selectedProduct.sentiment.negative / totalSentiment) * 100)
+        };
+    }
+    
+    console.log("Calculated sentiment counts:", selectedProduct.sentiment_counts);
     
     console.log("Final product details with defaults:", selectedProduct);
     
@@ -447,44 +489,29 @@ function renderProductDetail() {
                       (selectedProduct.reviews ? selectedProduct.reviews.length : 
                       (sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative));
 
-  // Calculate percentages - handle both actual counts and ratios (0-1)
-  let positivePercent = 0;
-  let neutralPercent = 0;
-  let negativePercent = 0;
+  // Use the sentiment_counts which are already calculated as percentages
+  let positivePercent = selectedProduct.sentiment_counts.positive;
+  let neutralPercent = selectedProduct.sentiment_counts.neutral;
+  let negativePercent = selectedProduct.sentiment_counts.negative;
   
-  // If we have review counts but all sentiment values are 0, set all to neutral
-  if (totalReviews > 0 && 
-      sentimentCounts.positive === 0 && 
-      sentimentCounts.neutral === 0 && 
-      sentimentCounts.negative === 0) {
-    // When we have reviews but no sentiment distribution, default to neutral
-    neutralPercent = 100;
-  } 
-  // If the sentiment values are between 0-1 (ratios)
-  else if (sentimentCounts.positive <= 1 && sentimentCounts.neutral <= 1 && sentimentCounts.negative <= 1) {
-    // Convert ratios directly to percentages
-    positivePercent = Math.round(sentimentCounts.positive * 100);
-    neutralPercent = Math.round(sentimentCounts.neutral * 100);
-    negativePercent = Math.round(sentimentCounts.negative * 100);
-    
-    // Handle case where percentages don't add up to 100%
-    const total = positivePercent + neutralPercent + negativePercent;
-    if (total !== 100 && total !== 0) {
-      // Normalize to ensure they add up to 100%
-      positivePercent = Math.round((positivePercent / total) * 100);
-      neutralPercent = Math.round((neutralPercent / total) * 100);
-      negativePercent = 100 - positivePercent - neutralPercent;
-    }
-  } 
-  // Otherwise, treat as actual counts
-  else {
-    const total = sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative;
-    if (total > 0) {
-      positivePercent = Math.round((sentimentCounts.positive / total) * 100);
-      neutralPercent = Math.round((sentimentCounts.neutral / total) * 100);
-      negativePercent = Math.round((sentimentCounts.negative / total) * 100);
-    }
+  // For safety, ensure they add up to 100% (sometimes there can be rounding errors)
+  const total = positivePercent + neutralPercent + negativePercent;
+  if (total > 0 && total !== 100) {
+    // Normalize to ensure they add up to 100%
+    positivePercent = Math.round((positivePercent / total) * 100);
+    neutralPercent = Math.round((neutralPercent / total) * 100);
+    negativePercent = 100 - positivePercent - neutralPercent;
   }
+  
+  // If we have review count but no sentiment distribution, default to balanced distribution
+  if (totalReviews > 0 && total === 0) {
+    console.log("No sentiment distribution for product with reviews, using defaults");
+    positivePercent = 70;  // Default to 70% positive
+    neutralPercent = 20;   // 20% neutral
+    negativePercent = 10;  // 10% negative
+  }
+  
+  console.log(`Final percentages for display: Positive=${positivePercent}%, Neutral=${neutralPercent}%, Negative=${negativePercent}%`);
 
   // Format hype vs reality data
   let hypeRealityHTML = '<p>No hype vs reality analysis available.</p>';
