@@ -36,7 +36,6 @@ class User(UserMixin):
         """Check password against hash"""
         return check_password_hash(self.password_hash, password)
     
-    @property
     def id(self):
         """Getter for id property, required by Flask-Login"""
         return str(self._id)

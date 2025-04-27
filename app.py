@@ -6,27 +6,21 @@ This module sets up the Flask application, MongoDB, and handles routes.
 
 import os
 import logging
-from flask import Flask, jsonify, send_from_directory
-from flask_login import LoginManager
-from flask_cors import CORS
+from flask import jsonify, send_from_directory
+import nltk
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create the Flask app
-app = Flask(__name__)
-CORS(app)
+# Download NLTK data
+logger.info("Downloading VADER lexicon for sentiment analysis")
+nltk.download('vader_lexicon')
+logger.info("NLTK Vader lexicon downloaded successfully")
 
-# Set app configuration
-app.config["SECRET_KEY"] = os.environ.get("SESSION_SECRET", "default_secret_key")
-app.config["MONGO_URI"] = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/sentiment_ecommerce")
-app.config["MONGO_DBNAME"] = os.environ.get("MONGODB_NAME", "sentiment_ecommerce")
-
-# Initialize Flask-Login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'
+# Import app factory and create app
+from init_app import create_app
+app, login_manager = create_app()
 
 # Import and initialize MongoDB after app creation but before model imports
 from mongo_config import init_mongo, setup_db
@@ -45,7 +39,7 @@ def load_user(user_id):
 
 # Import backend routes
 try:
-    from backend.app import bp as backend_bp
+    from backend.routes import bp as backend_bp
     app.register_blueprint(backend_bp)
     logger.info("Backend routes registered successfully")
 except ImportError as e:

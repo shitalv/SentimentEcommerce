@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 # MongoDB connection configuration - using MongoDB Atlas
 # Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
-MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+MONGO_URI = os.environ.get('MONGODB_URI')
 DB_NAME = os.environ.get('MONGODB_NAME', 'sentiment_ecommerce')
 
 # We'll use a mock database if MongoDB is not available
