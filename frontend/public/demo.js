@@ -401,7 +401,7 @@ function renderProductList() {
           <p class="card-text">${product.description}</p>
           <p class="card-text"><strong>Price:</strong> $${product.price ? product.price.toFixed(2) : 'N/A'}</p>
           <p class="card-text"><strong>Category:</strong> ${product.category}</p>
-          <p class="card-text"><strong>Reviews:</strong> ${product.reviews ? product.reviews.length : 0}</p>
+          <p class="card-text"><strong>Reviews:</strong> ${product.review_count || (product.reviews ? product.reviews.length : 0)}</p>
         </div>
         <div class="card-footer">
           <button class="btn btn-primary view-product" data-product-id="${product.id}">View Details</button>
@@ -434,13 +434,17 @@ function renderProductDetail() {
   productDetailEl.style.display = 'block';
 
   // Sentiment counts
+  // Use sentiment data for visualization
   const sentimentCounts = selectedProduct.sentiment_counts || {
-    positive: 0,
-    neutral: 0,
-    negative: 0
+    positive: Math.round(selectedProduct.sentiment.positive * 100),
+    neutral: Math.round(selectedProduct.sentiment.neutral * 100),
+    negative: Math.round(selectedProduct.sentiment.negative * 100)
   };
 
-  const totalReviews = sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative;
+  // For total count, prioritize the backend review_count field
+  const totalReviews = selectedProduct.review_count || 
+                      (selectedProduct.reviews ? selectedProduct.reviews.length : 
+                      (sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative));
 
   // Calculate percentages
   const positivePercent = totalReviews > 0 ? Math.round((sentimentCounts.positive / totalReviews) * 100) : 0;
@@ -566,7 +570,7 @@ function renderProductDetail() {
                   Negative ${negativePercent}%
                 </div>
               </div>
-              <p><small class="text-muted">Based on ${totalReviews} reviews</small></p>
+              <p><small class="text-muted">Based on ${selectedProduct.review_count || totalReviews} reviews</small></p>
             </div>
           </div>
 

@@ -49,7 +49,8 @@ def get_products(query=None, category=None, min_sentiment=None, max_sentiment=No
                         "positive": product_data.get("positive_score", 0),
                         "neutral": product_data.get("neutral_score", 0),
                         "negative": product_data.get("negative_score", 0)
-                    }
+                    },
+                    "review_count": sum(1 for r in db["reviews"].values() if r.get("product_id") == product_id)
                 })
         else:
             # Using real MongoDB
@@ -74,7 +75,8 @@ def get_products(query=None, category=None, min_sentiment=None, max_sentiment=No
                         "positive": product.positive_score,
                         "neutral": product.neutral_score,
                         "negative": product.negative_score
-                    }
+                    },
+                    "review_count": len(list(product.get_reviews())) if hasattr(product, 'get_reviews') else 0
                 })
                 
         return products_list
@@ -109,7 +111,8 @@ def get_product_by_id(product_id):
                     "positive": p_data.get("positive_score", 0),
                     "neutral": p_data.get("neutral_score", 0),
                     "negative": p_data.get("negative_score", 0)
-                }
+                },
+                "review_count": sum(1 for r in db["reviews"].values() if r.get("product_id") == product_id)
             }
             
             # Get reviews for this product
@@ -144,7 +147,8 @@ def get_product_by_id(product_id):
                     "positive": product.positive_score,
                     "neutral": product.neutral_score,
                     "negative": product.negative_score
-                }
+                },
+                "review_count": len(list(product.get_reviews())) if hasattr(product, 'get_reviews') else 0
             }
             
             # Get reviews for this product
