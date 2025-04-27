@@ -29,11 +29,15 @@ function App() {
         // Use relative URL to match both development and production
         const apiUrl = '/api/products';
         const response = await axios.get(apiUrl);
-        setProducts(response.data);
-        setFilteredProducts(response.data);
+        console.log("Products fetched:", response.data);
+        
+        // Check if we have products property in the response
+        const productsData = response.data.products || [];
+        setProducts(productsData);
+        setFilteredProducts(productsData);
         
         // Extract unique categories
-        const uniqueCategories = [...new Set(response.data.map(product => product.category))];
+        const uniqueCategories = [...new Set(productsData.map(product => product.category))];
         setCategories(uniqueCategories);
         
         setLoading(false);
@@ -64,9 +68,11 @@ function App() {
     // Apply sentiment filter
     if (sentimentFilter !== 'all') {
       filtered = filtered.filter(product => {
-        if (sentimentFilter === 'positive') return product.sentiment_score >= 0.5;
-        if (sentimentFilter === 'neutral') return product.sentiment_score >= 0.3 && product.sentiment_score < 0.5;
-        if (sentimentFilter === 'negative') return product.sentiment_score < 0.3;
+        if (!product.sentiment) return false;
+        
+        if (sentimentFilter === 'positive') return product.sentiment.positive >= 0.5;
+        if (sentimentFilter === 'neutral') return product.sentiment.neutral >= 0.3;
+        if (sentimentFilter === 'negative') return product.sentiment.negative >= 0.3;
         return true;
       });
     }

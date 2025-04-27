@@ -46,20 +46,29 @@ function ProductList({ products, onSelectProduct }) {
     return products.map(product => (
       <div key={product.id} className="col-md-4 mb-4">
         <div className="card h-100 position-relative">
-          {getSentimentBadge(product.sentiment_score)}
+          {getSentimentBadge(product.sentiment ? product.sentiment.positive : 0)}
           <div className="product-img-container bg-light p-3">
-            <svg className="bd-placeholder-img card-img-top" width="100%" height="150" xmlns="http://www.w3.org/2000/svg" role="img" preserveAspectRatio="xMidYMid slice" focusable="false">
-              <title>{product.name}</title>
-              <rect width="100%" height="100%" fill="#55595c"/>
-              <text x="50%" y="50%" fill="#eceeef" dy=".3em">{product.name}</text>
-            </svg>
+            {product.image_url ? (
+              <img 
+                src={product.image_url} 
+                alt={product.name}
+                className="card-img-top"
+                style={{ maxHeight: "150px", objectFit: "contain" }}
+              />
+            ) : (
+              <svg className="bd-placeholder-img card-img-top" width="100%" height="150" xmlns="http://www.w3.org/2000/svg" role="img" preserveAspectRatio="xMidYMid slice" focusable="false">
+                <title>{product.name}</title>
+                <rect width="100%" height="100%" fill="#55595c"/>
+                <text x="50%" y="50%" fill="#eceeef" dy=".3em">{product.name}</text>
+              </svg>
+            )}
           </div>
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <span className="badge bg-secondary">{product.category}</span>
-              <div className={`${getSentimentClass(product.sentiment_score)}`}>
+              <div className={`${getSentimentClass(product.sentiment ? product.sentiment.positive : 0)}`}>
                 <i className="fas fa-star me-1"></i>
-                <strong>{product.sentiment_score.toFixed(2)}</strong>
+                <strong>{product.sentiment ? product.sentiment.positive.toFixed(2) : "0.00"}</strong>
               </div>
             </div>
             <h5 className="card-title">{product.name}</h5>
