@@ -1,0 +1,601 @@
+{% extends 'base.html' %}
+
+{% block title %}Hype vs. Reality Analysis | Admin Dashboard{% endblock %}
+
+{% block sidebar %}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+    <div class="sidebar-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/products">
+                    <i class="fas fa-box me-2"></i>Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reviews">
+                    <i class="fas fa-comment me-2"></i>Reviews
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/users">
+                    <i class="fas fa-users me-2"></i>Users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/settings">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Reports</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/sentiment">
+                    <i class="fas fa-chart-bar me-2"></i>Sentiment Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/products">
+                    <i class="fas fa-chart-line me-2"></i>Product Performance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/admin/reports/hype-reality">
+                    <i class="fas fa-balance-scale me-2"></i>Hype vs. Reality
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Hype vs. Reality Analysis</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-analysis">
+                <i class="fas fa-sync me-1"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="export-analysis">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Introduction Card -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Understanding Hype vs. Reality Analysis</h5>
+            </div>
+            <div class="card-body">
+                <p>This analysis compares marketing claims found in product descriptions (the "hype") with actual customer experiences shared in reviews (the "reality"). The system identifies:</p>
+                <ul>
+                    <li><span class="badge bg-success me-2">Confirmed Claims</span> Marketing points that are supported by customer reviews</li>
+                    <li><span class="badge bg-danger me-2">Contradicted Claims</span> Marketing points that are contradicted by customer reviews</li>
+                    <li><span class="badge bg-secondary me-2">Unmentioned Claims</span> Marketing points that customers don't mention at all</li>
+                </ul>
+                <p>This helps identify potential gaps between marketing and customer experience, allowing for more authentic product positioning.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Products Analysis -->
+<div class="row">
+    <!-- Product Selector Card -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Select Product</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <select class="form-select" id="product-selector">
+                            <option value="" selected disabled>Choose a product to analyze...</option>
+                            <option value="1">Amazon Kindle E-Reader 6" Wifi (8th Generation, 2016)</option>
+                            <option value="2">Echo Dot (4th Gen) Smart Speaker</option>
+                            <option value="3">Amazon Fire HD 10 Tablet</option>
+                            <option value="4">Amazon Basics Microfiber Cleaning Cloth</option>
+                            <option value="5">Amazon Essentials Men's Slim-Fit T-Shirt</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-primary" id="analyze-button">
+                                <i class="fas fa-balance-scale me-2"></i>Analyze
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Results -->
+    <div class="col-md-12">
+        <div class="card shadow-sm" id="analysis-card" style="display: none;">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0" id="product-name">Product Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3">Product Description (Marketing Claims)</h6>
+                        <p id="product-description" class="bg-light p-3 rounded">Select a product to view its description.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2 mb-3">Customer Review Highlights</h6>
+                        <div id="review-highlights" class="bg-light p-3 rounded">
+                            <p class="text-muted">Select a product to view review highlights.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="border-bottom pb-2 mb-3">Hype vs. Reality Analysis</h6>
+                
+                <!-- Analysis Summary -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-success">Confirmed Claims</h6>
+                                <div class="display-4 mb-2" id="confirmed-count">0</div>
+                                <p class="card-text text-muted">Marketing claims supported by customer reviews</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-danger">Contradicted Claims</h6>
+                                <div class="display-4 mb-2" id="contradicted-count">0</div>
+                                <p class="card-text text-muted">Marketing claims contradicted by customer reviews</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-secondary">Unmentioned Claims</h6>
+                                <div class="display-4 mb-2" id="unmentioned-count">0</div>
+                                <p class="card-text text-muted">Marketing claims not mentioned in reviews</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reality Score -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h6>Reality Score</h6>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success" id="reality-score-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <small class="text-muted">
+                            The Reality Score measures how well marketing claims align with customer experiences. 
+                            Higher scores indicate better alignment between marketing and reality.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Detailed Analysis Table -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" style="width: 50%">Marketing Claim</th>
+                                <th scope="col" style="width: 15%">Status</th>
+                                <th scope="col" style="width: 35%">Customer Feedback</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analysis-table-body">
+                            <tr>
+                                <td colspan="3" class="text-center">Select a product to view analysis.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up event listeners
+    document.getElementById('analyze-button').addEventListener('click', analyzeProduct);
+    document.getElementById('refresh-analysis').addEventListener('click', function() {
+        const productSelect = document.getElementById('product-selector');
+        if (productSelect.value) {
+            analyzeProduct();
+        } else {
+            showError('Please select a product to analyze.');
+        }
+    });
+    
+    // Export analysis
+    document.getElementById('export-analysis').addEventListener('click', function() {
+        const productSelect = document.getElementById('product-selector');
+        if (productSelect.value) {
+            showSuccess('Exporting analysis as PDF...');
+            // Add export functionality here
+        } else {
+            showError('Please select a product to analyze first.');
+        }
+    });
+});
+
+// Analyze selected product
+function analyzeProduct() {
+    const productId = document.getElementById('product-selector').value;
+    
+    if (!productId) {
+        showError('Please select a product to analyze.');
+        return;
+    }
+    
+    // Show loading state
+    document.getElementById('analyze-button').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
+    document.getElementById('analyze-button').disabled = true;
+    
+    // In a real app, fetch actual data from the backend
+    // For demo, use hardcoded data based on product ID
+    setTimeout(() => {
+        // Reset button state
+        document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+        document.getElementById('analyze-button').disabled = false;
+        
+        // Show analysis card
+        document.getElementById('analysis-card').style.display = 'block';
+        
+        // Load product data
+        const productData = getProductData(productId);
+        
+        // Update UI with analysis results
+        updateAnalysisUI(productData);
+        
+        // Scroll to analysis results
+        document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
+    }, 1500);
+}
+
+// Get sample product data for demo
+function getProductData(productId) {
+    const products = {
+        // Kindle E-Reader
+        '1': {
+            name: 'Amazon Kindle E-Reader 6" Wifi (8th Generation, 2016)',
+            description: 'No screen glare in bright sunlight, read with one hand, battery lasts weeks not hours, hundreds of thousands of books, adjustable text sizes, dictionary look-up, and more. Designed as a dedicated e-reader, Kindle has an unparalleled reading experience with a glare-free touchscreen that reads like real paper. Superior battery life lasting weeks, not hours.',
+            reviewHighlights: [
+                { text: "The screen is perfect for reading, just like real paper. No eye strain at all.", sentiment: "positive" },
+                { text: "Battery life is amazing, I've gone over two weeks on a single charge with daily reading.", sentiment: "positive" },
+                { text: "So much lighter than my old tablet, I can hold it for hours without my hand getting tired.", sentiment: "positive" },
+                { text: "The backlight isn't the brightest, but perfectly adequate for nighttime reading.", sentiment: "neutral" }
+            ],
+            claims: [
+                { 
+                    text: "No screen glare in bright sunlight", 
+                    status: "confirmed", 
+                    feedback: "Multiple reviews confirm excellent readability in sunlight with no glare issues." 
+                },
+                { 
+                    text: "Battery lasts weeks not hours", 
+                    status: "confirmed", 
+                    feedback: "Users consistently report 2+ weeks of battery life with regular daily use." 
+                },
+                { 
+                    text: "Read with one hand", 
+                    status: "confirmed", 
+                    feedback: "Reviews mention the lightweight design makes one-handed reading comfortable." 
+                },
+                { 
+                    text: "Adjustable text sizes", 
+                    status: "unmentioned", 
+                    feedback: "Feature not specifically mentioned in customer reviews." 
+                },
+                { 
+                    text: "Dictionary look-up", 
+                    status: "unmentioned", 
+                    feedback: "Feature not specifically mentioned in customer reviews." 
+                }
+            ],
+            realityScore: 85
+        },
+        // Echo Dot
+        '2': {
+            name: 'Echo Dot (4th Gen) Smart Speaker',
+            description: 'Meet the all-new Echo Dot - Our most popular smart speaker with Alexa. The sleek, compact design delivers crisp vocals and balanced bass for full sound. Voice control your entertainment - Stream songs from Amazon Music, Apple Music, Spotify, and others. Control your smart home - Use your voice to turn on lights, adjust thermostats, and lock doors with compatible devices.',
+            reviewHighlights: [
+                { text: "Sound quality is surprisingly good for such a small speaker.", sentiment: "positive" },
+                { text: "Alexa responds quickly to commands, better than my previous model.", sentiment: "positive" },
+                { text: "I've had connectivity issues with some smart home devices.", sentiment: "negative" },
+                { text: "The spherical design looks nice on my countertop.", sentiment: "positive" }
+            ],
+            claims: [
+                { 
+                    text: "Crisp vocals and balanced bass for full sound", 
+                    status: "confirmed", 
+                    feedback: "Multiple reviews praise the sound quality as surprisingly good for its size." 
+                },
+                { 
+                    text: "Voice control your entertainment", 
+                    status: "confirmed", 
+                    feedback: "Users report successfully streaming music from various services." 
+                },
+                { 
+                    text: "Control your smart home", 
+                    status: "contradicted", 
+                    feedback: "Several reviews mention connectivity issues with some smart home devices." 
+                },
+                { 
+                    text: "Sleek, compact design", 
+                    status: "confirmed", 
+                    feedback: "Customers like the spherical design and mention it looks aesthetically pleasing." 
+                }
+            ],
+            realityScore: 75
+        },
+        // Fire HD 10 Tablet
+        '3': {
+            name: 'Amazon Fire HD 10 Tablet',
+            description: 'Fast and responsive - powerful octa-core processor and 3 GB RAM. Long-lasting 12-hour battery and 32 or 64 GB internal storage. Brighter display - Vivid 10.1" 1080p Full HD display is 10% brighter than previous generation, with more than 2 million pixels. Enjoy your favorite apps like Netflix, Facebook, Hulu, Instagram, TikTok, and more through Amazon's Appstore (Google Play not supported).',
+            reviewHighlights: [
+                { text: "The display is crisp and bright, great for watching videos and browsing the web.", sentiment: "positive" },
+                { text: "Battery life is solid, easily lasts all day with mixed use.", sentiment: "positive" },
+                { text: "It's a bit slower than my iPad, especially when switching between apps.", sentiment: "negative" },
+                { text: "Not having Google Play is limiting, had to sideload some apps I needed.", sentiment: "negative" }
+            ],
+            claims: [
+                { 
+                    text: "Fast and responsive with octa-core processor", 
+                    status: "contradicted", 
+                    feedback: "Several users mention the tablet feels slower than expected, especially when multitasking." 
+                },
+                { 
+                    text: "Long-lasting 12-hour battery", 
+                    status: "confirmed", 
+                    feedback: "Battery life claims are supported by user experiences, with all-day use reported." 
+                },
+                { 
+                    text: "Vivid 10.1\" 1080p Full HD display", 
+                    status: "confirmed", 
+                    feedback: "The display quality receives consistent praise from customers." 
+                },
+                { 
+                    text: "Enjoy your favorite apps (Google Play not supported)", 
+                    status: "contradicted", 
+                    feedback: "Many users express frustration about the lack of Google Play support limiting app availability." 
+                }
+            ],
+            realityScore: 60
+        },
+        // Microfiber Cleaning Cloth
+        '4': {
+            name: 'Amazon Basics Microfiber Cleaning Cloth',
+            description: 'Ultra soft, non-abrasive microfiber cloths will not scratch surfaces or damage delicate electronics. Cleans with or without chemical cleaners, leaves lint and streak-free results. Absorbs eight times its weight in water, making the cloths great for cleaning up spills. Ideal for cleaning TVs, LCD screens, car surfaces, glasses, and other delicate surfaces.',
+            reviewHighlights: [
+                { text: "These cloths are soft and don't scratch my glasses or screens.", sentiment: "positive" },
+                { text: "They pick up dust really well, even without any cleaning solution.", sentiment: "positive" },
+                { text: "Wish they were a bit larger for cleaning bigger surfaces.", sentiment: "negative" },
+                { text: "They wash well and maintain their softness even after multiple washes.", sentiment: "positive" }
+            ],
+            claims: [
+                { 
+                    text: "Ultra soft, non-abrasive microfiber cloths will not scratch surfaces", 
+                    status: "confirmed", 
+                    feedback: "Users consistently confirm the cloths don't scratch delicate surfaces like glasses and screens." 
+                },
+                { 
+                    text: "Cleans with or without chemical cleaners", 
+                    status: "confirmed", 
+                    feedback: "Many reviews mention effective cleaning without using any solutions." 
+                },
+                { 
+                    text: "Absorbs eight times its weight in water", 
+                    status: "unmentioned", 
+                    feedback: "No reviews specifically mention the absorption capacity." 
+                },
+                { 
+                    text: "Leaves lint and streak-free results", 
+                    status: "confirmed", 
+                    feedback: "Users report streak-free cleaning on glasses and screens." 
+                },
+                { 
+                    text: "Ideal size for various cleaning tasks", 
+                    status: "contradicted", 
+                    feedback: "Some customers wish the cloths were larger for cleaning bigger surfaces." 
+                }
+            ],
+            realityScore: 70
+        },
+        // Men's T-Shirt
+        '5': {
+            name: 'Amazon Essentials Men\'s Slim-Fit T-Shirt',
+            description: 'This everyday t-shirt features a regular fit through the chest for a relaxed, easy feel. Slim fit, less fabric & a slimmer sleeve than our regular t-shirt. Super soft jersey fabric with a lightweight feel. Comfortable, tag-free neck. An Amazon brand.',
+            reviewHighlights: [
+                { text: "The fabric is really soft and comfortable against the skin.", sentiment: "positive" },
+                { text: "Perfect slim fit, not too tight but not baggy either.", sentiment: "positive" },
+                { text: "Shrinkage after washing was minimal, still fits great.", sentiment: "positive" },
+                { text: "Love that there's no tag to irritate my neck.", sentiment: "positive" }
+            ],
+            claims: [
+                { 
+                    text: "Regular fit through the chest for a relaxed, easy feel", 
+                    status: "confirmed", 
+                    feedback: "Customers confirm the fit is comfortable through the chest area." 
+                },
+                { 
+                    text: "Slim fit with less fabric & a slimmer sleeve", 
+                    status: "confirmed", 
+                    feedback: "Multiple reviews praise the flattering slim fit without being too tight." 
+                },
+                { 
+                    text: "Super soft jersey fabric with a lightweight feel", 
+                    status: "confirmed", 
+                    feedback: "Users consistently mention the soft fabric and comfort." 
+                },
+                { 
+                    text: "Comfortable, tag-free neck", 
+                    status: "confirmed", 
+                    feedback: "The tag-free design is specifically appreciated in several reviews." 
+                }
+            ],
+            realityScore: 95
+        }
+    };
+    
+    return products[productId];
+}
+
+// Update UI with analysis results
+function updateAnalysisUI(productData) {
+    // Update product info
+    document.getElementById('product-name').textContent = productData.name;
+    document.getElementById('product-description').textContent = productData.description;
+    
+    // Update review highlights
+    const reviewHighlightsEl = document.getElementById('review-highlights');
+    let highlightsHtml = '';
+    
+    productData.reviewHighlights.forEach(highlight => {
+        let badgeClass = 'bg-secondary';
+        if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
+        if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+        
+        highlightsHtml += `
+            <div class="mb-2">
+                <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
+                "${highlight.text}"
+            </div>
+        `;
+    });
+    
+    reviewHighlightsEl.innerHTML = highlightsHtml;
+    
+    // Update analysis counts
+    const confirmedClaims = productData.claims.filter(claim => claim.status === 'confirmed').length;
+    const contradictedClaims = productData.claims.filter(claim => claim.status === 'contradicted').length;
+    const unmentionedClaims = productData.claims.filter(claim => claim.status === 'unmentioned').length;
+    
+    document.getElementById('confirmed-count').textContent = confirmedClaims;
+    document.getElementById('contradicted-count').textContent = contradictedClaims;
+    document.getElementById('unmentioned-count').textContent = unmentionedClaims;
+    
+    // Update reality score
+    const realityScoreBar = document.getElementById('reality-score-bar');
+    realityScoreBar.style.width = `${productData.realityScore}%`;
+    realityScoreBar.textContent = `${productData.realityScore}%`;
+    realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
+    
+    // Set color based on score
+    if (productData.realityScore >= 80) {
+        realityScoreBar.className = 'progress-bar bg-success';
+    } else if (productData.realityScore >= 60) {
+        realityScoreBar.className = 'progress-bar bg-warning';
+    } else {
+        realityScoreBar.className = 'progress-bar bg-danger';
+    }
+    
+    // Update detailed analysis table
+    const tableBody = document.getElementById('analysis-table-body');
+    tableBody.innerHTML = '';
+    
+    productData.claims.forEach(claim => {
+        const row = document.createElement('tr');
+        
+        // Set row background based on status
+        if (claim.status === 'confirmed') {
+            row.className = 'table-success';
+        } else if (claim.status === 'contradicted') {
+            row.className = 'table-danger';
+        } else {
+            row.className = 'table-secondary';
+        }
+        
+        // Create status badge
+        let badgeClass = 'bg-secondary';
+        let statusText = 'Unmentioned';
+        
+        if (claim.status === 'confirmed') {
+            badgeClass = 'bg-success';
+            statusText = 'Confirmed';
+        } else if (claim.status === 'contradicted') {
+            badgeClass = 'bg-danger';
+            statusText = 'Contradicted';
+        }
+        
+        const statusBadge = `<span class="badge ${badgeClass}">${statusText}</span>`;
+        
+        row.innerHTML = `
+            <td>${claim.text}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td>${claim.feedback}</td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Show success message
+    showSuccess('Analysis completed successfully.');
+}
+
+// Show success message
+function showSuccess(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+
+// Show error message
+function showError(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+</script>
+{% endblock %}
