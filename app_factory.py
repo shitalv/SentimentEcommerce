@@ -36,7 +36,7 @@ def create_app():
     # Initialize Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'backend.login'
+    login_manager.login_view = 'login_page'
     
     # Initialize MongoDB
     with app.app_context():

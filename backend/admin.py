@@ -23,8 +23,14 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            return jsonify({"error": "Administrator access required"}), 403
+        if not current_user.is_authenticated:
+            return redirect(url_for('login_page'))
+            
+        if not getattr(current_user, 'is_admin', False):
+            return render_template('error.html', 
+                                 error_title="Access Denied", 
+                                 error_message="Administrator access required")
+                                 
         return f(*args, **kwargs)
     return decorated_function
 
