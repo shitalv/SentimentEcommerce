@@ -19,5 +19,8 @@ from app_factory import create_app
 app = create_app()
 
 if __name__ == "__main__":
+    # Get the port from environment or use a different default
+    port = int(os.environ.get("FLASK_PORT", 5001))
+    
     # Run the backend Flask app
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True)
