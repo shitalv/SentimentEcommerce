@@ -129,51 +129,56 @@ def admin_analytics():
 @admin_required
 def admin_products():
     """Get all products for admin management"""
-    try:
-        mongo_client, db = get_mongo_client()
-        if db is None:
-            return jsonify({"error": "Database connection failed"}), 500
-        
-        # Get all products with pagination
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 10))
-        skip = (page - 1) * per_page
-        
-        # Get products
-        products = list(db.products.find().skip(skip).limit(per_page))
-        
-        # Format product data
-        product_data = []
-        for product in products:
-            product_data.append({
-                "id": str(product.get("_id")),
-                "name": product.get("name"),
-                "category": product.get("category"),
-                "price": product.get("price"),
-                "review_count": db.reviews.count_documents({"product_id": str(product.get("_id"))}),
-                "positive_score": product.get("positive_score", 0),
-                "neutral_score": product.get("neutral_score", 0),
-                "negative_score": product.get("negative_score", 0),
-                "created_at": product.get("created_at")
+    # Check if this is a JSON API request or HTML page request
+    if request.headers.get('Accept') == 'application/json' or request.args.get('format') == 'json':
+        try:
+            mongo_client, db = get_mongo_client()
+            if db is None:
+                return jsonify({"error": "Database connection failed"}), 500
+            
+            # Get all products with pagination
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 10))
+            skip = (page - 1) * per_page
+            
+            # Get products
+            products = list(db.products.find().skip(skip).limit(per_page))
+            
+            # Format product data
+            product_data = []
+            for product in products:
+                product_data.append({
+                    "id": str(product.get("_id")),
+                    "name": product.get("name"),
+                    "category": product.get("category"),
+                    "price": product.get("price"),
+                    "review_count": db.reviews.count_documents({"product_id": str(product.get("_id"))}),
+                    "positive_score": product.get("positive_score", 0),
+                    "neutral_score": product.get("neutral_score", 0),
+                    "negative_score": product.get("negative_score", 0),
+                    "created_at": product.get("created_at")
+                })
+            
+            # Get total count for pagination
+            total_products = db.products.count_documents({})
+            total_pages = (total_products + per_page - 1) // per_page
+            
+            return jsonify({
+                "products": product_data,
+                "pagination": {
+                    "current_page": page,
+                    "per_page": per_page,
+                    "total_products": total_products,
+                    "total_pages": total_pages
+                }
             })
         
-        # Get total count for pagination
-        total_products = db.products.count_documents({})
-        total_pages = (total_products + per_page - 1) // per_page
-        
-        return jsonify({
-            "products": product_data,
-            "pagination": {
-                "current_page": page,
-                "per_page": per_page,
-                "total_products": total_products,
-                "total_pages": total_pages
-            }
-        })
-    
-    except Exception as e:
-        logger.error(f"Error getting admin products: {str(e)}")
-        return jsonify({"error": f"Failed to get products: {str(e)}"}), 500
+        except Exception as e:
+            logger.error(f"Error getting admin products: {str(e)}")
+            return jsonify({"error": f"Failed to get products: {str(e)}"}), 500
+    else:
+        # Render the HTML template for the admin products page
+        return render_template('admin/products.html')
 
 # Get all reviews for admin
 @admin_bp.route('/reviews')
