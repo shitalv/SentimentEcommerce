@@ -1,0 +1,647 @@
+{% extends 'base.html' %}
+
+{% block title %}Sentiment Analysis Reports | Admin Dashboard{% endblock %}
+
+{% block sidebar %}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+    <div class="sidebar-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/products">
+                    <i class="fas fa-box me-2"></i>Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reviews">
+                    <i class="fas fa-comment me-2"></i>Reviews
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/users">
+                    <i class="fas fa-users me-2"></i>Users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/settings">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Reports</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link active" href="/admin/reports/sentiment">
+                    <i class="fas fa-chart-bar me-2"></i>Sentiment Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/products">
+                    <i class="fas fa-chart-line me-2"></i>Product Performance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/hype-reality">
+                    <i class="fas fa-balance-scale me-2"></i>Hype vs. Reality
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Sentiment Analysis Reports</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-reports">
+                <i class="fas fa-sync me-1"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="export-reports">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+        <div class="input-group">
+            <label class="input-group-text" for="time-period">Period</label>
+            <select class="form-select form-select-sm" id="time-period">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last year</option>
+                <option value="all">All time</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Sentiment Overview Card -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Sentiment Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6 class="text-center mb-3">Overall Sentiment Distribution</h6>
+                        <div id="sentiment-pie-chart" style="height: 250px;"></div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6 class="text-center mb-3">Sentiment Trend Over Time</h6>
+                        <div id="sentiment-trend-chart" style="height: 250px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Sentiment Card -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Sentiment by Category</h5>
+            </div>
+            <div class="card-body">
+                <div id="category-sentiment-chart" style="height: 300px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Keywords Card -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Top Sentiment Keywords</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-success text-center">Positive Keywords</h6>
+                        <div id="positive-keywords-cloud" style="height: 250px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-danger text-center">Negative Keywords</h6>
+                        <div id="negative-keywords-cloud" style="height: 250px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sentiment Analysis Table -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark-subtle d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Detailed Sentiment Analysis</h5>
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <input type="text" class="form-control" placeholder="Search products..." id="table-search">
+                    <button class="btn btn-outline-secondary" type="button" id="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Product</th>
+                                <th scope="col">Category</th>
+                                <th scope="col">Reviews</th>
+                                <th scope="col">Positive</th>
+                                <th scope="col">Neutral</th>
+                                <th scope="col">Negative</th>
+                                <th scope="col">Overall</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sentiment-table-body">
+                            <tr>
+                                <td>Loading data...</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js library for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial reports
+    loadSentimentReports();
+    
+    // Set up event listeners
+    document.getElementById('refresh-reports').addEventListener('click', loadSentimentReports);
+    document.getElementById('time-period').addEventListener('change', loadSentimentReports);
+    
+    // Export reports
+    document.getElementById('export-reports').addEventListener('click', function() {
+        showSuccess('Exporting reports as CSV...');
+        // Add export functionality here
+    });
+    
+    // Table search
+    document.getElementById('search-button').addEventListener('click', filterTable);
+    document.getElementById('table-search').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            filterTable();
+        }
+    });
+});
+
+// Load sentiment reports data
+function loadSentimentReports() {
+    const timePeriod = document.getElementById('time-period').value;
+    
+    // Show loading message
+    document.getElementById('sentiment-table-body').innerHTML = '<tr><td>Loading data...</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+    
+    // Fetch sentiment data or use mock data for demonstration
+    // This would normally be an API request to get real data
+    setTimeout(() => {
+        // Draw charts with demo data
+        drawSentimentPieChart();
+        drawSentimentTrendChart();
+        drawCategorySentimentChart();
+        drawKeywordClouds();
+        populateSentimentTable();
+    }, 500);
+}
+
+// Filter the table based on search term
+function filterTable() {
+    const searchTerm = document.getElementById('table-search').value.toLowerCase();
+    const rows = document.querySelectorAll('#sentiment-table-body tr');
+    
+    rows.forEach(row => {
+        const productName = row.querySelector('td:first-child').textContent.toLowerCase();
+        const category = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+        
+        if (productName.includes(searchTerm) || category.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Draw sentiment distribution pie chart
+function drawSentimentPieChart() {
+    const ctx = document.getElementById('sentiment-pie-chart').getContext('2d');
+    
+    // Demo data
+    const data = {
+        labels: ['Positive', 'Neutral', 'Negative'],
+        datasets: [{
+            data: [65, 20, 15],
+            backgroundColor: ['#198754', '#6c757d', '#dc3545'],
+            hoverOffset: 4
+        }]
+    };
+    
+    // Create or update chart
+    if (window.sentimentPieChart) {
+        window.sentimentPieChart.data = data;
+        window.sentimentPieChart.update();
+    } else {
+        window.sentimentPieChart = new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                return label + ': ' + value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Draw sentiment trend line chart
+function drawSentimentTrendChart() {
+    const ctx = document.getElementById('sentiment-trend-chart').getContext('2d');
+    
+    // Demo data - last 30 days sentiment trend
+    const labels = Array.from({ length: 30 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - 29 + i);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
+    // Generate some random trend data with an overall positive trend
+    const positiveData = [];
+    const neutralData = [];
+    const negativeData = [];
+    
+    for (let i = 0; i < 30; i++) {
+        // Random values with a trend
+        const positive = 50 + Math.floor(Math.random() * 20) + (i / 3);
+        positiveData.push(positive);
+        
+        const neutral = Math.max(5, 25 - (i / 10) + Math.floor(Math.random() * 10));
+        neutralData.push(neutral);
+        
+        const negative = Math.max(5, 100 - positive - neutral);
+        negativeData.push(negative);
+    }
+    
+    const data = {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Positive',
+                data: positiveData,
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: 'Neutral',
+                data: neutralData,
+                borderColor: '#6c757d',
+                backgroundColor: 'rgba(108, 117, 125, 0.2)',
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: 'Negative',
+                data: negativeData,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                tension: 0.3,
+                fill: true
+            }
+        ]
+    };
+    
+    // Create or update chart
+    if (window.sentimentTrendChart) {
+        window.sentimentTrendChart.data = data;
+        window.sentimentTrendChart.update();
+    } else {
+        window.sentimentTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        stacked: true,
+                        title: {
+                            display: true,
+                            text: 'Percentage'
+                        },
+                        min: 0,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Draw category sentiment bar chart
+function drawCategorySentimentChart() {
+    const ctx = document.getElementById('category-sentiment-chart').getContext('2d');
+    
+    // Demo data - categories and their sentiment scores
+    const data = {
+        labels: ['Electronics', 'Home & Kitchen', 'Clothing', 'Books', 'Beauty'],
+        datasets: [
+            {
+                label: 'Positive',
+                data: [75, 60, 70, 80, 65],
+                backgroundColor: '#198754',
+            },
+            {
+                label: 'Neutral',
+                data: [15, 25, 20, 10, 20],
+                backgroundColor: '#6c757d',
+            },
+            {
+                label: 'Negative',
+                data: [10, 15, 10, 10, 15],
+                backgroundColor: '#dc3545',
+            }
+        ]
+    };
+    
+    // Create or update chart
+    if (window.categorySentimentChart) {
+        window.categorySentimentChart.data = data;
+        window.categorySentimentChart.update();
+    } else {
+        window.categorySentimentChart = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                    },
+                    y: {
+                        stacked: true,
+                        title: {
+                            display: true,
+                            text: 'Percentage'
+                        },
+                        min: 0,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Draw keyword word clouds
+function drawKeywordClouds() {
+    // This is a placeholder for actual word cloud implementation
+    // In a real application, you would use a word cloud library
+    
+    const positiveKeywords = document.getElementById('positive-keywords-cloud');
+    const negativeKeywords = document.getElementById('negative-keywords-cloud');
+    
+    // Simple representation of keyword clouds
+    positiveKeywords.innerHTML = `
+        <div class="d-flex flex-wrap justify-content-center">
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.2rem;">quality</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.5rem;">excellent</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.4rem;">comfortable</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.8rem;">perfect</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.6rem;">value</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.3rem;">love</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.1rem;">reliable</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.7rem;">easy</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.4rem;">great</span>
+            <span class="badge bg-success m-1 p-2" style="font-size: 1.2rem;">durable</span>
+        </div>
+    `;
+    
+    negativeKeywords.innerHTML = `
+        <div class="d-flex flex-wrap justify-content-center">
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.6rem;">expensive</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.3rem;">disappointing</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.8rem;">broke</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.2rem;">uncomfortable</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.5rem;">slow</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.4rem;">difficult</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.1rem;">poor</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.3rem;">overpriced</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.7rem;">failed</span>
+            <span class="badge bg-danger m-1 p-2" style="font-size: 1.2rem;">cheap</span>
+        </div>
+    `;
+}
+
+// Populate sentiment analysis table
+function populateSentimentTable() {
+    const tableBody = document.getElementById('sentiment-table-body');
+    
+    // Demo data for table
+    const products = [
+        {
+            name: 'Echo Dot (4th Gen) Smart Speaker',
+            category: 'Electronics',
+            reviews: 3,
+            positive: 78,
+            neutral: 15,
+            negative: 7
+        },
+        {
+            name: 'Amazon Fire HD 10 Tablet',
+            category: 'Electronics',
+            reviews: 3, 
+            positive: 85,
+            neutral: 10,
+            negative: 5
+        },
+        {
+            name: 'Amazon Kindle E-Reader 6" Wifi',
+            category: 'Electronics',
+            reviews: 9,
+            positive: 90,
+            neutral: 5,
+            negative: 5
+        },
+        {
+            name: 'Amazon Basics Microfiber Cleaning Cloth',
+            category: 'Home & Kitchen',
+            reviews: 2,
+            positive: 75,
+            neutral: 15,
+            negative: 10
+        },
+        {
+            name: 'Amazon Essentials Men\'s Slim-Fit T-Shirt',
+            category: 'Clothing',
+            reviews: 1,
+            positive: 100,
+            neutral: 0,
+            negative: 0
+        }
+    ];
+    
+    // Clear table
+    tableBody.innerHTML = '';
+    
+    // Add rows
+    products.forEach(product => {
+        const row = document.createElement('tr');
+        
+        // Calculate overall sentiment score (0-10)
+        const overallScore = (product.positive * 10) / 100;
+        
+        // Create bar for overall score
+        let barColor;
+        if (overallScore >= 7.5) {
+            barColor = 'bg-success';
+        } else if (overallScore >= 5) {
+            barColor = 'bg-warning';
+        } else {
+            barColor = 'bg-danger';
+        }
+        
+        const scoreBar = `
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar ${barColor}" role="progressbar" 
+                    style="width: ${overallScore * 10}%;" 
+                    aria-valuenow="${overallScore}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="10">
+                    ${overallScore.toFixed(1)}/10
+                </div>
+            </div>
+        `;
+        
+        // Create sentiment distribution bars
+        const sentimentBars = (label, value, color) => `
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <small>${label}:</small>
+                <small>${value}%</small>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar ${color}" role="progressbar" 
+                    style="width: ${value}%;" 
+                    aria-valuenow="${value}" 
+                    aria-valuemin="0" 
+                    aria-valuemax="100">
+                </div>
+            </div>
+        `;
+        
+        const positiveBars = sentimentBars('Positive', product.positive, 'bg-success');
+        const neutralBars = sentimentBars('Neutral', product.neutral, 'bg-secondary');
+        const negativeBars = sentimentBars('Negative', product.negative, 'bg-danger');
+        
+        row.innerHTML = `
+            <td><a href="/admin/products?search=${encodeURIComponent(product.name)}">${product.name}</a></td>
+            <td>${product.category}</td>
+            <td>${product.reviews}</td>
+            <td>${product.positive}%</td>
+            <td>${product.neutral}%</td>
+            <td>${product.negative}%</td>
+            <td>${scoreBar}</td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+}
+
+// Show success message
+function showSuccess(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+
+// Show error message
+function showError(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+</script>
+{% endblock %}

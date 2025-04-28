@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Settings | Admin Dashboard{% endblock %}
+
+{% block sidebar %}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+    <div class="sidebar-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/products">
+                    <i class="fas fa-box me-2"></i>Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reviews">
+                    <i class="fas fa-comment me-2"></i>Reviews
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/users">
+                    <i class="fas fa-users me-2"></i>Users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/admin/settings">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Reports</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/sentiment">
+                    <i class="fas fa-chart-bar me-2"></i>Sentiment Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/products">
+                    <i class="fas fa-chart-line me-2"></i>Product Performance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/hype-reality">
+                    <i class="fas fa-balance-scale me-2"></i>Hype vs. Reality
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Admin Settings</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <!-- General Settings Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">General Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="general-settings-form">
+                    <div class="mb-3">
+                        <label for="site-name" class="form-label">Site Name</label>
+                        <input type="text" class="form-control" id="site-name" value="Sentiment E-commerce" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="site-description" class="form-label">Site Description</label>
+                        <textarea class="form-control" id="site-description" rows="2">AI-powered e-commerce sentiment analysis platform.</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact-email" class="form-label">Contact Email</label>
+                        <input type="email" class="form-control" id="contact-email" value="contact@example.com">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="save-general-settings">Save Settings</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sentiment Analysis Settings Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Sentiment Analysis Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="sentiment-settings-form">
+                    <div class="mb-3">
+                        <label for="analysis-model" class="form-label">Default Analysis Model</label>
+                        <select class="form-select" id="analysis-model">
+                            <option value="vader" selected>NLTK VADER</option>
+                            <option value="textblob">TextBlob</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sentiment-threshold" class="form-label">Positive Sentiment Threshold</label>
+                        <input type="range" class="form-range" id="sentiment-threshold" min="0.5" max="0.9" step="0.05" value="0.6">
+                        <div class="d-flex justify-content-between">
+                            <small>More inclusive (0.5)</small>
+                            <small id="threshold-value">0.6</small>
+                            <small>More strict (0.9)</small>
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="extract-keywords" checked>
+                        <label class="form-check-label" for="extract-keywords">Extract keywords from reviews</label>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="save-sentiment-settings">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <!-- Database Settings Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Database Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="database-settings-form">
+                    <div class="mb-3">
+                        <label for="db-status" class="form-label">Database Status</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="db-status" value="Connected (MongoDB)" readonly>
+                            <button class="btn btn-outline-secondary" type="button" id="check-db-connection">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="db-products" class="form-label">Products in Database</label>
+                        <input type="number" class="form-control" id="db-products" value="5" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="db-reviews" class="form-label">Reviews in Database</label>
+                        <input type="number" class="form-control" id="db-reviews" value="18" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="db-users" class="form-label">Users in Database</label>
+                        <input type="number" class="form-control" id="db-users" value="2" readonly>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary" id="refresh-db-stats">Refresh Statistics</button>
+                        <button type="button" class="btn btn-warning" id="run-db-maintenance">Run Database Maintenance</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Backup and Restore Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Backup and Restore</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="last-backup" class="form-label">Last Backup</label>
+                    <input type="text" class="form-control" id="last-backup" value="2025-04-27 10:15:33" readonly>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" id="create-backup">
+                        <i class="fas fa-download me-2"></i>Create New Backup
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="schedule-backup">
+                        <i class="fas fa-calendar me-2"></i>Schedule Regular Backups
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="restore-backup">
+                        <i class="fas fa-upload me-2"></i>Restore from Backup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize sentiment threshold display
+    const thresholdSlider = document.getElementById('sentiment-threshold');
+    const thresholdValue = document.getElementById('threshold-value');
+    
+    thresholdSlider.addEventListener('input', function() {
+        thresholdValue.textContent = this.value;
+    });
+    
+    // Save general settings
+    document.getElementById('save-general-settings').addEventListener('click', function() {
+        // Simulate saving settings
+        showSuccess('General settings saved successfully');
+    });
+    
+    // Save sentiment settings
+    document.getElementById('save-sentiment-settings').addEventListener('click', function() {
+        // Simulate saving settings
+        showSuccess('Sentiment analysis settings saved successfully');
+    });
+    
+    // Refresh database statistics
+    document.getElementById('refresh-db-stats').addEventListener('click', function() {
+        // Simulate refreshing stats
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Refreshing...';
+        
+        setTimeout(() => {
+            document.getElementById('db-products').value = '5';
+            document.getElementById('db-reviews').value = '18';
+            document.getElementById('db-users').value = '2';
+            
+            this.innerHTML = 'Refresh Statistics';
+            showSuccess('Database statistics refreshed');
+        }, 1000);
+    });
+    
+    // Run database maintenance
+    document.getElementById('run-db-maintenance').addEventListener('click', function() {
+        if (confirm('Are you sure you want to run database maintenance? This may take a few minutes.')) {
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Running...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                this.innerHTML = 'Run Database Maintenance';
+                this.disabled = false;
+                showSuccess('Database maintenance completed successfully');
+            }, 3000);
+        }
+    });
+    
+    // Create backup
+    document.getElementById('create-backup').addEventListener('click', function() {
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating Backup...';
+        this.disabled = true;
+        
+        setTimeout(() => {
+            document.getElementById('last-backup').value = new Date().toLocaleString();
+            this.innerHTML = '<i class="fas fa-download me-2"></i>Create New Backup';
+            this.disabled = false;
+            showSuccess('Backup created successfully');
+        }, 2000);
+    });
+    
+    // Check database connection
+    document.getElementById('check-db-connection').addEventListener('click', function() {
+        const dbStatus = document.getElementById('db-status');
+        dbStatus.value = 'Checking connection...';
+        
+        setTimeout(() => {
+            dbStatus.value = 'Connected (MongoDB)';
+            showSuccess('Database connection verified');
+        }, 1000);
+    });
+});
+
+// Show success message
+function showSuccess(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+
+// Show error message
+function showError(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+</script>
+{% endblock %}

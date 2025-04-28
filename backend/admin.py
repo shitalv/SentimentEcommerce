@@ -7,7 +7,7 @@ This module contains functions and routes for the admin dashboard.
 import logging
 import json
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from functools import wraps
 from mongo_config import get_mongo_client
@@ -186,56 +186,176 @@ def admin_products():
 @admin_required
 def admin_reviews():
     """Get all reviews for admin moderation"""
-    try:
-        mongo_client, db = get_mongo_client()
-        if db is None:
-            return jsonify({"error": "Database connection failed"}), 500
-        
-        # Get all reviews with pagination
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 20))
-        skip = (page - 1) * per_page
-        
-        # Get reviews
-        reviews = list(db.reviews.find().sort("created_at", -1).skip(skip).limit(per_page))
-        
-        # Format review data
-        review_data = []
-        for review in reviews:
-            # Get product information
-            product_id = review.get("product_id")
-            product = db.products.find_one({"_id": product_id}) if product_id else None
+    # Check if this is a JSON API request or HTML page request
+    if request.headers.get('Accept') == 'application/json' or request.args.get('format') == 'json':
+        try:
+            mongo_client, db = get_mongo_client()
+            if db is None:
+                return jsonify({"error": "Database connection failed"}), 500
             
-            review_data.append({
-                "id": str(review.get("_id")),
-                "product_id": review.get("product_id"),
-                "product_name": product.get("name") if product else "Unknown Product",
-                "author": review.get("author"),
-                "text": review.get("text"),
-                "rating": review.get("rating"),
-                "sentiment_score": review.get("sentiment_score"),
-                "sentiment_class": review.get("sentiment_class"),
-                "date": review.get("date"),
-                "created_at": review.get("created_at")
+            # Get all reviews with pagination
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 20))
+            skip = (page - 1) * per_page
+            
+            # Get filter parameters
+            product_id = request.args.get('product_id')
+            sentiment = request.args.get('sentiment')
+            search_term = request.args.get('search')
+            
+            # Build query
+            query = {}
+            if product_id:
+                query["product_id"] = product_id
+            if sentiment:
+                query["sentiment_class"] = sentiment
+            if search_term:
+                query["$text"] = {"$search": search_term}
+            
+            # Get reviews
+            reviews = list(db.reviews.find(query).sort("created_at", -1).skip(skip).limit(per_page))
+            
+            # Format review data
+            review_data = []
+            for review in reviews:
+                # Get product information
+                product_id = review.get("product_id")
+                product = db.products.find_one({"_id": product_id}) if product_id else None
+                
+                review_data.append({
+                    "id": str(review.get("_id")),
+                    "product_id": review.get("product_id"),
+                    "product_name": product.get("name") if product else "Unknown Product",
+                    "author": review.get("author"),
+                    "text": review.get("text"),
+                    "rating": review.get("rating"),
+                    "sentiment_score": review.get("sentiment_score"),
+                    "sentiment_class": review.get("sentiment_class"),
+                    "date": review.get("date"),
+                    "created_at": review.get("created_at")
+                })
+            
+            # Get total count for pagination
+            total_reviews = db.reviews.count_documents(query)
+            total_pages = (total_reviews + per_page - 1) // per_page
+            
+            return jsonify({
+                "reviews": review_data,
+                "pagination": {
+                    "current_page": page,
+                    "per_page": per_page,
+                    "total_reviews": total_reviews,
+                    "total_pages": total_pages
+                }
             })
         
-        # Get total count for pagination
-        total_reviews = db.reviews.count_documents({})
-        total_pages = (total_reviews + per_page - 1) // per_page
+        except Exception as e:
+            logger.error(f"Error getting admin reviews: {str(e)}")
+            return jsonify({"error": f"Failed to get reviews: {str(e)}"}), 500
+    else:
+        # Render the HTML template for the admin reviews page
+        return render_template('admin/reviews.html')
+
+# User management for admin
+@admin_bp.route('/users')
+@login_required
+@admin_required
+def admin_users():
+    """Get all users for admin management"""
+    # Check if this is a JSON API request or HTML page request
+    if request.headers.get('Accept') == 'application/json' or request.args.get('format') == 'json':
+        try:
+            mongo_client, db = get_mongo_client()
+            if db is None:
+                return jsonify({"error": "Database connection failed"}), 500
+            
+            # Get all users with pagination
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 10))
+            skip = (page - 1) * per_page
+            
+            # Get filter parameters
+            search_term = request.args.get('search')
+            is_admin = request.args.get('is_admin')
+            
+            # Build query
+            query = {}
+            if search_term:
+                query["$or"] = [
+                    {"username": {"$regex": search_term, "$options": "i"}},
+                    {"email": {"$regex": search_term, "$options": "i"}}
+                ]
+            if is_admin is not None:
+                query["is_admin"] = is_admin.lower() == 'true'
+            
+            # Get users
+            users = list(db.users.find(query).skip(skip).limit(per_page))
+            
+            # Format user data (excluding password hash)
+            user_data = []
+            for user in users:
+                user_data.append({
+                    "id": str(user.get("_id")),
+                    "username": user.get("username"),
+                    "email": user.get("email"),
+                    "is_admin": user.get("is_admin", False),
+                    "created_at": user.get("created_at"),
+                    # Count saved products
+                    "saved_products_count": db.user_saved_products.count_documents({"user_id": str(user.get("_id"))})
+                })
+            
+            # Get total count for pagination
+            total_users = db.users.count_documents(query)
+            total_pages = (total_users + per_page - 1) // per_page
+            
+            return jsonify({
+                "users": user_data,
+                "pagination": {
+                    "current_page": page,
+                    "per_page": per_page,
+                    "total_users": total_users,
+                    "total_pages": total_pages
+                }
+            })
         
-        return jsonify({
-            "reviews": review_data,
-            "pagination": {
-                "current_page": page,
-                "per_page": per_page,
-                "total_reviews": total_reviews,
-                "total_pages": total_pages
-            }
-        })
-    
-    except Exception as e:
-        logger.error(f"Error getting admin reviews: {str(e)}")
-        return jsonify({"error": f"Failed to get reviews: {str(e)}"}), 500
+        except Exception as e:
+            logger.error(f"Error getting admin users: {str(e)}")
+            return jsonify({"error": f"Failed to get users: {str(e)}"}), 500
+    else:
+        # Render the HTML template for the admin users page
+        return render_template('admin/users.html')
+
+# Sentiment analysis reports for admin
+@admin_bp.route('/reports/sentiment')
+@login_required
+@admin_required
+def sentiment_reports():
+    """Sentiment analysis reports for admin"""
+    return render_template('admin/reports/sentiment.html')
+
+# Hype vs. Reality analysis for admin
+@admin_bp.route('/reports/hype-reality')
+@login_required
+@admin_required
+def hype_reality_reports():
+    """Hype vs. Reality analysis for admin"""
+    return render_template('admin/reports/hype_reality.html')
+
+# Product performance reports for admin
+@admin_bp.route('/reports/products')
+@login_required
+@admin_required
+def product_reports():
+    """Product performance reports for admin"""
+    return render_template('admin/reports/products.html')
+
+# Settings page for admin
+@admin_bp.route('/settings')
+@login_required
+@admin_required
+def admin_settings():
+    """Admin settings page"""
+    return render_template('admin/settings.html')
 
 # Add is_admin field to user model in the database
 def add_admin_field_to_users():
