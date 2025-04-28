@@ -53,6 +53,15 @@
 {% endblock %}
 
 {% block content %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <strong>Admin Access</strong> - You can log in as admin using these credentials:
+    <ul class="mb-0">
+        <li>Username: <code>admin</code></li>
+        <li>Password: <code>admin</code></li>
+    </ul>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Admin Dashboard</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
