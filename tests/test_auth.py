@@ -17,6 +17,7 @@ class AuthTestCase(unittest.TestCase):
         """Set up test client and app context"""
         self.app = create_app()
         self.app.config['TESTING'] = True
+        self.app.config['SERVER_NAME'] = 'localhost.localdomain'  # Prevent port conflicts
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()

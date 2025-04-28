@@ -11,6 +11,11 @@
                     <h4 class="mb-0">Login</h4>
                 </div>
                 <div class="card-body">
+                    {% if message %}
+                    <div class="alert alert-success" role="alert">
+                        {{ message }}
+                    </div>
+                    {% endif %}
                     <form id="login-form">
                         <div class="mb-3">
                             <label for="username" class="form-label">Username</label>

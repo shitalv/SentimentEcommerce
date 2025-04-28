@@ -125,9 +125,11 @@ def register_routes(app):
     @app.route('/<path:path>')
     def serve(path):
         """Serve React frontend static files"""
-        # Skip login route as it's handled separately
+        # Skip login and logout routes as they're handled separately
         if path == 'login':
             return login_page()
+        elif path == 'logout':
+            return logout_page()
             
         if path != "" and os.path.exists(os.path.join('frontend/public', path)):
             return send_from_directory('frontend/public', path)
