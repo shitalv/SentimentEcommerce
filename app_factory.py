@@ -82,7 +82,7 @@ def register_routes(app):
     backend_bp.route('/')(home)
     backend_bp.route('/auth/register', methods=['POST'])(register)
     backend_bp.route('/auth/login', methods=['POST'])(login)
-    backend_bp.route('/auth/logout', methods=['POST'])(logout_user)
+    backend_bp.route('/auth/logout', methods=['POST'])(logout)
     backend_bp.route('/auth/user', methods=['GET'])(get_user)
     backend_bp.route('/products', methods=['GET'])(api_get_products)
     backend_bp.route('/products/<product_id>', methods=['GET'])(api_get_product)
@@ -107,11 +107,18 @@ def register_routes(app):
     
     logger.info("Backend routes registered successfully")
     
-    # Login page route
+    # Login and logout page routes
     @app.route('/login')
     def login_page():
         """Serve login page"""
         return render_template('login.html')
+        
+    @app.route('/logout')
+    def logout_page():
+        """Handle GET logout requests from UI links"""
+        from flask_login import logout_user
+        logout_user()
+        return render_template('login.html', message="You have been logged out successfully.")
         
     # Serve React frontend
     @app.route('/', defaults={'path': ''})
