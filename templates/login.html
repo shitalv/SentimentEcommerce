@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | Sentiment E-commerce{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Login</h4>
+                </div>
+                <div class="card-body">
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div id="login-error" class="alert alert-danger d-none" role="alert">
+                            Invalid username or password
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                </div>
+                <div class="card-footer text-center">
+                    <p class="mb-0">Don't have an account? <a href="/register">Register</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    
+    loginForm.addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        // Hide any previous error
+        loginError.classList.add('d-none');
+        
+        // Send login request
+        fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                // Show error message
+                loginError.textContent = data.error;
+                loginError.classList.remove('d-none');
+            } else {
+                // Login successful, redirect
+                console.log('Login successful:', data);
+                
+                // Get redirect URL from query parameter or go to home
+                const urlParams = new URLSearchParams(window.location.search);
+                const nextUrl = urlParams.get('next') || '/';
+                
+                window.location.href = nextUrl;
+            }
+        })
+        .catch(error => {
+            console.error('Error logging in:', error);
+            loginError.textContent = 'An error occurred. Please try again.';
+            loginError.classList.remove('d-none');
+        });
+    });
+});
+</script>
+{% endblock %}

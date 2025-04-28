@@ -8,7 +8,7 @@ and all its dependencies to avoid circular imports.
 import os
 import logging
 import nltk
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, send_from_directory, render_template
 from flask_login import LoginManager
 from flask_cors import CORS
 from mongo_config import init_mongo, setup_db
@@ -36,7 +36,7 @@ def create_app():
     # Initialize Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'login'
+    login_manager.login_view = 'backend.login'
     
     # Initialize MongoDB
     with app.app_context():
@@ -107,11 +107,21 @@ def register_routes(app):
     
     logger.info("Backend routes registered successfully")
     
+    # Login page route
+    @app.route('/login')
+    def login_page():
+        """Serve login page"""
+        return render_template('login.html')
+        
     # Serve React frontend
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve(path):
         """Serve React frontend static files"""
+        # Skip login route as it's handled separately
+        if path == 'login':
+            return login_page()
+            
         if path != "" and os.path.exists(os.path.join('frontend/public', path)):
             return send_from_directory('frontend/public', path)
         else:
