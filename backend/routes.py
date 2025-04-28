@@ -50,7 +50,7 @@ def register():
         return jsonify({
             "message": "User registered successfully",
             "user": {
-                "id": user.id(),
+                "id": user.get_id(),
                 "username": user.username,
                 "email": user.email
             }

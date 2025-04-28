@@ -37,7 +37,7 @@ class User(UserMixin):
         """Check password against hash"""
         return check_password_hash(self.password_hash, password)
     
-    def id(self):
+    def get_id(self):
         """Getter for id property, required by Flask-Login"""
         return str(self._id)
     
@@ -84,7 +84,22 @@ class User(UserMixin):
         else:
             # Use real MongoDB
             try:
-                user_data = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+                # Check if user_id is a method or bound method (error handling)
+                if callable(user_id):
+                    print(f"Warning: user_id is callable: {user_id}")
+                    return None
+                
+                # Convert to string if needed
+                str_user_id = str(user_id)
+                
+                # Try to find by ObjectId
+                try:
+                    user_data = mongo.db.users.find_one({"_id": ObjectId(str_user_id)})
+                except Exception as e:
+                    print(f"Could not convert to ObjectId, trying string match: {str(e)}")
+                    # If we can't convert to ObjectId, try string ID match
+                    user_data = mongo.db.users.find_one({"_id": str_user_id})
+                
                 if not user_data:
                     return None
                 
