@@ -96,7 +96,6 @@ def login():
         logger.error(f"Error logging in: {str(e)}")
         return jsonify({"error": "An error occurred while logging in"}), 500
 
-@login_required
 def logout():
     """Log out the current user"""
     try:
