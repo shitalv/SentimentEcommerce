@@ -86,7 +86,7 @@ def login():
         return jsonify({
             "message": "Login successful",
             "user": {
-                "id": user.id(),
+                "id": user.get_id(),
                 "username": user.username,
                 "email": user.email
             }
@@ -110,9 +110,15 @@ def get_user():
     """Get the current user info"""
     try:
         if current_user.is_authenticated:
+            # Debug - check what current_user actually contains
+            logger.info(f"Current user: {current_user.__dict__}")
+            
+            # Use get_id method which is required by Flask-Login
+            user_id = current_user.get_id()
+            
             return jsonify({
                 "user": {
-                    "id": current_user.id(),
+                    "id": user_id,
                     "username": current_user.username,
                     "email": current_user.email
                 }
@@ -120,6 +126,22 @@ def get_user():
         return jsonify({"user": None})
     except Exception as e:
         logger.error(f"Error getting user: {str(e)}")
+        logger.error(f"Current user type: {type(current_user)}")
+        
+        # Try alternative approach
+        try:
+            if hasattr(current_user, '_id'):
+                user_id = str(current_user._id)
+                return jsonify({
+                    "user": {
+                        "id": user_id,
+                        "username": current_user.username,
+                        "email": current_user.email
+                    }
+                })
+        except Exception as inner_e:
+            logger.error(f"Alternative approach failed: {str(inner_e)}")
+        
         return jsonify({"error": "An error occurred while getting user info"}), 500
 
 def api_get_products():
