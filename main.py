@@ -7,7 +7,7 @@ This module sets up the application and serves as the entry point.
 import os
 import sys
 import logging
-from flask import redirect
+from flask import redirect, render_template
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -25,11 +25,17 @@ def reports_direct():
     """Direct access to reports without authentication"""
     return redirect('/reports')
     
-# Add a root redirect to the admin dashboard
+# Add a root redirect to our direct admin dashboard
 @app.route('/')
 def root_page():
-    """Root page redirects to admin dashboard"""
-    return redirect('/admin')
+    """Root page redirects to our ultra-simple admin dashboard"""
+    return redirect('/admin_dashboard_direct')
+    
+# Add a direct route to the admin dashboard that bypasses all authentication
+@app.route('/admin_dashboard_direct')
+def admin_dashboard_direct():
+    """Direct access to admin dashboard without template inheritance"""
+    return render_template('admin_dashboard_direct.html')
 
 if __name__ == "__main__":
     # Get the port from environment or use a different default
