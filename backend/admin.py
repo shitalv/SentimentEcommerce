@@ -6,8 +6,9 @@ This module contains functions and routes for the admin dashboard.
 
 import logging
 import json
+import os
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from functools import wraps
 from mongo_config import get_mongo_client
@@ -18,6 +19,36 @@ logger = logging.getLogger('admin')
 
 # Create blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+# Development mode flag - set to True to enable temporary admin access hack
+DEV_MODE = True
+
+# Secret admin access token - should be a complex value in production
+ADMIN_ACCESS_TOKEN = os.environ.get('ADMIN_ACCESS_TOKEN', 'admin123_temp_token')
+
+# Development admin access decorator - a safer alternative to removing authentication
+def dev_admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if we're in dev mode with the temporary hack enabled
+        if DEV_MODE:
+            # Check if admin access token is in the session or query parameters
+            if session.get('admin_access_token') == ADMIN_ACCESS_TOKEN or request.args.get('access_token') == ADMIN_ACCESS_TOKEN:
+                return f(*args, **kwargs)
+            # For direct access, add token to session for subsequent requests
+            if request.args.get('access_token') == ADMIN_ACCESS_TOKEN:
+                session['admin_access_token'] = ADMIN_ACCESS_TOKEN
+                return f(*args, **kwargs)
+        
+        # Fall back to standard login_required and admin check
+        if current_user.is_authenticated:
+            if getattr(current_user, 'is_admin', False):
+                return f(*args, **kwargs)
+            else:
+                flash('Admin access required')
+                return redirect(url_for('login_page'))
+        return redirect(url_for('login_page'))
+    return decorated_function
 
 # Admin-only decorator
 def admin_required(f):
