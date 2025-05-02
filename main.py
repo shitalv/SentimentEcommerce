@@ -38,9 +38,43 @@ def reports_direct():
 def root_page():
     """Root page - single source of truth for root URL handling
     
-    Simple redirect to admin dashboard for immediate access.
+    Serve a static emergency page with links to all important sections.
+    This ensures something is always visible at the root URL.
     """
-    return redirect('/admin/dashboard')
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Sentiment E-commerce Platform</title>
+        <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body { padding: 20px; }
+            .btn { margin: 5px; }
+            .container { max-width: 900px; margin: 0 auto; }
+            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Sentiment E-commerce Platform</h1>
+            <p>AI-powered product insights based on customer sentiment analysis</p>
+            
+            <div class="card bg-primary text-white mb-4 p-4">
+                <h2>Direct Navigation</h2>
+                <div class="grid">
+                    <a href="/admin/dashboard" class="btn btn-light">Admin Dashboard</a>
+                    <a href="/admin/products" class="btn btn-light">Products</a>
+                    <a href="/admin/reviews" class="btn btn-light">Reviews</a>
+                    <a href="/admin/reports/sentiment" class="btn btn-light">Sentiment Reports</a>
+                    <a href="/admin/reports/hype-reality" class="btn btn-light">Hype vs Reality</a>
+                    <a href="/emergency" class="btn btn-light">Emergency Navigation</a>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
 # Admin direct access route
 @app.route('/admin-portal')
@@ -102,8 +136,69 @@ def emergency_direct():
     """
 
 if __name__ == "__main__":
-    # Get the port from environment or use a different default
-    port = int(os.environ.get("FLASK_PORT", 5001))
-    
-    # Run the backend Flask app
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Check if we need to run a simple HTTP server for emergency access
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "emergency":
+        import http.server
+        import socketserver
+        
+        class EmergencyHandler(http.server.SimpleHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == '/' or self.path == '/index.html':
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/html')
+                    self.end_headers()
+                    
+                    emergency_html = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Emergency Access - Sentiment Platform</title>
+                        <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <style>
+                            body {{ padding: 20px; }}
+                            .btn {{ margin: 5px; }}
+                        </style>
+                    </head>
+                    <body class="bg-dark text-white">
+                        <div class="container">
+                            <div class="alert alert-danger">
+                                <h1>Emergency Access Mode</h1>
+                                <p>This is a direct access page bypassing the main application.</p>
+                            </div>
+                            
+                            <div class="card bg-secondary mb-4">
+                                <div class="card-body">
+                                    <h2>Direct Access Links</h2>
+                                    <div class="d-grid gap-2">
+                                        <a href="/admin/dashboard" class="btn btn-primary">Admin Dashboard</a>
+                                        <a href="/admin/reports/sentiment" class="btn btn-info">Sentiment Reports</a>
+                                        <a href="/admin/reports/hype-reality" class="btn btn-warning">Hype vs. Reality</a>
+                                        <a href="/admin/products" class="btn btn-success">Products</a>
+                                        <a href="/admin/reviews" class="btn btn-danger">Reviews</a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p>Server is running on port 8000</p>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    self.wfile.write(emergency_html.encode())
+                else:
+                    super().do_GET()
+        
+        # Run a simple HTTP server on port 8000 for emergency access
+        print("Starting emergency HTTP server on port 8000")
+        handler = EmergencyHandler
+        with socketserver.TCPServer(("0.0.0.0", 8000), handler) as httpd:
+            print("Emergency server started at http://0.0.0.0:8000")
+            httpd.serve_forever()
+    else:
+        # Get the port from environment or use a different default
+        port = int(os.environ.get("FLASK_PORT", 5001))
+        
+        # Run the backend Flask app
+        app.run(host="0.0.0.0", port=port, debug=True)
