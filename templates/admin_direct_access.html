@@ -12,203 +12,145 @@
         body {
             padding: 20px;
         }
-        .card {
-            margin-bottom: 20px;
-            transition: transform 0.2s;
+        .feature-card {
+            height: 100%;
+            transition: transform 0.3s;
+            border: none;
+            border-radius: 10px;
         }
-        .card:hover {
+        .feature-card:hover {
             transform: translateY(-5px);
         }
-        .btn-icon {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-10">
-                <div class="card shadow mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h3 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Admin Direct Access Portal</h3>
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold text-primary mb-3">Admin Direct Access Portal</h1>
+            <p class="lead">Access all admin features without authentication barriers</p>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> This portal provides direct access to all admin features, bypassing login requirements.
+            </div>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+            <!-- Dashboard Card -->
+            <div class="col">
+                <div class="card feature-card bg-primary-subtle h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon text-primary">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h3 class="card-title">Admin Dashboard</h3>
+                        <p class="card-text">View key performance metrics and sentiment analysis overview</p>
+                        <a href="/admin_dashboard_direct" class="btn btn-primary mt-3">
+                            <i class="fas fa-arrow-right me-2"></i>Access Dashboard
+                        </a>
                     </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Welcome, Admin!</strong> This page provides direct links to all admin functions.
-                            Use this page for quick navigation while we resolve the regular admin navigation issue.
+                </div>
+            </div>
+
+            <!-- Sentiment Reports Card -->
+            <div class="col">
+                <div class="card feature-card bg-success-subtle h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon text-success">
+                            <i class="fas fa-chart-pie"></i>
                         </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-primary">
-                                            <i class="fas fa-tachometer-alt"></i>
-                                        </div>
-                                        <h5 class="card-title">Dashboard</h5>
-                                        <p class="card-text text-muted">Main admin dashboard with overview stats</p>
-                                        <a href="/admin" class="btn btn-primary" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Open Dashboard
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-success">
-                                            <i class="fas fa-box"></i>
-                                        </div>
-                                        <h5 class="card-title">Products</h5>
-                                        <p class="card-text text-muted">Manage and view product information</p>
-                                        <a href="/admin/products" class="btn btn-success" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Manage Products
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-info">
-                                            <i class="fas fa-comment"></i>
-                                        </div>
-                                        <h5 class="card-title">Reviews</h5>
-                                        <p class="card-text text-muted">Moderate and analyze customer reviews</p>
-                                        <a href="/admin/reviews" class="btn btn-info" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Manage Reviews
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-warning">
-                                            <i class="fas fa-users"></i>
-                                        </div>
-                                        <h5 class="card-title">Users</h5>
-                                        <p class="card-text text-muted">Manage user accounts and permissions</p>
-                                        <a href="/admin/users" class="btn btn-warning" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Manage Users
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-danger">
-                                            <i class="fas fa-cog"></i>
-                                        </div>
-                                        <h5 class="card-title">Settings</h5>
-                                        <p class="card-text text-muted">Configure application settings</p>
-                                        <a href="/admin/settings" class="btn btn-danger" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Settings
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-secondary">
-                                            <i class="fas fa-exclamation-circle"></i>
-                                        </div>
-                                        <h5 class="card-title">Helper Page</h5>
-                                        <p class="card-text text-muted">View navigation helper without login</p>
-                                        <a href="/admin/nav-helper" class="btn btn-secondary" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>Nav Helper
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <h4 class="mb-3 border-bottom pb-2"><i class="fas fa-chart-bar me-2"></i>Reports Section</h4>
-                        
-                        <!-- Special Featured Report -->
-                        <div class="alert alert-success mb-4">
-                            <div class="d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="fas fa-star fa-2x"></i>
-                                </div>
-                                <div>
-                                    <h5 class="alert-heading mb-1">Featured Report: Sentiment Analysis</h5>
-                                    <p class="mb-2">Our advanced sentiment analysis reports are now available with real-time data visualization!</p>
-                                    <a href="/admin/reports/sentiment" class="btn btn-primary" target="_blank">
-                                        <i class="fas fa-chart-pie me-2"></i>View Sentiment Reports
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="card text-center h-100 bg-primary bg-opacity-10">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-primary">
-                                            <i class="fas fa-chart-bar"></i>
-                                        </div>
-                                        <h5 class="card-title">Sentiment Analysis</h5>
-                                        <p class="card-text text-muted">View sentiment analysis reports</p>
-                                        <a href="/admin/reports/sentiment" class="btn btn-primary" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>View Report
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-success">
-                                            <i class="fas fa-chart-line"></i>
-                                        </div>
-                                        <h5 class="card-title">Product Performance</h5>
-                                        <p class="card-text text-muted">View product performance analytics</p>
-                                        <a href="/admin/reports/products" class="btn btn-outline-success" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>View Report
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card text-center h-100">
-                                    <div class="card-body">
-                                        <div class="btn-icon text-info">
-                                            <i class="fas fa-balance-scale"></i>
-                                        </div>
-                                        <h5 class="card-title">Hype vs. Reality</h5>
-                                        <p class="card-text text-muted">Marketing claims vs. customer feedback</p>
-                                        <a href="/admin/reports/hype-reality" class="btn btn-outline-info" target="_blank">
-                                            <i class="fas fa-external-link-alt me-2"></i>View Report
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <h3 class="card-title">Sentiment Reports</h3>
+                        <p class="card-text">Detailed sentiment analysis reports and trends</p>
+                        <a href="/admin/reports/sentiment" class="btn btn-success mt-3">
+                            <i class="fas fa-arrow-right me-2"></i>View Reports
+                        </a>
                     </div>
-                    <div class="card-footer">
-                        <div class="d-flex justify-content-between">
-                            <a href="/" class="btn btn-secondary">
-                                <i class="fas fa-home me-2"></i>Back to Home
-                            </a>
-                            <a href="/logout" class="btn btn-danger">
-                                <i class="fas fa-sign-out-alt me-2"></i>Logout
-                            </a>
+                </div>
+            </div>
+
+            <!-- Hype vs Reality Card -->
+            <div class="col">
+                <div class="card feature-card bg-info-subtle h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon text-info">
+                            <i class="fas fa-balance-scale"></i>
                         </div>
+                        <h3 class="card-title">Hype vs Reality</h3>
+                        <p class="card-text">Compare product marketing claims against user sentiments</p>
+                        <a href="/admin/reports/hype-reality" class="btn btn-info mt-3">
+                            <i class="fas fa-arrow-right me-2"></i>Analyze Claims
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Card -->
+            <div class="col">
+                <div class="card feature-card bg-warning-subtle h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon text-warning">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <h3 class="card-title">Product Management</h3>
+                        <p class="card-text">Manage products and view performance metrics</p>
+                        <a href="/admin/products" class="btn btn-warning mt-3">
+                            <i class="fas fa-arrow-right me-2"></i>Manage Products
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews Card -->
+            <div class="col">
+                <div class="card feature-card bg-danger-subtle h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon text-danger">
+                            <i class="fas fa-comment"></i>
+                        </div>
+                        <h3 class="card-title">Review Moderation</h3>
+                        <p class="card-text">Manage and moderate user reviews</p>
+                        <a href="/admin/reviews" class="btn btn-danger mt-3">
+                            <i class="fas fa-arrow-right me-2"></i>Moderate Reviews
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management Card -->
+            <div class="col">
+                <div class="card feature-card bg-secondary-subtle h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon text-secondary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="card-title">User Management</h3>
+                        <p class="card-text">Manage user accounts and permissions</p>
+                        <a href="/admin/users" class="btn btn-secondary mt-3">
+                            <i class="fas fa-arrow-right me-2"></i>Manage Users
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Emergency Navigation -->
+        <div class="card mt-4 bg-dark-subtle">
+            <div class="card-body">
+                <h4 class="card-title"><i class="fas fa-life-ring me-2"></i>Emergency Navigation</h4>
+                <p class="card-text">If you're experiencing navigation issues, use these direct links:</p>
+                <a href="/emergency_navigation" class="btn btn-outline-secondary mt-2">
+                    <i class="fas fa-link me-2"></i>Emergency Navigation Page
+                </a>
+                <a href="/all_reports" class="btn btn-outline-info mt-2 ms-2">
+                    <i class="fas fa-chart-bar me-2"></i>All Reports Directory
+                </a>
+            </div>
+        </div>
     </div>
-    
-    <!-- Bootstrap JS -->
+
+    <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
