@@ -201,6 +201,16 @@ def register_routes(app):
     def navigation_page():
         """Special page for direct navigation links without authentication"""
         return render_template('navigation.html')
+        
+    @app.route('/reports')
+    def all_reports_page():
+        """Special page for accessing all reports without sidebar navigation"""
+        return render_template('all_reports.html')
+        
+    @app.route('/home')
+    def home_page():
+        """Homepage with reports navigation built in"""
+        return render_template('index.html')
 
 def register_error_handlers(app):
     """Register error handlers with the app"""

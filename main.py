@@ -7,6 +7,7 @@ This module sets up the application and serves as the entry point.
 import os
 import sys
 import logging
+from flask import redirect
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +18,12 @@ from app_factory import create_app
 
 # Create the application
 app = create_app()
+
+# Add a direct reports route at the application level
+@app.route('/reports-direct')
+def reports_direct():
+    """Direct access to reports without authentication"""
+    return redirect('/reports')
 
 if __name__ == "__main__":
     # Get the port from environment or use a different default
