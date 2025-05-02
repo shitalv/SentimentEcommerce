@@ -79,12 +79,14 @@ def admin_direct_access():
 
 # Admin dashboard home
 @admin_bp.route('/')
+@dev_admin_required
 def admin_dashboard():
-    """Admin dashboard homepage - simplified with no auth checks"""
+    """Admin dashboard homepage - with dev mode authentication"""
     return render_template('admin/dashboard.html')
 
 # Get admin analytics data
 @admin_bp.route('/analytics')
+@dev_admin_required
 def admin_analytics():
     """Get analytics data for admin dashboard"""
     try:

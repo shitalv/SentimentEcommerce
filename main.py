@@ -7,7 +7,7 @@ This module sets up the application and serves as the entry point.
 import os
 import sys
 import logging
-from flask import redirect, render_template
+from flask import redirect, render_template, Flask
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +18,9 @@ from app_factory import create_app
 
 # Create the application
 app = create_app()
+
+# Ensure app is also available as a global variable for gunicorn
+application = app
 
 # Add a direct reports route at the application level
 @app.route('/reports-direct')
