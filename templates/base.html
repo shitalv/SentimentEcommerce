@@ -67,7 +67,7 @@
         <div class="navbar-nav">
             <div class="nav-item text-nowrap d-flex">
                 {% if current_user.is_authenticated %}
-                    {% if current_user.is_admin %}
+                    {% if current_user.is_admin or is_admin %}
                     <a class="nav-link px-3" href="/admin">
                         <i class="fas fa-tachometer-alt me-1"></i>Admin
                     </a>

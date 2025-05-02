@@ -347,6 +347,196 @@ def sentiment_reports():
     """Sentiment analysis reports for admin"""
     return render_template('admin/reports/sentiment.html')
 
+# API endpoint for sentiment report data
+@admin_bp.route('/api/reports/sentiment')
+@login_required
+@admin_required
+def sentiment_report_data():
+    """Get sentiment report data for admin dashboard"""
+    try:
+        mongo_client, db = get_mongo_client()
+        if db is None:
+            return jsonify({"error": "Database connection failed"}), 500
+        
+        # Get time period from request
+        time_period = request.args.get('period', 'all')
+        
+        # Build query for the time period
+        query = {}
+        if time_period != 'all':
+            days = int(time_period)
+            date_threshold = datetime.now() - timedelta(days=days)
+            query["created_at"] = {"$gte": date_threshold}
+        
+        # Get all products matching the time period
+        products = list(db.products.find(query))
+        
+        # Calculate overall sentiment distribution
+        overall_sentiment = {
+            "positive": 0,
+            "neutral": 0,
+            "negative": 0
+        }
+        
+        product_data = []
+        category_sentiment = {}
+        
+        # Process each product
+        for product in products:
+            if not product:
+                continue
+                
+            # Get product reviews count
+            product_id = str(product.get("_id"))
+            reviews_count = db.reviews.count_documents({"product_id": product_id})
+            
+            # Get sentiment scores
+            pos_score = product.get("positive_score", 0)
+            neut_score = product.get("neutral_score", 0)
+            neg_score = product.get("negative_score", 0)
+            
+            # Skip products with no sentiment data
+            if pos_score == 0 and neut_score == 0 and neg_score == 0:
+                continue
+                
+            # Add to overall sentiment
+            overall_sentiment["positive"] += pos_score
+            overall_sentiment["neutral"] += neut_score
+            overall_sentiment["negative"] += neg_score
+            
+            # Add to product data
+            product_data.append({
+                "id": product_id,
+                "name": product.get("name", "Unknown Product"),
+                "category": product.get("category", "Uncategorized"),
+                "reviews_count": reviews_count,
+                "positive_score": pos_score,
+                "neutral_score": neut_score,
+                "negative_score": neg_score,
+                "overall_score": (pos_score * 5 + neut_score * 3 + neg_score * 1) / 
+                                 max(1, (pos_score + neut_score + neg_score))
+            })
+            
+            # Add to category sentiment
+            category = product.get("category", "Uncategorized")
+            if category not in category_sentiment:
+                category_sentiment[category] = {
+                    "positive": 0,
+                    "neutral": 0,
+                    "negative": 0,
+                    "count": 0
+                }
+            
+            category_sentiment[category]["positive"] += pos_score
+            category_sentiment[category]["neutral"] += neut_score
+            category_sentiment[category]["negative"] += neg_score
+            category_sentiment[category]["count"] += 1
+        
+        # Calculate average sentiment per category
+        categories_data = []
+        for category, data in category_sentiment.items():
+            if data["count"] > 0:
+                categories_data.append({
+                    "category": category,
+                    "positive": data["positive"] / data["count"],
+                    "neutral": data["neutral"] / data["count"],
+                    "negative": data["negative"] / data["count"]
+                })
+        
+        # Normalize overall sentiment to percentages
+        total_sentiment = sum(overall_sentiment.values())
+        if total_sentiment > 0:
+            overall_sentiment = {
+                k: round(v * 100 / total_sentiment, 1) 
+                for k, v in overall_sentiment.items()
+            }
+        
+        # Get trend data - create a time series of sentiment scores
+        trend_data = []
+        if time_period != 'all' and days <= 90:  # Only for reasonable time periods
+            for day in range(days):
+                date = datetime.now() - timedelta(days=days-day-1)
+                date_str = date.strftime('%Y-%m-%d')
+                
+                # Calculate sentiment for this day
+                day_query = {
+                    "created_at": {
+                        "$gte": datetime.combine(date, datetime.min.time()),
+                        "$lt": datetime.combine(date + timedelta(days=1), datetime.min.time())
+                    }
+                }
+                
+                day_reviews = list(db.reviews.find(day_query))
+                day_sentiment = {"positive": 0, "neutral": 0, "negative": 0, "total": 0}
+                
+                for review in day_reviews:
+                    sentiment_class = review.get("sentiment_class", "neutral")
+                    day_sentiment[sentiment_class] += 1
+                    day_sentiment["total"] += 1
+                
+                # Normalize to percentages
+                if day_sentiment["total"] > 0:
+                    trend_data.append({
+                        "date": date_str,
+                        "positive": round(day_sentiment["positive"] * 100 / day_sentiment["total"], 1),
+                        "neutral": round(day_sentiment["neutral"] * 100 / day_sentiment["total"], 1),
+                        "negative": round(day_sentiment["negative"] * 100 / day_sentiment["total"], 1)
+                    })
+                else:
+                    trend_data.append({
+                        "date": date_str,
+                        "positive": 0,
+                        "neutral": 0,
+                        "negative": 0
+                    })
+        
+        # Get keyword data
+        positive_keywords = {}
+        negative_keywords = {}
+        
+        # Find all sentiment keywords in reviews
+        reviews = list(db.reviews.find({}, {"sentiment_keywords": 1, "sentiment_class": 1}))
+        for review in reviews:
+            keywords = review.get("sentiment_keywords")
+            sentiment = review.get("sentiment_class")
+            
+            # Skip if no keywords or sentiment
+            if not keywords or not sentiment:
+                continue
+            
+            # Convert from JSON string if needed
+            if isinstance(keywords, str):
+                try:
+                    keywords = json.loads(keywords)
+                except:
+                    keywords = []
+            
+            # Add keywords to appropriate list
+            keywords_dict = positive_keywords if sentiment == "positive" else negative_keywords
+            for keyword in keywords:
+                if keyword in keywords_dict:
+                    keywords_dict[keyword] += 1
+                else:
+                    keywords_dict[keyword] = 1
+        
+        # Sort and limit keywords
+        top_positive = sorted(positive_keywords.items(), key=lambda x: x[1], reverse=True)[:50]
+        top_negative = sorted(negative_keywords.items(), key=lambda x: x[1], reverse=True)[:50]
+        
+        # Return all data
+        return jsonify({
+            "overall_sentiment": overall_sentiment,
+            "trend_data": trend_data,
+            "categories": categories_data,
+            "products": product_data,
+            "positive_keywords": [{"text": k, "weight": v} for k, v in top_positive],
+            "negative_keywords": [{"text": k, "weight": v} for k, v in top_negative]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting sentiment report data: {str(e)}")
+        return jsonify({"error": f"Failed to get sentiment report data: {str(e)}"}), 500
+
 # Hype vs. Reality analysis for admin
 @admin_bp.route('/reports/hype-reality')
 @login_required

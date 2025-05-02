@@ -58,6 +58,13 @@ def create_app():
     # Setup error handlers
     register_error_handlers(app)
     
+    # Make is_admin available in all templates
+    @app.context_processor
+    def inject_admin_status():
+        if current_user.is_authenticated:
+            return {'is_admin': getattr(current_user, 'is_admin', False)}
+        return {'is_admin': False}
+    
     return app
 
 def register_routes(app):
