@@ -211,6 +211,11 @@ def register_routes(app):
     def home_page():
         """Homepage with reports navigation built in"""
         return render_template('index.html')
+        
+    @app.route('/emergency')
+    def emergency_nav():
+        """Emergency navigation page with direct links to all sections"""
+        return render_template('emergency_navigation.html')
 
 def register_error_handlers(app):
     """Register error handlers with the app"""
