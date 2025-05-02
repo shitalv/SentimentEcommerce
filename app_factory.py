@@ -120,6 +120,19 @@ def register_routes(app):
         logout_user()
         return render_template('login.html', message="You have been logged out successfully.")
         
+    # API endpoints should be exposed before handling React routes
+    @app.route('/api/products')
+    def api_products():
+        """API endpoint for products"""
+        from backend.routes import get_products
+        return get_products()
+        
+    @app.route('/api/reviews')
+    def api_reviews():
+        """API endpoint for reviews"""
+        from backend.routes import get_reviews
+        return get_reviews()
+
     # Explicitly define routes that should NOT be handled by React frontend
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
@@ -136,6 +149,9 @@ def register_routes(app):
             return logout_page()
         elif path == 'navigation':
             return navigation_page()
+        # Skip API endpoints
+        elif path.startswith('api/'):
+            return app.view_functions.get(request.endpoint)()
             
         # If it's a static file, serve it
         if path != "" and os.path.exists(os.path.join('frontend/public', path)):
