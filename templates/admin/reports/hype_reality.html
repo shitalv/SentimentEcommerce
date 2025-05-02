@@ -240,6 +240,50 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Show error message
+function showError(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+
+// Show success message
+function showSuccess(message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Insert at the top of the content area
+    const contentArea = document.querySelector('main');
+    contentArea.insertBefore(alertDiv, contentArea.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => alertDiv.remove(), 150);
+    }, 5000);
+}
+
 // Analyze selected product
 function analyzeProduct() {
     const productId = document.getElementById('product-selector').value;
@@ -272,6 +316,78 @@ function analyzeProduct() {
         // Scroll to analysis results
         document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
     }, 1500);
+}
+
+// Update the UI with analysis results
+function updateAnalysisUI(productData) {
+    // Update product info
+    document.getElementById('product-name').textContent = productData.name;
+    document.getElementById('product-description').textContent = productData.description;
+    
+    // Update review highlights
+    const reviewHighlightsEl = document.getElementById('review-highlights');
+    let highlightsHtml = '';
+    
+    productData.reviewHighlights.forEach(highlight => {
+        let badgeClass = 'bg-secondary';
+        if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
+        if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+        
+        highlightsHtml += `
+            <div class="mb-2">
+                <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
+                "${highlight.text}"
+            </div>
+        `;
+    });
+    
+    reviewHighlightsEl.innerHTML = highlightsHtml;
+    
+    // Update counts
+    let confirmedCount = 0;
+    let contradictedCount = 0;
+    let unmentionedCount = 0;
+    
+    productData.claims.forEach(claim => {
+        if (claim.status === 'confirmed') confirmedCount++;
+        if (claim.status === 'contradicted') contradictedCount++;
+        if (claim.status === 'unmentioned') unmentionedCount++;
+    });
+    
+    document.getElementById('confirmed-count').textContent = confirmedCount;
+    document.getElementById('contradicted-count').textContent = contradictedCount;
+    document.getElementById('unmentioned-count').textContent = unmentionedCount;
+    
+    // Update reality score
+    const realityScoreBar = document.getElementById('reality-score-bar');
+    realityScoreBar.style.width = `${productData.realityScore}%`;
+    realityScoreBar.textContent = `${productData.realityScore}%`;
+    realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
+    
+    // Update detailed analysis table
+    const tableBody = document.getElementById('analysis-table-body');
+    let tableHtml = '';
+    
+    productData.claims.forEach(claim => {
+        let statusBadge = '';
+        if (claim.status === 'confirmed') {
+            statusBadge = '<span class="badge bg-success">Confirmed</span>';
+        } else if (claim.status === 'contradicted') {
+            statusBadge = '<span class="badge bg-danger">Contradicted</span>';
+        } else {
+            statusBadge = '<span class="badge bg-secondary">Unmentioned</span>';
+        }
+        
+        tableHtml += `
+            <tr>
+                <td>${claim.text}</td>
+                <td>${statusBadge}</td>
+                <td>${claim.feedback}</td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = tableHtml;
 }
 
 // Get sample product data for demo

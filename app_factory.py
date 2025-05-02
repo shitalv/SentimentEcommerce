@@ -8,8 +8,8 @@ and all its dependencies to avoid circular imports.
 import os
 import logging
 import nltk
-from flask import Flask, jsonify, send_from_directory, render_template
-from flask_login import LoginManager
+from flask import Flask, jsonify, send_from_directory, render_template, request, redirect
+from flask_login import LoginManager, current_user
 from flask_cors import CORS
 from mongo_config import init_mongo, setup_db
 
@@ -127,11 +127,29 @@ def register_routes(app):
         from backend.routes import get_products
         return get_products()
         
+    @app.route('/api/products/<product_id>')
+    def api_product_detail(product_id):
+        """API endpoint for product detail"""
+        from backend.routes import get_product
+        return get_product(product_id)
+    
+    @app.route('/api/products/<product_id>/recommendations')
+    def api_product_recommendations(product_id):
+        """API endpoint for product recommendations"""
+        from backend.routes import get_product_recommendations
+        return get_product_recommendations(product_id)
+        
     @app.route('/api/reviews')
     def api_reviews():
         """API endpoint for reviews"""
         from backend.routes import get_reviews
         return get_reviews()
+        
+    @app.route('/api/reviews/product/<product_id>')
+    def api_product_reviews(product_id):
+        """API endpoint for product reviews"""
+        from backend.routes import get_product_reviews
+        return get_product_reviews(product_id)
 
     # Explicitly define routes that should NOT be handled by React frontend
     @app.route('/', defaults={'path': ''})
