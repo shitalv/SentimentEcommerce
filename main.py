@@ -23,8 +23,9 @@ app = create_app()
 from mongo_config import get_mongo_client
 
 # Ensure app is also available as a global variable for gunicorn
-# This is what Replit expects for deployment
+# This is what Replit expects for deployment - BOTH names are needed
 application = app
+# Make sure both 'app' and 'application' are defined for compatibility
 
 # Add a direct reports route at the application level
 @app.route('/reports-direct')
