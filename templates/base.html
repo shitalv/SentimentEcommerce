@@ -63,7 +63,17 @@
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="w-100"></div>
+        <div class="w-100">
+            <!-- Main Navigation Links (visible to all) -->
+            <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0 justify-content-center">
+                <li><a href="/" class="nav-link px-3 text-white">Home</a></li>
+                <li><a href="/reports" class="nav-link px-3 text-white">Reports</a></li>
+                {% if current_user.is_authenticated and (current_user.is_admin or is_admin) %}
+                <li><a href="/admin/reports/sentiment" class="nav-link px-3 text-white">Sentiment</a></li>
+                <li><a href="/admin/reports/hype-reality" class="nav-link px-3 text-white">Hype vs Reality</a></li>
+                {% endif %}
+            </ul>
+        </div>
         <div class="navbar-nav">
             <div class="nav-item text-nowrap d-flex">
                 {% if current_user.is_authenticated %}
@@ -71,11 +81,8 @@
                     <a class="nav-link px-3" href="/admin">
                         <i class="fas fa-tachometer-alt me-1"></i>Admin
                     </a>
-                    <a class="nav-link px-3" href="/admin/reports/sentiment">
-                        <i class="fas fa-chart-bar me-1"></i>Reports
-                    </a>
                     <a class="nav-link px-3" href="/admin/direct-access">
-                        <i class="fas fa-th-large me-1"></i>Admin Portal
+                        <i class="fas fa-th-large me-1"></i>Portal
                     </a>
                     {% endif %}
                     <a class="nav-link px-3" href="/logout">Sign out</a>
