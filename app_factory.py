@@ -125,8 +125,11 @@ def register_routes(app):
     @app.route('/<path:path>')
     def serve(path):
         """Serve React frontend static files"""
-        # Skip login and logout routes as they're handled separately
-        if path == 'login':
+        # Skip admin, login and logout routes as they're handled separately
+        if path.startswith('admin'):
+            # Let the admin blueprint handle these routes
+            return app.view_functions.get(request.endpoint)()
+        elif path == 'login':
             return login_page()
         elif path == 'logout':
             return logout_page()
