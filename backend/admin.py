@@ -349,10 +349,15 @@ def sentiment_reports():
 
 # API endpoint for sentiment report data
 @admin_bp.route('/api/reports/sentiment')
-@login_required
-@admin_required
 def sentiment_report_data():
     """Get sentiment report data for admin dashboard"""
+    # Check if user is authenticated and is admin
+    if not current_user.is_authenticated:
+        return jsonify({"error": "Unauthorized", "message": "Please log in"}), 401
+    
+    # Check if user is admin
+    if not getattr(current_user, 'is_admin', False):
+        return jsonify({"error": "Forbidden", "message": "Admin access required"}), 403
     try:
         mongo_client, db = get_mongo_client()
         if db is None:
