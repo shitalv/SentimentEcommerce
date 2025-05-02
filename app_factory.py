@@ -145,6 +145,11 @@ def register_routes(app):
             "database": "mongodb",
             "message": "Sentiment E-commerce API is running"
         })
+        
+    @app.route('/navigation')
+    def navigation_page():
+        """Special page for direct navigation links without authentication"""
+        return render_template('navigation.html')
 
 def register_error_handlers(app):
     """Register error handlers with the app"""

@@ -34,6 +34,12 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Special helper route - no auth required
+@admin_bp.route('/nav-helper')
+def admin_nav_helper():
+    """Admin navigation helper page without authentication"""
+    return render_template('admin/nav_helper.html')
+
 # Admin dashboard home
 @admin_bp.route('/')
 @login_required
