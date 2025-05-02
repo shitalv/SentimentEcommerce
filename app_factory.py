@@ -165,6 +165,8 @@ def register_routes(app):
         """Serve React frontend static files"""
         # Skip routes that should be handled by Flask
         if path.startswith('admin/'):
+            # Log the path for debugging
+            logger.info(f"Admin path: {path}")
             return redirect(f'/admin/{path[6:]}')
         elif path == 'admin':
             return redirect('/admin/')
