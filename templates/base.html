@@ -66,11 +66,25 @@
         <div class="w-100">
             <!-- Main Navigation Links (visible to all) -->
             <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 mb-md-0 justify-content-center">
-                <li><a href="/" class="nav-link px-3 text-white">Home</a></li>
-                <li><a href="/reports" class="nav-link px-3 text-white">Reports</a></li>
+                <li><a href="/admin" class="nav-link px-3 text-white"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+                
+                <!-- Reports Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link px-3 text-white dropdown-toggle" href="#" role="button" id="reportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-chart-bar me-1"></i>Reports
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+                        <li><a class="dropdown-item" href="/admin/reports/sentiment"><i class="fas fa-chart-pie me-2"></i>Sentiment Analysis</a></li>
+                        <li><a class="dropdown-item" href="/admin/reports/hype-reality"><i class="fas fa-balance-scale me-2"></i>Hype vs Reality</a></li>
+                        <li><a class="dropdown-item" href="/admin/reports/products"><i class="fas fa-chart-line me-2"></i>Product Performance</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Admin Sections -->
                 {% if current_user.is_authenticated and (current_user.is_admin or is_admin) %}
-                <li><a href="/admin/reports/sentiment" class="nav-link px-3 text-white">Sentiment</a></li>
-                <li><a href="/admin/reports/hype-reality" class="nav-link px-3 text-white">Hype vs Reality</a></li>
+                <li><a href="/admin/products" class="nav-link px-3 text-white"><i class="fas fa-box me-1"></i>Products</a></li>
+                <li><a href="/admin/reviews" class="nav-link px-3 text-white"><i class="fas fa-comment me-1"></i>Reviews</a></li>
+                <li><a href="/admin/users" class="nav-link px-3 text-white"><i class="fas fa-users me-1"></i>Users</a></li>
                 {% endif %}
             </ul>
         </div>
@@ -78,12 +92,21 @@
             <div class="nav-item text-nowrap d-flex">
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin or is_admin %}
-                    <a class="nav-link px-3" href="/admin">
-                        <i class="fas fa-tachometer-alt me-1"></i>Admin
-                    </a>
-                    <a class="nav-link px-3" href="/admin/direct-access">
-                        <i class="fas fa-th-large me-1"></i>Portal
-                    </a>
+                    <div class="dropdown">
+                        <a class="nav-link px-3 dropdown-toggle" href="#" role="button" id="adminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-tachometer-alt me-1"></i>Admin
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                            <li><a class="dropdown-item" href="/admin"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                            <li><a class="dropdown-item" href="/admin/products"><i class="fas fa-box me-2"></i>Products</a></li>
+                            <li><a class="dropdown-item" href="/admin/reviews"><i class="fas fa-comment me-2"></i>Reviews</a></li>
+                            <li><a class="dropdown-item" href="/admin/users"><i class="fas fa-users me-2"></i>Users</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/admin/reports/sentiment"><i class="fas fa-chart-bar me-2"></i>Sentiment Analysis</a></li>
+                            <li><a class="dropdown-item" href="/admin/reports/hype-reality"><i class="fas fa-balance-scale me-2"></i>Hype vs Reality</a></li>
+                            <li><a class="dropdown-item" href="/admin/reports/products"><i class="fas fa-chart-line me-2"></i>Product Performance</a></li>
+                        </ul>
+                    </div>
                     {% endif %}
                     <a class="nav-link px-3" href="/logout">Sign out</a>
                 {% else %}

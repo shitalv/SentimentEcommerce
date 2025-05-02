@@ -25,11 +25,11 @@ def reports_direct():
     """Direct access to reports without authentication"""
     return redirect('/reports')
     
-# Add a root redirect to our emergency navigation
+# Add a root redirect to the admin dashboard
 @app.route('/')
 def root_page():
-    """Root page redirects to emergency navigation during navigation issues"""
-    return redirect('/emergency')
+    """Root page redirects to admin dashboard"""
+    return redirect('/admin')
 
 if __name__ == "__main__":
     # Get the port from environment or use a different default
