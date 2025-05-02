@@ -120,22 +120,27 @@ def register_routes(app):
         logout_user()
         return render_template('login.html', message="You have been logged out successfully.")
         
-    # Serve React frontend
+    # Explicitly define routes that should NOT be handled by React frontend
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve(path):
         """Serve React frontend static files"""
-        # Skip admin, login and logout routes as they're handled separately
-        if path.startswith('admin'):
-            # Let the admin blueprint handle these routes
-            return app.view_functions.get(request.endpoint)()
+        # Skip routes that should be handled by Flask
+        if path.startswith('admin/'):
+            return redirect(f'/admin/{path[6:]}')
+        elif path == 'admin':
+            return redirect('/admin/')
         elif path == 'login':
             return login_page()
         elif path == 'logout':
             return logout_page()
+        elif path == 'navigation':
+            return navigation_page()
             
+        # If it's a static file, serve it
         if path != "" and os.path.exists(os.path.join('frontend/public', path)):
             return send_from_directory('frontend/public', path)
+        # Otherwise serve the React app
         else:
             return send_from_directory('frontend/public', 'index.html')
     
