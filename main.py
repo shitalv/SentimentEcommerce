@@ -29,7 +29,13 @@ def reports_direct():
 @app.route('/')
 def root_page():
     """Root page redirects to our ultra-simple admin dashboard"""
-    return redirect('/admin_dashboard_direct')
+    return redirect('/admin/direct')
+
+# Admin direct access
+@app.route('/admin-portal')
+def admin_portal():
+    """Direct access to admin portal without authentication"""
+    return redirect('/admin/direct')
     
 # Add a direct route to the admin dashboard that bypasses all authentication
 @app.route('/admin_dashboard_direct')
