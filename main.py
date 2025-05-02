@@ -38,88 +38,9 @@ def reports_direct():
 def root_page():
     """Root page - single source of truth for root URL handling
     
-    Shows a simple dashboard interface with basic stats and navigation.
-    No authentication required for this page since it's the landing page.
+    Simple redirect to admin dashboard for immediate access.
     """
-    # Get database connection for stats
-    mongo_client, db = None, None
-    try:
-        mongo_client, db = get_mongo_client()
-    except Exception as e:
-        logger.error(f"Database connection error: {e}")
-    
-    # Get counts with fallbacks if database unavailable
-    product_count = db.products.count_documents({}) if db else 0
-    review_count = db.reviews.count_documents({}) if db else 0
-    user_count = db.users.count_documents({}) if db else 0
-    
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Sentiment E-commerce Platform</title>
-        <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
-        <style>
-            body {{ padding: 20px; }}
-            .stat-card {{ padding: 20px; margin-bottom: 20px; border-radius: 5px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Sentiment E-commerce Platform</h1>
-            <p>AI-powered product insights based on customer sentiment analysis</p>
-            
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card bg-primary text-white mb-4">
-                        <div class="card-body text-center">
-                            <h3>Products</h3>
-                            <h2>{product_count}</h2>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-success text-white mb-4">
-                        <div class="card-body text-center">
-                            <h3>Reviews</h3>
-                            <h2>{review_count}</h2>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-info text-white mb-4">
-                        <div class="card-body text-center">
-                            <h3>Users</h3>
-                            <h2>{user_count}</h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h3>Navigation</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="list-group">
-                                <a href="/admin/dashboard" class="list-group-item list-group-item-action">Admin Dashboard</a>
-                                <a href="/admin/products" class="list-group-item list-group-item-action">Products</a>
-                                <a href="/admin/reviews" class="list-group-item list-group-item-action">Reviews</a>
-                                <a href="/admin/users" class="list-group-item list-group-item-action">Users</a>
-                                <a href="/admin/reports/sentiment" class="list-group-item list-group-item-action">Sentiment Reports</a>
-                                <a href="/admin/reports/hype-reality" class="list-group-item list-group-item-action">Hype vs Reality</a>
-                                <a href="/emergency" class="list-group-item list-group-item-action">Emergency Navigation</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    return redirect('/admin/dashboard')
 
 # Admin direct access route
 @app.route('/admin-portal')

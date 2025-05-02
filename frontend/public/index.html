@@ -8,211 +8,84 @@
     <!-- Bootstrap CSS from Replit Theme -->
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
-    <!-- Bootstrap JavaScript Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
-    
-    <title>SentimentShop - Product Insights</title>
+    <title>Sentiment E-commerce Platform</title>
     <style>
       body {
-        padding-top: 20px;
-        padding-bottom: 40px;
+        padding: 20px;
       }
-      .container {
-        max-width: 1200px;
+      .card {
+        margin-bottom: 20px;
       }
-      .alerts-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1050;
-        width: 350px;
+      .link-card {
+        transition: transform 0.2s;
+      }
+      .link-card:hover {
+        transform: translateY(-5px);
       }
     </style>
   </head>
-  <body>
-    <div class="container">
-      <header class="mb-4">
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark rounded">
-          <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-              <i class="fas fa-chart-line me-2"></i>
-              SentimentShop
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-              <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                  <a class="nav-link active" href="#products">Products</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#analyzer">Sentiment Analyzer</a>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </nav>
+  <body class="bg-dark text-light">
+    <div class="container py-4">
+      <header class="pb-3 mb-4 border-bottom">
+        <h1 class="display-5 fw-bold">Sentiment E-commerce Platform</h1>
+        <p class="lead">AI-powered product insights based on customer sentiment analysis</p>
       </header>
-      
-      <!-- Alerts Container -->
-      <div class="alerts-container"></div>
-      
+
       <div class="row mb-4">
-        <div class="col-md-8">
+        <div class="col-lg-6">
           <div class="card bg-primary text-white">
             <div class="card-body">
-              <h2 class="card-title">AI-Powered Product Sentiment Analysis</h2>
-              <p class="card-text">Explore products with our AI sentiment analysis tool that analyzes customer reviews to provide honest insights about products.</p>
-              <p class="card-text"><small>Make informed purchasing decisions based on real customer experiences.</small></p>
+              <h2>Discover Product Insights</h2>
+              <p>Our AI analyzes thousands of customer reviews to give you honest insights about products.</p>
+              <a href="/admin/dashboard" class="btn btn-light">Go to Dashboard</a>
             </div>
           </div>
         </div>
-        <div class="col-md-4">
-          <div id="auth-forms">
-            <div class="card mb-3">
-              <div class="card-header bg-dark text-white">
-                <h5 class="mb-0">User Account</h5>
-              </div>
-              <div class="card-body">
-                <div id="login-container">
-                  <h6>Login</h6>
-                  <form id="login-form">
-                    <div class="mb-3">
-                      <label for="login-username" class="form-label">Username</label>
-                      <input type="text" class="form-control" id="login-username" required>
-                    </div>
-                    <div class="mb-3">
-                      <label for="login-password" class="form-label">Password</label>
-                      <input type="password" class="form-control" id="login-password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Login</button>
-                    <a href="#" id="switch-to-register" class="btn btn-link">Create an account</a>
-                  </form>
-                </div>
-                
-                <div id="register-container" style="display: none;">
-                  <h6>Register</h6>
-                  <form id="register-form">
-                    <div class="mb-3">
-                      <label for="register-username" class="form-label">Username</label>
-                      <input type="text" class="form-control" id="register-username" required>
-                    </div>
-                    <div class="mb-3">
-                      <label for="register-email" class="form-label">Email</label>
-                      <input type="email" class="form-control" id="register-email" required>
-                    </div>
-                    <div class="mb-3">
-                      <label for="register-password" class="form-label">Password</label>
-                      <input type="password" class="form-control" id="register-password" required minlength="6">
-                    </div>
-                    <button type="submit" class="btn btn-success">Register</button>
-                    <a href="#" id="switch-to-login" class="btn btn-link">Already have an account?</a>
-                  </form>
-                </div>
+        <div class="col-lg-6">
+          <div class="card bg-secondary text-white">
+            <div class="card-body">
+              <h2>Emergency Navigation</h2>
+              <p>Direct access to all important sections of the application.</p>
+              <div class="d-grid gap-2">
+                <a href="/admin/dashboard" class="btn btn-light mb-2">Admin Dashboard</a>
+                <a href="/admin/products" class="btn btn-light mb-2">Products Management</a>
+                <a href="/admin/reviews" class="btn btn-light mb-2">Reviews Management</a>
+                <a href="/admin/reports/sentiment" class="btn btn-light mb-2">Sentiment Reports</a>
               </div>
             </div>
-          </div>
-          
-          <div id="user-info" style="display: none;">
-            <!-- User info will be shown here when logged in -->
           </div>
         </div>
       </div>
-      
-      <section id="products" class="mb-5">
-        <div class="card">
-          <div class="card-header bg-dark text-white">
-            <h3 class="mb-0">Products with Sentiment Analysis</h3>
-          </div>
-          <div class="card-body">
-            <!-- Search and Filter Bar -->
-            <div class="mb-4">
-              <div class="card bg-light">
-                <div class="card-body">
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label for="product-search" class="form-label">Search Products</label>
-                      <input type="text" class="form-control" id="product-search" placeholder="Search by product name or keywords...">
-                    </div>
-                    <div class="col-md-3">
-                      <label for="category-filter" class="form-label">Category</label>
-                      <select class="form-select" id="category-filter">
-                        <option value="">All Categories</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Wearables">Wearables</option>
-                        <option value="Home">Home</option>
-                        <option value="Appliances">Appliances</option>
-                      </select>
-                    </div>
-                    <div class="col-md-3">
-                      <label for="sentiment-filter" class="form-label">Sentiment</label>
-                      <select class="form-select" id="sentiment-filter">
-                        <option value="">All Sentiments</option>
-                        <option value="positive">Positive</option>
-                        <option value="neutral">Neutral</option>
-                        <option value="negative">Negative</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="row mt-3">
-                    <div class="col-12">
-                      <button id="apply-filters" class="btn btn-primary">Apply Filters</button>
-                      <button id="reset-filters" class="btn btn-outline-secondary ms-2">Reset</button>
-                    </div>
-                  </div>
+
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card bg-dark border border-light">
+            <div class="card-body">
+              <h2 class="card-title">Direct Access Links</h2>
+              <div class="row">
+                <div class="col-md-4">
+                  <a href="/admin_dashboard_direct" class="card bg-info text-white mb-3 p-3 text-decoration-none link-card">
+                    <h3>Direct Dashboard</h3>
+                    <p>Access dashboard without templates</p>
+                  </a>
+                </div>
+                <div class="col-md-4">
+                  <a href="/emergency" class="card bg-warning text-dark mb-3 p-3 text-decoration-none link-card">
+                    <h3>Emergency Panel</h3>
+                    <p>Simplified emergency navigation</p>
+                  </a>
+                </div>
+                <div class="col-md-4">
+                  <a href="/api/status" class="card bg-success text-white mb-3 p-3 text-decoration-none link-card">
+                    <h3>API Status</h3>
+                    <p>Check if API is working</p>
+                  </a>
                 </div>
               </div>
             </div>
-            
-            <div id="product-list">
-              <div class="d-flex justify-content-center">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            </div>
-            
-            <div id="product-detail" style="display: none;">
-              <!-- Product detail will be shown here -->
-            </div>
           </div>
         </div>
-      </section>
-      
-      <section id="analyzer" class="mb-5">
-        <div class="card">
-          <div class="card-header bg-dark text-white">
-            <h3 class="mb-0">Sentiment Analyzer Tool</h3>
-          </div>
-          <div class="card-body">
-            <p class="lead">Try our sentiment analysis tool on any text to see how our AI evaluates the sentiment.</p>
-            
-            <form id="analyze-form">
-              <div class="mb-3">
-                <label for="analyze-text" class="form-label">Enter text to analyze:</label>
-                <textarea class="form-control" id="analyze-text" rows="4" required placeholder="Example: These headphones are amazing! The sound quality is exceptional and the noise cancellation works perfectly."></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary">Analyze Sentiment</button>
-            </form>
-            
-            <div id="analysis-result">
-              <!-- Analysis result will be shown here -->
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      <footer class="text-center text-muted mb-4">
-        <hr>
-        <p>SentimentShop - E-commerce with AI-Powered Review Analysis</p>
-      </footer>
+      </div>
     </div>
-    
-    <!-- Main JavaScript -->
-    <script src="/demo.js"></script>
   </body>
 </html>
