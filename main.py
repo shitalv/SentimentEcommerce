@@ -7,7 +7,7 @@ This module sets up the application and serves as the entry point.
 import os
 import sys
 import logging
-from flask import redirect, render_template, Flask
+from flask import redirect, render_template, Flask, jsonify
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +19,11 @@ from app_factory import create_app
 # Create the application
 app = create_app()
 
+# Import MongoDB connection here to avoid circular imports
+from mongo_config import get_mongo_client
+
 # Ensure app is also available as a global variable for gunicorn
+# This is what Replit expects for deployment
 application = app
 
 # Add a direct reports route at the application level
@@ -27,20 +31,23 @@ application = app
 def reports_direct():
     """Direct access to reports without authentication"""
     return redirect('/reports')
-    
-# Add a root redirect to our ultra-simple admin dashboard
+
+# Root URL handler - ensure there's something at the root path
 @app.route('/')
 def root_page():
-    """Root page shows a simple admin interface directly"""
-    # Get database connection
+    """Root page - single source of truth for root URL handling
+    
+    Shows a simple dashboard interface with basic stats and navigation.
+    No authentication required for this page since it's the landing page.
+    """
+    # Get database connection for stats
     mongo_client, db = None, None
     try:
-        from mongo_config import get_mongo_client
         mongo_client, db = get_mongo_client()
     except Exception as e:
-        print(f"Database connection error: {e}")
+        logger.error(f"Database connection error: {e}")
     
-    # Get counts
+    # Get counts with fallbacks if database unavailable
     product_count = db.products.count_documents({}) if db else 0
     review_count = db.reviews.count_documents({}) if db else 0
     user_count = db.users.count_documents({}) if db else 0
@@ -49,7 +56,7 @@ def root_page():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Admin Dashboard</title>
+        <title>Sentiment E-commerce Platform</title>
         <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
         <style>
             body {{ padding: 20px; }}
@@ -58,8 +65,8 @@ def root_page():
     </head>
     <body>
         <div class="container">
-            <h1>Admin Dashboard</h1>
-            <p>This is a direct admin interface embedded in the main application.</p>
+            <h1>Sentiment E-commerce Platform</h1>
+            <p>AI-powered product insights based on customer sentiment analysis</p>
             
             <div class="row mt-4">
                 <div class="col-md-4">
@@ -92,16 +99,17 @@ def root_page():
                 <div class="col-12">
                     <div class="card mb-4">
                         <div class="card-header">
-                            <h3>Admin Navigation</h3>
+                            <h3>Navigation</h3>
                         </div>
                         <div class="card-body">
                             <div class="list-group">
-                                <a href="/emergency_navigation" class="list-group-item list-group-item-action">Emergency Navigation</a>
+                                <a href="/admin/dashboard" class="list-group-item list-group-item-action">Admin Dashboard</a>
                                 <a href="/admin/products" class="list-group-item list-group-item-action">Products</a>
                                 <a href="/admin/reviews" class="list-group-item list-group-item-action">Reviews</a>
                                 <a href="/admin/users" class="list-group-item list-group-item-action">Users</a>
                                 <a href="/admin/reports/sentiment" class="list-group-item list-group-item-action">Sentiment Reports</a>
                                 <a href="/admin/reports/hype-reality" class="list-group-item list-group-item-action">Hype vs Reality</a>
+                                <a href="/emergency" class="list-group-item list-group-item-action">Emergency Navigation</a>
                             </div>
                         </div>
                     </div>
@@ -112,17 +120,23 @@ def root_page():
     </html>
     """
 
-# Admin direct access
+# Admin direct access route
 @app.route('/admin-portal')
 def admin_portal():
     """Direct access to admin portal without authentication"""
-    return redirect('/')
+    return redirect('/admin/dashboard')
     
-# Add a direct route to the admin dashboard that bypasses all authentication
+# Direct route to admin dashboard that doesn't require template inheritance
 @app.route('/admin_dashboard_direct')
 def admin_dashboard_direct():
     """Direct access to admin dashboard without template inheritance"""
-    return render_template('admin_dashboard_direct.html')
+    try:
+        return render_template('admin_dashboard_direct.html')
+    except Exception as e:
+        logger.error(f"Template error: {e}")
+        return redirect('/')
+
+# API status is already defined in app_factory.py, no need to redefine it here
 
 # Emergency navigation with direct HTML (no templates)
 @app.route('/emergency')
@@ -132,7 +146,7 @@ def emergency_direct():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Emergency Admin Navigation</title>
+        <title>Emergency Navigation</title>
         <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
         <style>
             body { padding: 20px; }
@@ -144,21 +158,19 @@ def emergency_direct():
             <div class="row">
                 <div class="col-12">
                     <div class="alert alert-warning">
-                        <h1>Emergency Admin Navigation</h1>
-                        <p>This is a direct emergency access page with no dependencies on templates or authentication.</p>
+                        <h1>Emergency Navigation</h1>
+                        <p>Direct access links to all important sections of the application.</p>
                     </div>
                     
                     <div class="list-group mt-4">
-                        <a href="/" class="list-group-item list-group-item-action list-group-item-primary">Home/Dashboard</a>
+                        <a href="/" class="list-group-item list-group-item-action list-group-item-primary">Home</a>
+                        <a href="/admin/dashboard" class="list-group-item list-group-item-action">Admin Dashboard</a>
                         <a href="/admin/products" class="list-group-item list-group-item-action">Products Management</a>
                         <a href="/admin/reviews" class="list-group-item list-group-item-action">Reviews Management</a>
                         <a href="/admin/users" class="list-group-item list-group-item-action">Users Management</a>
                         <a href="/admin/reports/sentiment" class="list-group-item list-group-item-action">Sentiment Reports</a>
                         <a href="/admin/reports/hype-reality" class="list-group-item list-group-item-action">Hype vs Reality</a>
-                        <a href="/admin/dashboard" class="list-group-item list-group-item-action">Admin Dashboard</a>
-                        <a href="/admin/direct" class="list-group-item list-group-item-action">Admin Direct Access</a>
-                        <a href="/admin-portal" class="list-group-item list-group-item-action">Admin Portal</a>
-                        <a href="/admin_dashboard_direct" class="list-group-item list-group-item-action">Admin Dashboard Direct</a>
+                        <a href="/api/status" class="list-group-item list-group-item-action">API Status Check</a>
                     </div>
                 </div>
             </div>
@@ -166,10 +178,6 @@ def emergency_direct():
     </body>
     </html>
     """
-
-# Make this clear for gunicorn in deployment
-# This is the WSGI entry point that Replit uses for deployment
-application = app
 
 if __name__ == "__main__":
     # Get the port from environment or use a different default
