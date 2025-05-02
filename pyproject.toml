@@ -24,4 +24,5 @@ dependencies = [
     "flask-pymongo==2.3.0",
     "anthropic>=0.50.0",
     "requests>=2.32.3",
+    "flask-testing>=0.8.1",
 ]

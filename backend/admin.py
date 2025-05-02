@@ -40,6 +40,14 @@ def admin_nav_helper():
     """Admin navigation helper page without authentication"""
     return render_template('admin/nav_helper.html')
 
+# Direct access portal to all admin functions
+@admin_bp.route('/direct-access')
+@login_required
+@admin_required
+def admin_direct_access():
+    """Direct access portal to all admin pages"""
+    return render_template('admin_direct_access.html')
+
 # Admin dashboard home
 @admin_bp.route('/')
 @login_required
