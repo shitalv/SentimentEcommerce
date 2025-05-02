@@ -50,16 +50,12 @@ def admin_direct_access():
 
 # Admin dashboard home
 @admin_bp.route('/')
-@login_required
-@admin_required
 def admin_dashboard():
-    """Admin dashboard homepage"""
+    """Admin dashboard homepage - simplified with no auth checks"""
     return render_template('admin/dashboard.html')
 
 # Get admin analytics data
 @admin_bp.route('/analytics')
-@login_required
-@admin_required
 def admin_analytics():
     """Get analytics data for admin dashboard"""
     try:
@@ -341,8 +337,6 @@ def admin_users():
 
 # Sentiment analysis reports for admin
 @admin_bp.route('/reports/sentiment')
-@login_required
-@admin_required
 def sentiment_reports():
     """Sentiment analysis reports for admin"""
     return render_template('admin/reports/sentiment.html')
