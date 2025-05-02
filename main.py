@@ -167,6 +167,10 @@ def emergency_direct():
     </html>
     """
 
+# Make this clear for gunicorn in deployment
+# This is the WSGI entry point that Replit uses for deployment
+application = app
+
 if __name__ == "__main__":
     # Get the port from environment or use a different default
     port = int(os.environ.get("FLASK_PORT", 5001))

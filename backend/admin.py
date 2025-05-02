@@ -166,6 +166,7 @@ def admin_analytics():
 
 # Get all products for admin
 @admin_bp.route('/products')
+@dev_admin_required
 def admin_products():
     """Get all products for admin management"""
     # Check if this is a JSON API request or HTML page request
@@ -221,6 +222,7 @@ def admin_products():
 
 # Get all reviews for admin
 @admin_bp.route('/reviews')
+@dev_admin_required
 def admin_reviews():
     """Get all reviews for admin moderation"""
     # Check if this is a JSON API request or HTML page request
@@ -295,6 +297,7 @@ def admin_reviews():
 
 # User management for admin
 @admin_bp.route('/users')
+@dev_admin_required
 def admin_users():
     """Get all users for admin management"""
     # Check if this is a JSON API request or HTML page request
@@ -362,12 +365,14 @@ def admin_users():
 
 # Sentiment analysis reports for admin
 @admin_bp.route('/reports/sentiment')
+@dev_admin_required
 def sentiment_reports():
     """Sentiment analysis reports for admin"""
     return render_template('admin/reports/sentiment.html')
 
 # API endpoint for sentiment report data
 @admin_bp.route('/api/reports/sentiment')
+@dev_admin_required
 def sentiment_report_data():
     """Get sentiment report data for admin dashboard"""
     try:
@@ -556,18 +561,21 @@ def sentiment_report_data():
 
 # Hype vs. Reality analysis for admin
 @admin_bp.route('/reports/hype-reality')
+@dev_admin_required
 def hype_reality_reports():
     """Hype vs. Reality analysis for admin"""
     return render_template('admin/reports/hype_reality.html')
 
 # Product performance reports for admin
 @admin_bp.route('/reports/products')
+@dev_admin_required
 def product_reports():
     """Product performance reports for admin"""
     return render_template('admin/reports/products.html')
 
 # Settings page for admin
 @admin_bp.route('/settings')
+@dev_admin_required
 def admin_settings():
     """Admin settings page"""
     return render_template('admin/settings.html')
