@@ -41,7 +41,7 @@ def admin_nav_helper():
     return render_template('admin/nav_helper.html')
 
 # Direct access portal to all admin functions
-@admin_bp.route('/direct-access')
+@admin_bp.route('/direct')
 def admin_direct_access():
     """Direct access portal to all admin pages"""
     return render_template('admin_direct_access.html')
