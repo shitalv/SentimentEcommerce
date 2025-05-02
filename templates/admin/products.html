@@ -229,7 +229,7 @@ function loadProducts(page) {
     const category = document.getElementById('category-filter').value;
     
     // Build query string
-    let queryParams = `page=${page}&per_page=${productsPerPage}`;
+    let queryParams = `page=${page}&per_page=${productsPerPage}&format=json`;
     if (searchTerm) {
         queryParams += `&search=${encodeURIComponent(searchTerm)}`;
     }
@@ -238,20 +238,47 @@ function loadProducts(page) {
     }
     
     // Fetch products
-    fetch(`/admin/products?${queryParams}`)
+    fetch(`/admin/products?${queryParams}`, {
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
         .then(response => {
             if (!response.ok) {
+                // If redirected to login page or other error
+                if (response.status === 302 || response.redirected) {
+                    window.location.reload(); // Reload to trigger login redirect
+                    return;
+                }
                 throw new Error('Failed to load products');
             }
             return response.json();
         })
         .then(data => {
+            if (!data) return; // Skip if no data (happens during redirect)
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
             renderProductsTable(data.products);
             updatePagination(data.pagination);
         })
         .catch(error => {
             console.error('Error loading products:', error);
             showError('Failed to load products. Please try again.');
+            
+            // Display instructions if it might be an auth issue
+            const tableBody = document.getElementById('products-table');
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center">
+                <div class="alert alert-warning">
+                    <strong>Authentication error!</strong> 
+                    <p>You may need to <a href="/login">login</a> as an admin user first.</p>
+                    <p>If you're already logged in, ensure your account has admin privileges.</p>
+                </div>
+            </td></tr>`;
         });
 }
 
