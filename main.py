@@ -37,7 +37,7 @@ def reports_direct():
 @app.route('/')
 def root_page():
     """Root page - single source of truth for root URL handling
-    
+
     Serve a static emergency page with links to all important sections.
     This ensures something is always visible at the root URL.
     """
@@ -59,7 +59,7 @@ def root_page():
         <div class="container">
             <h1>Sentiment E-commerce Platform</h1>
             <p>AI-powered product insights based on customer sentiment analysis</p>
-            
+
             <div class="card bg-primary text-white mb-4 p-4">
                 <h2>Direct Navigation</h2>
                 <div class="grid">
@@ -86,7 +86,7 @@ def admin_portal():
 def admin_dashboard_redirect():
     """Ensure /admin/dashboard redirects to /admin for consistency"""
     return redirect('/admin')
-    
+
 # Direct route to admin dashboard that doesn't require template inheritance
 @app.route('/admin_dashboard_direct')
 def admin_dashboard_direct():
@@ -122,7 +122,7 @@ def emergency_direct():
                         <h1>Emergency Navigation</h1>
                         <p>Direct access links to all important sections of the application.</p>
                     </div>
-                    
+
                     <div class="list-group mt-4">
                         <a href="/" class="list-group-item list-group-item-action list-group-item-primary">Home</a>
                         <a href="/admin" class="list-group-item list-group-item-action">Admin Dashboard</a>
@@ -146,14 +146,14 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "emergency":
         import http.server
         import socketserver
-        
+
         class EmergencyHandler(http.server.SimpleHTTPRequestHandler):
             def do_GET(self):
                 if self.path == '/' or self.path == '/index.html':
                     self.send_response(200)
                     self.send_header('Content-type', 'text/html')
                     self.end_headers()
-                    
+
                     emergency_html = f"""
                     <!DOCTYPE html>
                     <html>
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                                 <h1>Emergency Access Mode</h1>
                                 <p>This is a direct access page bypassing the main application.</p>
                             </div>
-                            
+
                             <div class="card bg-secondary mb-4">
                                 <div class="card-body">
                                     <h2>Direct Access Links</h2>
@@ -185,7 +185,7 @@ if __name__ == "__main__":
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <p>Server is running on port 8000</p>
                         </div>
                     </body>
@@ -194,7 +194,7 @@ if __name__ == "__main__":
                     self.wfile.write(emergency_html.encode())
                 else:
                     super().do_GET()
-        
+
         # Run a simple HTTP server on port 8000 for emergency access
         print("Starting emergency HTTP server on port 8000")
         handler = EmergencyHandler
@@ -204,6 +204,6 @@ if __name__ == "__main__":
     else:
         # Always use port 5000 for consistency with Gunicorn
         port = int(os.environ.get("PORT", 5000))
-        
+
         # Run the backend Flask app
         app.run(host="0.0.0.0", port=port, debug=True)
