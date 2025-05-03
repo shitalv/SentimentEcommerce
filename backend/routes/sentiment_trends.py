@@ -8,10 +8,10 @@ import logging
 from flask import Blueprint, jsonify, request
 from backend.sentiment_trends import aggregate_sentiment_by_time, get_sentiment_trend_metrics
 
-sentiment_trends_bp = Blueprint('sentiment_trends', __name__)
-logger = logging.getLogger(__name__)
+# Create blueprint
+sentiment_trends_bp = Blueprint('sentiment_trends', __name__, url_prefix='/api/sentiment-trends')
 
-@sentiment_trends_bp.route('/api/sentiment-trends', methods=['GET'])
+@sentiment_trends_bp.route('', methods=['GET'])
 def get_sentiment_trends():
     """Get sentiment trends data aggregated over time"""
     try:
@@ -20,43 +20,49 @@ def get_sentiment_trends():
         time_range = request.args.get('time_range', 'month')
         limit = int(request.args.get('limit', 12))
         
-        # Validate time_range parameter
+        # Validate time_range
         if time_range not in ['day', 'week', 'month']:
-            return jsonify({"error": "Invalid time_range parameter. Use 'day', 'week', or 'month'."}), 400
+            time_range = 'month'  # Default to month if invalid
         
-        # Get sentiment trend data
-        trend_data = aggregate_sentiment_by_time(
-            product_id=product_id,
-            time_range=time_range,
-            limit=limit
-        )
+        # Get trend data
+        trend_data = aggregate_sentiment_by_time(product_id, time_range, limit)
         
-        # Get overall trend metrics
-        trend_metrics = get_sentiment_trend_metrics(product_id=product_id)
+        # Get trend metrics
+        trend_metrics = get_sentiment_trend_metrics(product_id)
         
+        # Return data
         return jsonify({
-            "trend_data": trend_data,
-            "trend_metrics": trend_metrics,
-            "time_range": time_range,
-            "product_id": product_id
+            'status': 'success',
+            'trend_data': trend_data,
+            'trend_metrics': trend_metrics
         })
-        
     except Exception as e:
-        logger.error(f"Error retrieving sentiment trends: {e}")
-        return jsonify({"error": str(e)}), 500
+        logging.error(f"Error in get_sentiment_trends route: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve sentiment trend data',
+            'error': str(e)
+        }), 500
 
-@sentiment_trends_bp.route('/api/sentiment-trends/metrics', methods=['GET'])
+@sentiment_trends_bp.route('/metrics', methods=['GET'])
 def get_trends_metrics():
     """Get sentiment trend metrics for dashboard display"""
     try:
-        # Get query parameters
+        # Get product_id parameter
         product_id = request.args.get('product_id')
         
-        # Get trend metrics
-        metrics = get_sentiment_trend_metrics(product_id=product_id)
+        # Get metrics
+        metrics = get_sentiment_trend_metrics(product_id)
         
-        return jsonify(metrics)
-        
+        # Return metrics
+        return jsonify({
+            'status': 'success',
+            'metrics': metrics
+        })
     except Exception as e:
-        logger.error(f"Error retrieving sentiment trend metrics: {e}")
-        return jsonify({"error": str(e)}), 500
+        logging.error(f"Error in get_trends_metrics route: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to retrieve sentiment trend metrics',
+            'error': str(e)
+        }), 500
