@@ -25,4 +25,5 @@ dependencies = [
     "anthropic>=0.50.0",
     "requests>=2.32.3",
     "flask-testing>=0.8.1",
+    "numpy>=2.2.4",
 ]

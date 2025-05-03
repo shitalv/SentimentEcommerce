@@ -120,6 +120,14 @@ def register_routes(app):
     except Exception as e:
         logger.error(f"Failed to register direct reports routes: {str(e)}")
         
+    # Register the sentiment trends routes
+    try:
+        from backend.routes.sentiment_trends import sentiment_trends_bp
+        app.register_blueprint(sentiment_trends_bp)
+        logger.info("Sentiment trends routes registered successfully")
+    except Exception as e:
+        logger.error(f"Failed to register direct reports routes: {str(e)}")
+        
     logger.info("Backend routes registered successfully")
     
     # Login and logout page routes
