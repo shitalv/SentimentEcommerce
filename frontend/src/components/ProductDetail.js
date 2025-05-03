@@ -1,5 +1,6 @@
 import React from 'react';
 import SentimentChart from './SentimentChart';
+import SentimentTrendChart from './SentimentTrendChart';
 import HypeVsRealityCheck from './HypeVsRealityCheck';
 import ProductRecommendations from './ProductRecommendations';
 
@@ -165,6 +166,9 @@ function ProductDetail({ product, onBack }) {
 
           {/* Hype vs Reality Check */}
           {product.hype_vs_reality && <HypeVsRealityCheck hypeData={product.hype_vs_reality} />}
+          
+          {/* Time-Based Sentiment Trends */}
+          <SentimentTrendChart productId={product.id} />
           
           {/* Product Recommendations */}
           <ProductRecommendations productId={product.id} onSelectProduct={onBack} />
