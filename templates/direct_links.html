@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Access Links - Sentiment Platform</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        body { padding: 20px; }
+        .btn { margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="alert alert-primary">
+            <h1>Direct Access Links</h1>
+            <p>Use these links to access reports directly without authentication</p>
+        </div>
+        
+        <div class="alert alert-success">
+            <h4><i class="fas fa-check-circle me-2"></i>No Login Required</h4>
+            <p>These links bypass authentication and allow direct access to reports even when login functionality has issues. 
+            Use these when you need to view reports but can't or don't want to log in.</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Reports</h2>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="/direct/sentiment" class="btn btn-lg btn-success">Sentiment Analysis Report (Direct)</a>
+                <a href="/direct/hype-reality" class="btn btn-lg btn-success">Hype vs. Reality Check (Direct)</a>
+                <a href="/direct/products" class="btn btn-lg btn-success">Products Report (Direct)</a>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>API Endpoints (For Testing)</h2>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="/direct/api/sentiment-data" class="btn btn-lg btn-info" target="_blank">Sentiment Data API (Direct)</a>
+                <a href="/api/status" class="btn btn-lg btn-info" target="_blank">API Status</a>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Navigation</h2>
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="/" class="btn btn-lg btn-primary">Home</a>
+                <a href="/admin" class="btn btn-lg btn-secondary">Admin Dashboard (Requires Login)</a>
+                <a href="/emergency" class="btn btn-lg btn-warning">Emergency Navigation</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

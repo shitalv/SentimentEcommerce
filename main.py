@@ -42,12 +42,17 @@ def reports_direct():
 @app.route('/sentiment-direct')
 def sentiment_direct():
     """Direct access to sentiment reports without authentication"""
-    return redirect('/admin/reports/sentiment', code=307)  # Use 307 to preserve HTTP method
+    return redirect('/direct/sentiment', code=307)  # Use 307 to preserve HTTP method
 
 @app.route('/hype-reality-direct')
 def hype_reality_direct():
     """Direct access to hype-reality reports without authentication"""
-    return redirect('/admin/reports/hype-reality', code=307)  # Use 307 to preserve HTTP method
+    return redirect('/direct/hype-reality', code=307)  # Use 307 to preserve HTTP method
+
+@app.route('/direct-links')
+def direct_links_page():
+    """Page with direct links to reports without authentication"""
+    return render_template('direct_links.html')
 
 # Root URL handler - ensure there's something at the root path
 @app.route('/')
