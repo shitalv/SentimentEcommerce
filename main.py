@@ -61,6 +61,7 @@ def root_page():
     Serve a static emergency page with links to all important sections.
     This ensures something is always visible at the root URL.
     """
+    logger.info("ROOT PAGE ACCESSED - Serving static HTML")
     return """
     <!DOCTYPE html>
     <html>
