@@ -297,25 +297,48 @@ function analyzeProduct() {
     document.getElementById('analyze-button').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
     document.getElementById('analyze-button').disabled = true;
     
-    // In a real app, fetch actual data from the backend
-    // For demo, use hardcoded data based on product ID
-    setTimeout(() => {
-        // Reset button state
-        document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
-        document.getElementById('analyze-button').disabled = false;
-        
-        // Show analysis card
-        document.getElementById('analysis-card').style.display = 'block';
-        
-        // Load product data
-        const productData = getProductData(productId);
-        
-        // Update UI with analysis results
-        updateAnalysisUI(productData);
-        
-        // Scroll to analysis results
-        document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
-    }, 1500);
+    // Fetch actual data from our API endpoint
+    fetch(`/admin/api/reports/hype-reality/${productId}`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // User is not logged in
+                    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                    throw new Error('Please log in to view this data');
+                } else if (response.status === 403) {
+                    // User is not an admin
+                    throw new Error('Admin access required to view this data');
+                } else if (response.status === 404) {
+                    throw new Error('Product not found');
+                } else {
+                    throw new Error('Failed to load analysis data');
+                }
+            }
+            return response.json();
+        })
+        .then(productData => {
+            // Reset button state
+            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+            document.getElementById('analyze-button').disabled = false;
+            
+            // Show analysis card
+            document.getElementById('analysis-card').style.display = 'block';
+            
+            // Update UI with analysis results
+            updateAnalysisUI(productData);
+            
+            // Scroll to analysis results
+            document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
+        })
+        .catch(error => {
+            // Reset button state
+            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+            document.getElementById('analyze-button').disabled = false;
+            
+            // Show error
+            showError(error.message || 'Failed to analyze product. Please try again.');
+            console.error('Error analyzing product:', error);
+        });
 }
 
 // Update the UI with analysis results
@@ -343,16 +366,23 @@ function updateAnalysisUI(productData) {
     
     reviewHighlightsEl.innerHTML = highlightsHtml;
     
-    // Update counts
-    let confirmedCount = 0;
-    let contradictedCount = 0;
-    let unmentionedCount = 0;
+    // Update counts - use API provided counts if available, otherwise calculate
+    let confirmedCount = productData.confirmed_count || 0;
+    let contradictedCount = productData.contradicted_count || 0;
+    let unmentionedCount = productData.unmentioned_count || 0;
     
-    productData.claims.forEach(claim => {
-        if (claim.status === 'confirmed') confirmedCount++;
-        if (claim.status === 'contradicted') contradictedCount++;
-        if (claim.status === 'unmentioned') unmentionedCount++;
-    });
+    // If counts are not provided by the API, calculate them from claims
+    if (!productData.confirmed_count && productData.claims) {
+        confirmedCount = 0;
+        contradictedCount = 0;
+        unmentionedCount = 0;
+        
+        productData.claims.forEach(claim => {
+            if (claim.status === 'confirmed') confirmedCount++;
+            if (claim.status === 'contradicted') contradictedCount++;
+            if (claim.status === 'unmentioned') unmentionedCount++;
+        });
+    }
     
     document.getElementById('confirmed-count').textContent = confirmedCount;
     document.getElementById('contradicted-count').textContent = contradictedCount;
@@ -382,7 +412,16 @@ function updateAnalysisUI(productData) {
             <tr>
                 <td>${claim.text}</td>
                 <td>${statusBadge}</td>
-                <td>${claim.feedback}</td>
+                <td>
+                    ${claim.feedback && claim.feedback.length > 0 ? 
+                      claim.feedback.map(fb => 
+                        `<div class="mb-1">
+                           <span class="badge ${fb.sentiment === 'positive' ? 'bg-success' : fb.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary'} me-1">${fb.sentiment}</span>
+                           "${fb.text}"
+                         </div>`
+                      ).join('') : 
+                      '<span class="text-muted">No customer feedback available</span>'}
+                </td>
             </tr>
         `;
     });
