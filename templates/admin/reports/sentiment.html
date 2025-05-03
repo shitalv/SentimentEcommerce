@@ -230,13 +230,19 @@ function loadSentimentData(timePeriod) {
     // Show loading message
     document.getElementById('sentiment-table-body').innerHTML = '<tr><td>Loading data...</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
     
-    // Show loading indicators for charts
-    document.getElementById('sentiment-pie-chart').innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-    document.getElementById('sentiment-trend-chart').innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-    document.getElementById('category-sentiment-chart').innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    // Show loading indicators for keyword clouds
+    document.getElementById('positive-keywords-cloud').innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border text-success" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+    document.getElementById('negative-keywords-cloud').innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border text-danger" role="status"><span class="visually-hidden">Loading...</span></div></div>';
     
-    // Fetch real sentiment data from API
-    fetch(`/admin/api/reports/sentiment?period=${timePeriod}`)
+    // Try first the direct endpoint (no auth required)
+    fetch(`/direct/api/sentiment-data?period=${timePeriod}`)
+        .then(response => {
+            if (!response.ok) {
+                // If direct API fails, try the authenticated one
+                return fetch(`/admin/api/reports/sentiment?period=${timePeriod}`);
+            }
+            return response;
+        })
         .then(response => {
             if (response.status === 401) {
                 // User is not logged in
@@ -256,10 +262,7 @@ function loadSentimentData(timePeriod) {
                 throw new Error(data.message || data.error);
             }
             
-            // Clear loading indicators
-            document.getElementById('sentiment-pie-chart').innerHTML = '';
-            document.getElementById('sentiment-trend-chart').innerHTML = '';
-            document.getElementById('category-sentiment-chart').innerHTML = '';
+            // Ready to draw charts with real data
             
             // Draw charts with real data
             drawSentimentPieChart(data.overall_sentiment);
