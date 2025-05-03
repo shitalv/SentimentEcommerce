@@ -22,16 +22,32 @@ app = create_app()
 # Import MongoDB connection here to avoid circular imports
 from mongo_config import get_mongo_client
 
+# Import the direct reports blueprint
+from direct_reports import direct_reports
+
+# Register the direct reports blueprint
+app.register_blueprint(direct_reports)
+
 # Ensure app is also available as a global variable for gunicorn
 # This is what Replit expects for deployment - BOTH names are needed
 application = app
 # Make sure both 'app' and 'application' are defined for compatibility
 
-# Add a direct reports route at the application level
+# Add direct routes to access reports without authentication
 @app.route('/reports-direct')
 def reports_direct():
     """Direct access to reports without authentication"""
     return redirect('/reports')
+
+@app.route('/sentiment-direct')
+def sentiment_direct():
+    """Direct access to sentiment reports without authentication"""
+    return redirect('/admin/reports/sentiment', code=307)  # Use 307 to preserve HTTP method
+
+@app.route('/hype-reality-direct')
+def hype_reality_direct():
+    """Direct access to hype-reality reports without authentication"""
+    return redirect('/admin/reports/hype-reality', code=307)  # Use 307 to preserve HTTP method
 
 # Root URL handler - ensure there's something at the root path
 @app.route('/')
@@ -69,6 +85,13 @@ def root_page():
                     <a href="/admin/reports/sentiment" class="btn btn-light">Sentiment Reports</a>
                     <a href="/admin/reports/hype-reality" class="btn btn-light">Hype vs Reality</a>
                     <a href="/emergency" class="btn btn-light">Emergency Navigation</a>
+                </div>
+                
+                <h3 class="mt-4 text-light">Direct Access Links (No Login Required)</h3>
+                <div class="grid">
+                    <a href="/direct/sentiment" class="btn btn-success">Sentiment Reports (Direct)</a>
+                    <a href="/direct/hype-reality" class="btn btn-success">Hype vs Reality (Direct)</a>
+                    <a href="/direct/products" class="btn btn-success">Products Report (Direct)</a>
                 </div>
             </div>
         </div>
@@ -132,6 +155,13 @@ def emergency_direct():
                         <a href="/admin/reports/sentiment" class="list-group-item list-group-item-action">Sentiment Reports</a>
                         <a href="/admin/reports/hype-reality" class="list-group-item list-group-item-action">Hype vs Reality</a>
                         <a href="/api/status" class="list-group-item list-group-item-action">API Status Check</a>
+                    </div>
+                    
+                    <h3 class="mt-4">Direct Access (No Auth Required)</h3>
+                    <div class="list-group mt-2">
+                        <a href="/direct/sentiment" class="list-group-item list-group-item-action list-group-item-success">Sentiment Reports (Direct)</a>
+                        <a href="/direct/hype-reality" class="list-group-item list-group-item-action list-group-item-success">Hype vs Reality (Direct)</a>
+                        <a href="/direct/products" class="list-group-item list-group-item-action list-group-item-success">Products Report (Direct)</a>
                     </div>
                 </div>
             </div>
