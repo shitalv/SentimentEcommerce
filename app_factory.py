@@ -112,6 +112,14 @@ def register_routes(app):
     except Exception as e:
         logger.error(f"Failed to register admin routes: {str(e)}")
     
+    # Register the direct reports blueprint for authentication-free access
+    try:
+        from direct_reports import direct_reports
+        app.register_blueprint(direct_reports)
+        logger.info("Direct reports routes registered successfully")
+    except Exception as e:
+        logger.error(f"Failed to register direct reports routes: {str(e)}")
+        
     logger.info("Backend routes registered successfully")
     
     # Login and logout page routes

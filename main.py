@@ -22,12 +22,6 @@ app = create_app()
 # Import MongoDB connection here to avoid circular imports
 from mongo_config import get_mongo_client
 
-# Import the direct reports blueprint
-from direct_reports import direct_reports
-
-# Register the direct reports blueprint
-app.register_blueprint(direct_reports)
-
 # Ensure app is also available as a global variable for gunicorn
 # This is what Replit expects for deployment - BOTH names are needed
 application = app
@@ -49,10 +43,15 @@ def hype_reality_direct():
     """Direct access to hype-reality reports without authentication"""
     return redirect('/direct/hype-reality', code=307)  # Use 307 to preserve HTTP method
 
+# Route for direct links page
 @app.route('/direct-links')
 def direct_links_page():
     """Page with direct links to reports without authentication"""
-    return render_template('direct_links.html')
+    try:
+        return render_template('direct_links.html')
+    except Exception as e:
+        logger.error(f"Error rendering direct_links template: {e}")
+        return f"<h1>Direct Links</h1><p>Error rendering template: {e}</p>"
 
 # Root URL handler - ensure there's something at the root path
 @app.route('/')
