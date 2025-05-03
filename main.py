@@ -63,7 +63,7 @@ def root_page():
             <div class="card bg-primary text-white mb-4 p-4">
                 <h2>Direct Navigation</h2>
                 <div class="grid">
-                    <a href="/admin/dashboard" class="btn btn-light">Admin Dashboard</a>
+                    <a href="/admin" class="btn btn-light">Admin Dashboard</a>
                     <a href="/admin/products" class="btn btn-light">Products</a>
                     <a href="/admin/reviews" class="btn btn-light">Reviews</a>
                     <a href="/admin/reports/sentiment" class="btn btn-light">Sentiment Reports</a>
@@ -76,11 +76,16 @@ def root_page():
     </html>
     """
 
-# Admin direct access route
+# Admin direct access routes - ensure all of these work
 @app.route('/admin-portal')
 def admin_portal():
     """Direct access to admin portal without authentication"""
-    return redirect('/admin/dashboard')
+    return redirect('/admin')
+
+@app.route('/admin/dashboard')
+def admin_dashboard_redirect():
+    """Ensure /admin/dashboard redirects to /admin for consistency"""
+    return redirect('/admin')
     
 # Direct route to admin dashboard that doesn't require template inheritance
 @app.route('/admin_dashboard_direct')
@@ -120,7 +125,7 @@ def emergency_direct():
                     
                     <div class="list-group mt-4">
                         <a href="/" class="list-group-item list-group-item-action list-group-item-primary">Home</a>
-                        <a href="/admin/dashboard" class="list-group-item list-group-item-action">Admin Dashboard</a>
+                        <a href="/admin" class="list-group-item list-group-item-action">Admin Dashboard</a>
                         <a href="/admin/products" class="list-group-item list-group-item-action">Products Management</a>
                         <a href="/admin/reviews" class="list-group-item list-group-item-action">Reviews Management</a>
                         <a href="/admin/users" class="list-group-item list-group-item-action">Users Management</a>
@@ -172,7 +177,7 @@ if __name__ == "__main__":
                                 <div class="card-body">
                                     <h2>Direct Access Links</h2>
                                     <div class="d-grid gap-2">
-                                        <a href="/admin/dashboard" class="btn btn-primary">Admin Dashboard</a>
+                                        <a href="/admin" class="btn btn-primary">Admin Dashboard</a>
                                         <a href="/admin/reports/sentiment" class="btn btn-info">Sentiment Reports</a>
                                         <a href="/admin/reports/hype-reality" class="btn btn-warning">Hype vs. Reality</a>
                                         <a href="/admin/products" class="btn btn-success">Products</a>
@@ -197,8 +202,8 @@ if __name__ == "__main__":
             print("Emergency server started at http://0.0.0.0:8000")
             httpd.serve_forever()
     else:
-        # Get the port from environment or use a different default
-        port = int(os.environ.get("FLASK_PORT", 5001))
+        # Always use port 5000 for consistency with Gunicorn
+        port = int(os.environ.get("PORT", 5000))
         
         # Run the backend Flask app
         app.run(host="0.0.0.0", port=port, debug=True)
