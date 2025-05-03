@@ -236,8 +236,8 @@ if __name__ == "__main__":
             print("Emergency server started at http://0.0.0.0:8000")
             httpd.serve_forever()
     else:
-        # Always use port 5000 for consistency with Gunicorn
-        port = int(os.environ.get("PORT", 5000))
+        # Use port 5001 for the app_workflow to avoid conflicts with Gunicorn
+        port = int(os.environ.get("PORT", 5001))
 
         # Run the backend Flask app
         app.run(host="0.0.0.0", port=port, debug=True)
