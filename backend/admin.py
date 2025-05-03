@@ -566,6 +566,176 @@ def hype_reality_reports():
     """Hype vs. Reality analysis for admin"""
     return render_template('admin/reports/hype_reality.html')
 
+# API endpoint for Hype vs. Reality data
+@admin_bp.route('/api/reports/hype-reality/<product_id>')
+@dev_admin_required
+def hype_reality_data(product_id):
+    """Get Hype vs. Reality data for a specific product"""
+    try:
+        mongo_client, db = get_mongo_client()
+        if db is None:
+            return jsonify({"error": "Database connection failed"}), 500
+        
+        # Get product data
+        product = None
+        if product_id.isdigit():
+            # Find by sequential ID (for compatibility with frontend)
+            products = list(db.products.find())
+            if len(products) >= int(product_id) and int(product_id) > 0:
+                product = products[int(product_id) - 1]  # Convert to 0-based index
+        else:
+            # Find by MongoDB ID
+            from bson.objectid import ObjectId
+            product = db.products.find_one({"_id": ObjectId(product_id)})
+            
+        if not product:
+            return jsonify({"error": "Product not found"}), 404
+            
+        # Get product reviews
+        product_id_str = str(product.get("_id"))
+        reviews = list(db.reviews.find({"product_id": product_id_str}))
+        
+        # Get product description to analyze marketing claims
+        description = product.get("description", "")
+        if not description:
+            return jsonify({"error": "Product has no description to analyze"}), 400
+            
+        # Extract marketing claims from description
+        import re
+        claims = []
+        
+        # Split description into sentences and identify claims
+        sentences = re.split(r'[.!?]+', description)
+        for i, sentence in enumerate(sentences):
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+                
+            # Simple heuristic to identify marketing claims
+            # Look for positive adjectives, superlatives, or feature highlights
+            is_claim = any(keyword in sentence.lower() for keyword in 
+                          ["best", "perfect", "great", "superior", "excellent", 
+                           "advanced", "innovative", "powerful", "unique", "easy",
+                           "fast", "quick", "lightweight", "durable", "no ", "not ",
+                           "high", "low", "improved", "enhanced", "adjustable",
+                           "designed", "dedicated", "hundreds", "thousands"])
+            
+            if is_claim:
+                # Add as a marketing claim
+                claims.append({
+                    "id": i + 1,
+                    "text": sentence,
+                    "status": "unmentioned",  # Default status
+                    "feedback": []
+                })
+        
+        # Process reviews to find evidence for/against claims
+        for review in reviews:
+            review_text = review.get("text", "").lower()
+            sentiment_class = review.get("sentiment_class", "neutral")
+            
+            # Check each claim against this review
+            for claim in claims:
+                claim_keywords = set(re.findall(r'\b\w+\b', claim["text"].lower()))
+                significant_keywords = {word for word in claim_keywords 
+                                       if len(word) > 3 and word not in 
+                                       ["with", "that", "this", "have", "from", "your",
+                                        "like", "more", "also", "than", "will", "when"]}
+                
+                # Count keyword matches
+                matches = sum(1 for word in significant_keywords if word in review_text)
+                match_ratio = matches / len(significant_keywords) if significant_keywords else 0
+                
+                # If significant match found
+                if match_ratio > 0.3 or matches >= 2:
+                    # Extract relevant snippet from review
+                    # Find the sentence that best matches the claim
+                    review_sentences = re.split(r'[.!?]+', review_text)
+                    best_match = ""
+                    best_match_score = 0
+                    
+                    for sentence in review_sentences:
+                        sentence = sentence.strip()
+                        if not sentence:
+                            continue
+                            
+                        sentence_words = set(re.findall(r'\b\w+\b', sentence))
+                        match_score = sum(1 for word in significant_keywords if word in sentence_words)
+                        
+                        if match_score > best_match_score:
+                            best_match_score = match_score
+                            best_match = sentence
+                    
+                    if best_match:
+                        # Determine if review supports or contradicts the claim
+                        if sentiment_class == "positive":
+                            claim_status = "confirmed"
+                        elif sentiment_class == "negative":
+                            claim_status = "contradicted"
+                        else:
+                            # For neutral sentiment, don't change status
+                            # unless we already have a status
+                            if claim["status"] == "unmentioned":
+                                claim_status = "unmentioned"
+                            else:
+                                claim_status = claim["status"]
+                        
+                        # Update claim status using 'worse' status
+                        # (contradicted > unmentioned > confirmed)
+                        if claim_status == "contradicted" or claim["status"] == "contradicted":
+                            claim["status"] = "contradicted"
+                        elif claim_status == "confirmed" or claim["status"] == "confirmed":
+                            claim["status"] = "confirmed"
+                        
+                        # Add review feedback to claim
+                        claim["feedback"].append({
+                            "text": best_match.capitalize(),
+                            "sentiment": sentiment_class
+                        })
+        
+        # Calculate reality score (percentage of confirmed claims)
+        total_claims = len(claims)
+        confirmed_claims = sum(1 for claim in claims if claim["status"] == "confirmed")
+        contradicted_claims = sum(1 for claim in claims if claim["status"] == "contradicted")
+        unmentioned_claims = sum(1 for claim in claims if claim["status"] == "unmentioned")
+        
+        reality_score = 0
+        if total_claims > 0:
+            # Weight confirmed claims positively, contradicted claims negatively
+            reality_score = int(((confirmed_claims * 100) - (contradicted_claims * 50)) / total_claims)
+            reality_score = max(0, min(100, reality_score))  # Clamp between 0-100
+        
+        # Get review highlights for display
+        review_highlights = []
+        for review in reviews[:5]:  # Limit to 5 highlights
+            sentiment_class = review.get("sentiment_class", "neutral")
+            review_text = review.get("text", "")
+            
+            if review_text:
+                # Extract a highlight (first sentence or part of text)
+                highlight = re.split(r'[.!?]+', review_text)[0].strip()
+                if len(highlight) > 10:  # Only include substantive highlights
+                    review_highlights.append({
+                        "text": highlight,
+                        "sentiment": sentiment_class
+                    })
+        
+        # Return all data
+        return jsonify({
+            "name": product.get("name", "Unknown Product"),
+            "description": description,
+            "reviewHighlights": review_highlights,
+            "claims": claims,
+            "realityScore": reality_score,
+            "confirmed_count": confirmed_claims,
+            "contradicted_count": contradicted_claims,
+            "unmentioned_count": unmentioned_claims
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting hype-reality data: {str(e)}")
+        return jsonify({"error": f"Failed to get hype-reality data: {str(e)}"}), 500
+
 # Product performance reports for admin
 @admin_bp.route('/reports/products')
 @dev_admin_required
