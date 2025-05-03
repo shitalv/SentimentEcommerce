@@ -34,7 +34,7 @@ def aggregate_sentiment_by_time(product_id=None, time_range="month", limit=12):
             query = query.filter(Review.product_id == product_id)
         
         # Only consider reviews with dates
-        query = query.filter(Review.date != None)
+        query = query.filter(Review.date.isnot(None))
         
         # Get all relevant reviews
         reviews = query.order_by(Review.date).all()
@@ -44,11 +44,28 @@ def aggregate_sentiment_by_time(product_id=None, time_range="month", limit=12):
             return []
         
         # Convert SQLAlchemy objects to dictionaries for easier processing
-        reviews_data = [{
-            'date': review.date,
-            'sentiment_class': review.sentiment_class or 'neutral',
-            'sentiment_score': review.sentiment_score or 0.5
-        } for review in reviews if review.date]
+        reviews_data = []
+        for review in reviews:
+            # Skip reviews without valid date
+            if review.date is None:
+                continue
+                
+            # Build review data dictionary with defaults for missing values
+            review_data = {
+                'date': review.date,
+                'sentiment_class': 'neutral',
+                'sentiment_score': 0.5
+            }
+            
+            # Add sentiment class if available
+            if review.sentiment_class is not None:
+                review_data['sentiment_class'] = review.sentiment_class
+                
+            # Add sentiment score if available
+            if review.sentiment_score is not None:
+                review_data['sentiment_score'] = review.sentiment_score
+                
+            reviews_data.append(review_data)
         
         # Convert to pandas DataFrame for time-based analysis
         df = pd.DataFrame(reviews_data)

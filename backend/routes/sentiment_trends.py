@@ -6,7 +6,6 @@ This module provides API routes for accessing sentiment trend data over time.
 
 import logging
 from flask import Blueprint, jsonify, request
-from backend.sentiment_trends import aggregate_sentiment_by_time, get_sentiment_trend_metrics
 
 # Create blueprint
 sentiment_trends_bp = Blueprint('sentiment_trends', __name__, url_prefix='/api/sentiment-trends')
@@ -15,6 +14,9 @@ sentiment_trends_bp = Blueprint('sentiment_trends', __name__, url_prefix='/api/s
 def get_sentiment_trends():
     """Get sentiment trends data aggregated over time"""
     try:
+        # Import here to avoid circular imports
+        from backend.sentiment_trends import aggregate_sentiment_by_time, get_sentiment_trend_metrics
+        
         # Get query parameters
         product_id = request.args.get('product_id')
         time_range = request.args.get('time_range', 'month')
@@ -48,6 +50,9 @@ def get_sentiment_trends():
 def get_trends_metrics():
     """Get sentiment trend metrics for dashboard display"""
     try:
+        # Import here to avoid circular imports
+        from backend.sentiment_trends import get_sentiment_trend_metrics
+        
         # Get product_id parameter
         product_id = request.args.get('product_id')
         
