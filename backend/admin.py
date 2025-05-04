@@ -759,45 +759,63 @@ def add_admin_field_to_users():
             logger.error("Failed to connect to MongoDB")
             return False
         
-        # Handle both real MongoDB and mock database
-        if hasattr(db, 'users'):
-            # Real MongoDB collection
-            # Check if any users exist
-            result = db.users.update_many(
-                {"is_admin": {"$exists": False}},
-                {"$set": {"is_admin": False}}
-            )
+        # Reset modified count for reporting
+        modified_count = 0
             
-            modified_count = result.modified_count
-            
-            # Make the first user an admin if no admins exist
-            admin_count = db.users.count_documents({"is_admin": True})
-            if admin_count == 0:
-                first_user = db.users.find_one({})
-                if first_user:
-                    db.users.update_one(
-                        {"_id": first_user.get("_id")},
-                        {"$set": {"is_admin": True}}
+        # Handle different database types (Real MongoDB or Mock Dictionary)
+        try:
+            # Determine if this is a real MongoDB or a mock dictionary
+            if isinstance(db, dict):
+                # This is a dictionary mock database
+                if "users" in db and isinstance(db["users"], dict):
+                    # Process dictionary of users
+                    for user_id, user in db["users"].items():
+                        if "is_admin" not in user:
+                            user["is_admin"] = False
+                            modified_count += 1
+                    
+                    # Make the first user an admin if no admins exist
+                    admin_count = sum(1 for user in db["users"].values() if user.get("is_admin", False))
+                    if admin_count == 0 and db["users"]:
+                        first_user_id = next(iter(db["users"]))
+                        db["users"][first_user_id]["is_admin"] = True
+                        logger.info(f"Made user {db['users'][first_user_id].get('username', 'unknown')} an admin")
+                else:
+                    # Missing users collection in mock db, this is normal for new installs
+                    logger.info("No users collection in mock database, skipping admin field addition")
+                    db["users"] = {}  # Initialize empty users dict if it doesn't exist
+            else:
+                # Assume this is a MongoDB database object
+                if hasattr(db, 'users') and callable(getattr(db.users, 'update_many', None)):
+                    # This is a MongoDB collection
+                    result = db.users.update_many(
+                        {"is_admin": {"$exists": False}},
+                        {"$set": {"is_admin": False}}
                     )
-                    logger.info(f"Made user {first_user.get('username')} an admin")
-        else:
-            # Mock database (dictionary)
-            modified_count = 0
-            for user_id, user in db.get("users", {}).items():
-                if "is_admin" not in user:
-                    user["is_admin"] = False
-                    modified_count += 1
-            
-            # Make the first user an admin if no admins exist
-            admin_count = sum(1 for user in db.get("users", {}).values() if user.get("is_admin", False))
-            if admin_count == 0 and db.get("users", {}):
-                first_user_id = next(iter(db.get("users", {})))
-                if first_user_id:
-                    db["users"][first_user_id]["is_admin"] = True
-                    logger.info(f"Made user {db['users'][first_user_id].get('username')} an admin")
+                    
+                    modified_count = result.modified_count
+                    
+                    # Make the first user an admin if no admins exist
+                    admin_count = db.users.count_documents({"is_admin": True})
+                    if admin_count == 0:
+                        first_user = db.users.find_one({})
+                        if first_user:
+                            db.users.update_one(
+                                {"_id": first_user.get("_id")},
+                                {"$set": {"is_admin": True}}
+                            )
+                            logger.info(f"Made user {first_user.get('username', 'unknown')} an admin")
+                else:
+                    # MongoDB client but no users collection or unexpected structure
+                    logger.info("Database doesn't have a users collection with expected methods")
         
-        logger.info(f"Added is_admin field to {modified_count} users")
-        return True
+            logger.info(f"Added is_admin field to {modified_count} users")
+            return True
+            
+        except (AttributeError, TypeError, KeyError) as e:
+            # More specific exception handling for common database structure issues
+            logger.error(f"Database structure error: {str(e)}")
+            return False
     
     except Exception as e:
         logger.error(f"Error adding admin field to users: {str(e)}")
