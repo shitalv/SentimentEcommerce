@@ -12,10 +12,13 @@ It includes endpoints for:
 import json
 import datetime
 import random
-from flask import Blueprint, jsonify, request
-from models import Product, Review, db
-from sqlalchemy import func
+from flask import Blueprint, jsonify, request, current_app
 from flask_login import login_required, current_user
+
+# Use deferred imports to avoid circular dependencies
+# We'll import these inside the functions to avoid circular references
+# from models import Product, Review, db
+# from sqlalchemy import func
 
 # Create a blueprint for sentiment trends API
 sentiment_trends_api = Blueprint('sentiment_trends_api', __name__)
