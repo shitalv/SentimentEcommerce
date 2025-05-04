@@ -9,7 +9,8 @@ import sys
 import logging
 import math
 import random
-from flask import redirect, render_template, Flask, jsonify, send_from_directory
+import datetime
+from flask import redirect, render_template, Flask, jsonify, send_from_directory, request
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -401,6 +402,46 @@ def admin_dashboard():
     except Exception as e:
         logger.error(f"Admin dashboard template error: {e}")
         return redirect('/')
+
+@app.route('/admin/api/products')
+def admin_api_products():
+    """API endpoint for products in admin dashboard"""
+    mongo_client = get_mongo_client()
+    db = mongo_client.get_database()
+    
+    try:
+        # Fetch products from MongoDB
+        products = list(db.products.find({}, {
+            "_id": 1, 
+            "name": 1, 
+            "category": 1,
+            "price": 1,
+            "image_url": 1
+        }))
+        
+        # Convert ObjectId to string for each product
+        for product in products:
+            product["id"] = str(product.pop("_id"))
+            
+            # Get review count for this product
+            product["review_count"] = db.reviews.count_documents({"product_id": product["id"]})
+            
+            # Calculate sentiment for this product
+            positive = db.reviews.count_documents({"product_id": product["id"], "sentiment_class": "positive"})
+            neutral = db.reviews.count_documents({"product_id": product["id"], "sentiment_class": "neutral"})
+            negative = db.reviews.count_documents({"product_id": product["id"], "sentiment_class": "negative"})
+            
+            total = positive + neutral + negative
+            product["sentiment"] = {
+                "positive": positive / total if total > 0 else 0,
+                "neutral": neutral / total if total > 0 else 0,
+                "negative": negative / total if total > 0 else 0
+            }
+        
+        return jsonify({"products": products})
+    except Exception as e:
+        logger.error(f"Error fetching products: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/admin/analytics')
 def admin_analytics():
