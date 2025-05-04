@@ -341,186 +341,334 @@ function populateTopProductsTable() {
 
 // Draw category distribution chart
 function drawCategoryDistributionChart() {
-    const ctx = document.getElementById('category-distribution-chart').getContext('2d');
-    
-    // Demo data
-    const data = {
-        labels: ['Electronics', 'Home & Kitchen', 'Clothing', 'Books', 'Beauty'],
-        datasets: [{
-            label: 'Products',
-            data: [3, 1, 1, 0, 0],
-            backgroundColor: [
-                'rgba(54, 162, 235, 0.6)',
-                'rgba(255, 99, 132, 0.6)',
-                'rgba(255, 206, 86, 0.6)',
-                'rgba(75, 192, 192, 0.6)',
-                'rgba(153, 102, 255, 0.6)'
-            ],
-            borderColor: [
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 99, 132, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)'
-            ],
-            borderWidth: 1
-        }]
-    };
-    
-    // Create or update chart
-    if (window.categoryDistributionChart) {
-        window.categoryDistributionChart.data = data;
-        window.categoryDistributionChart.update();
-    } else {
-        window.categoryDistributionChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} (${percentage}%)`;
+    try {
+        // Safely get the chart element
+        const chartElement = document.getElementById('category-distribution-chart');
+        if (!chartElement) {
+            console.error("Chart element 'category-distribution-chart' not found");
+            return;
+        }
+        
+        // Safely get the context
+        let ctx;
+        try {
+            ctx = chartElement.getContext('2d');
+            if (!ctx) {
+                throw new Error("Failed to get 2D context");
+            }
+        } catch (error) {
+            console.error("Error getting chart context:", error);
+            
+            // Try to recreate the canvas element
+            const container = chartElement.parentElement;
+            if (container) {
+                container.innerHTML = '<canvas id="category-distribution-chart"></canvas>';
+                const newChartElement = document.getElementById('category-distribution-chart');
+                if (!newChartElement) {
+                    console.error("Failed to recreate chart element");
+                    return;
+                }
+                
+                try {
+                    ctx = newChartElement.getContext('2d');
+                    if (!ctx) {
+                        throw new Error("Failed to get 2D context after recreation");
+                    }
+                } catch (e) {
+                    console.error("Still failed to get context after recreation:", e);
+                    container.innerHTML = '<div class="alert alert-warning">Failed to load chart. Please refresh the page.</div>';
+                    return;
+                }
+            } else {
+                console.error("Cannot find parent container for chart");
+                return;
+            }
+        }
+        
+        // Demo data
+        const data = {
+            labels: ['Electronics', 'Home & Kitchen', 'Clothing', 'Books', 'Beauty'],
+            datasets: [{
+                label: 'Products',
+                data: [3, 1, 1, 0, 0],
+                backgroundColor: [
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)'
+                ],
+                borderColor: [
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+        
+        // Create or update chart
+        if (window.categoryDistributionChart) {
+            window.categoryDistributionChart.data = data;
+            window.categoryDistributionChart.update();
+        } else {
+            window.categoryDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+    } catch (error) {
+        console.error("Error in drawCategoryDistributionChart:", error);
+        // Show a user-friendly error message
+        const chartElement = document.getElementById('category-distribution-chart');
+        if (chartElement && chartElement.parentElement) {
+            chartElement.parentElement.innerHTML = 
+                '<div class="alert alert-warning">Unable to display chart. Please try refreshing the page.</div>';
+        }
     }
 }
 
 // Draw price vs. sentiment scatter chart
 function drawPriceSentimentChart() {
-    const ctx = document.getElementById('price-sentiment-chart').getContext('2d');
-    
-    // Demo data
-    const data = {
-        datasets: [{
-            label: 'Products',
-            data: [
-                { x: 159.79, y: 0.9, r: 9, name: 'Amazon Kindle E-Reader' },
-                { x: 149.99, y: 0.85, r: 3, name: 'Amazon Fire HD 10 Tablet' },
-                { x: 49.99, y: 0.82, r: 3, name: 'Echo Dot (4th Gen)' },
-                { x: 18.5, y: 0.8, r: 1, name: 'Men\'s Slim-Fit T-Shirt' },
-                { x: 14.99, y: 0.75, r: 2, name: 'Microfiber Cleaning Cloth' }
-            ],
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        }]
-    };
-    
-    // Create or update chart
-    if (window.priceSentimentChart) {
-        window.priceSentimentChart.data = data;
-        window.priceSentimentChart.update();
-    } else {
-        window.priceSentimentChart = new Chart(ctx, {
-            type: 'bubble',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Price ($)'
-                        },
-                        beginAtZero: true
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Sentiment Score'
-                        },
-                        min: 0,
-                        max: 1
+    try {
+        // Safely get the chart element
+        const chartElement = document.getElementById('price-sentiment-chart');
+        if (!chartElement) {
+            console.error("Chart element 'price-sentiment-chart' not found");
+            return;
+        }
+        
+        // Safely get the context
+        let ctx;
+        try {
+            ctx = chartElement.getContext('2d');
+            if (!ctx) {
+                throw new Error("Failed to get 2D context");
+            }
+        } catch (error) {
+            console.error("Error getting chart context:", error);
+            
+            // Try to recreate the canvas element
+            const container = chartElement.parentElement;
+            if (container) {
+                container.innerHTML = '<canvas id="price-sentiment-chart"></canvas>';
+                const newChartElement = document.getElementById('price-sentiment-chart');
+                if (!newChartElement) {
+                    console.error("Failed to recreate chart element");
+                    return;
+                }
+                
+                try {
+                    ctx = newChartElement.getContext('2d');
+                    if (!ctx) {
+                        throw new Error("Failed to get 2D context after recreation");
                     }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const point = context.raw;
-                                return `${point.name}: $${point.x.toFixed(2)}, Score: ${(point.y * 100).toFixed(0)}%, Reviews: ${point.r}`;
+                } catch (e) {
+                    console.error("Still failed to get context after recreation:", e);
+                    container.innerHTML = '<div class="alert alert-warning">Failed to load chart. Please refresh the page.</div>';
+                    return;
+                }
+            } else {
+                console.error("Cannot find parent container for chart");
+                return;
+            }
+        }
+        
+        // Demo data
+        const data = {
+            datasets: [{
+                label: 'Products',
+                data: [
+                    { x: 159.79, y: 0.9, r: 9, name: 'Amazon Kindle E-Reader' },
+                    { x: 149.99, y: 0.85, r: 3, name: 'Amazon Fire HD 10 Tablet' },
+                    { x: 49.99, y: 0.82, r: 3, name: 'Echo Dot (4th Gen)' },
+                    { x: 18.5, y: 0.8, r: 1, name: 'Men\'s Slim-Fit T-Shirt' },
+                    { x: 14.99, y: 0.75, r: 2, name: 'Microfiber Cleaning Cloth' }
+                ],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+        
+        // Create or update chart
+        if (window.priceSentimentChart) {
+            window.priceSentimentChart.data = data;
+            window.priceSentimentChart.update();
+        } else {
+            window.priceSentimentChart = new Chart(ctx, {
+                type: 'bubble',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Price ($)'
+                            },
+                            beginAtZero: true
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Sentiment Score'
+                            },
+                            min: 0,
+                            max: 1
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return `${point.name}: $${point.x.toFixed(2)}, Score: ${(point.y * 100).toFixed(0)}%, Reviews: ${point.r}`;
+                                }
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+    } catch (error) {
+        console.error("Error in drawPriceSentimentChart:", error);
+        // Show a user-friendly error message
+        const chartElement = document.getElementById('price-sentiment-chart');
+        if (chartElement && chartElement.parentElement) {
+            chartElement.parentElement.innerHTML = 
+                '<div class="alert alert-warning">Unable to display chart. Please try refreshing the page.</div>';
+        }
     }
 }
 
 // Draw review volume trend line chart
 function drawReviewVolumeChart() {
-    const ctx = document.getElementById('review-volume-chart').getContext('2d');
-    
-    // Generate dates for the last 30 days
-    const labels = Array.from({ length: 30 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - 29 + i);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    });
-    
-    // Demo data - random review counts
-    const reviewCounts = Array.from({ length: 30 }, () => Math.floor(Math.random() * 3));
-    
-    // Ensure at least some spikes in the data
-    reviewCounts[5] = 5;
-    reviewCounts[15] = 8;
-    reviewCounts[25] = 4;
-    
-    const data = {
-        labels: labels,
-        datasets: [{
-            label: 'New Reviews',
-            data: reviewCounts,
-            borderColor: 'rgba(75, 192, 192, 1)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            tension: 0.3,
-            fill: true
-        }]
-    };
-    
-    // Create or update chart
-    if (window.reviewVolumeChart) {
-        window.reviewVolumeChart.data = data;
-        window.reviewVolumeChart.update();
-    } else {
-        window.reviewVolumeChart = new Chart(ctx, {
-            type: 'line',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Reviews'
+    try {
+        // Safely get the chart element
+        const chartElement = document.getElementById('review-volume-chart');
+        if (!chartElement) {
+            console.error("Chart element 'review-volume-chart' not found");
+            return;
+        }
+        
+        // Safely get the context
+        let ctx;
+        try {
+            ctx = chartElement.getContext('2d');
+            if (!ctx) {
+                throw new Error("Failed to get 2D context");
+            }
+        } catch (error) {
+            console.error("Error getting chart context:", error);
+            
+            // Try to recreate the canvas element
+            const container = chartElement.parentElement;
+            if (container) {
+                container.innerHTML = '<canvas id="review-volume-chart"></canvas>';
+                const newChartElement = document.getElementById('review-volume-chart');
+                if (!newChartElement) {
+                    console.error("Failed to recreate chart element");
+                    return;
+                }
+                
+                try {
+                    ctx = newChartElement.getContext('2d');
+                    if (!ctx) {
+                        throw new Error("Failed to get 2D context after recreation");
+                    }
+                } catch (e) {
+                    console.error("Still failed to get context after recreation:", e);
+                    container.innerHTML = '<div class="alert alert-warning">Failed to load chart. Please refresh the page.</div>';
+                    return;
+                }
+            } else {
+                console.error("Cannot find parent container for chart");
+                return;
+            }
+        }
+        
+        // Generate dates for the last 30 days
+        const labels = Array.from({ length: 30 }, (_, i) => {
+            const date = new Date();
+            date.setDate(date.getDate() - 29 + i);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        
+        // Demo data - random review counts but with consistency between page loads
+        const reviewCounts = [2, 1, 1, 2, 0, 5, 1, 2, 1, 0, 3, 1, 2, 1, 0, 8, 3, 2, 1, 2, 0, 1, 3, 2, 0, 4, 2, 1, 0, 3];
+        
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: 'New Reviews',
+                data: reviewCounts,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.3,
+                fill: true
+            }]
+        };
+        
+        // Create or update chart
+        if (window.reviewVolumeChart) {
+            window.reviewVolumeChart.data = data;
+            window.reviewVolumeChart.update();
+        } else {
+            window.reviewVolumeChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Reviews'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
                         }
                     }
-                },
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
                 }
-            }
-        });
+            });
+        }
+    } catch (error) {
+        console.error("Error in drawReviewVolumeChart:", error);
+        // Show a user-friendly error message
+        const chartElement = document.getElementById('review-volume-chart');
+        if (chartElement && chartElement.parentElement) {
+            chartElement.parentElement.innerHTML = 
+                '<div class="alert alert-warning">Unable to display chart. Please try refreshing the page.</div>';
+        }
     }
 }
 
