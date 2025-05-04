@@ -301,8 +301,12 @@
                 const data = await response.json();
                 console.log('Product details:', data);
                 
-                selectedProduct = data;
-                renderProductDetail(data);
+                // Extract the product from the response
+                // The API returns either { product: {...} } or the product object directly
+                const productData = data.product || data;
+                
+                selectedProduct = productData;
+                renderProductDetail(productData);
             } catch (err) {
                 console.error('Error fetching product details:', err);
                 showError('Failed to load product details. Please try again.');
