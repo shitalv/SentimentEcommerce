@@ -27,4 +27,5 @@ dependencies = [
     "flask-testing>=0.8.1",
     "numpy>=2.2.4",
     "reportlab>=4.4.0",
+    "scipy>=1.15.2",
 ]

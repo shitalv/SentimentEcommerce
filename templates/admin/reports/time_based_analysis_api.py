@@ -371,119 +371,126 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
     Returns:
     - List of sentiment shifts with before/after metrics
     """
-    # Generate some significant shifts in sentiment
-    # In a real implementation, this would analyze actual review data to detect changes
+    from mongo_config import get_mongo_client
+    from bson.objectid import ObjectId
+    import numpy as np
+    from scipy import stats
     
     shifts = []
     
-    # If no specific entity selected, generate some default sample shifts
-    if not entity_id or entity_id == 'all':
-        # Set a consistent seed for "all" products view
-        random.seed(42)
+    try:
+        # Get MongoDB client
+        client = get_mongo_client()
+        db = client.sentiment_ecommerce
         
-        # Generate 2-3 sample shifts for the overview
-        num_shifts = random.randint(2, 3)
+        # Calculate potential shift points at 2-week intervals
+        total_days = (end_date - start_date).days
+        if total_days < 30:  # Not enough data for meaningful shifts
+            return shifts
         
-        # Generate shifts spread across the time period
-        time_range = (end_date - start_date).days
+        # Create potential shift points (approximately every 15 days)
+        num_shift_points = max(1, total_days // 15)
+        shift_points = []
         
-        for i in range(num_shifts):
-            # Calculate a point in time for the shift
-            shift_days = int(time_range * (0.2 + (i * 0.3)))
-            shift_date = start_date + datetime.timedelta(days=shift_days)
-            
-            # Calculate before and after periods
-            before_start = shift_date - datetime.timedelta(days=30)
+        for i in range(1, num_shift_points + 1):
+            # Calculate shift date (distribute evenly across time range)
+            shift_day = start_date + datetime.timedelta(days=int(i * total_days / (num_shift_points + 1)))
+            shift_points.append(shift_day)
+        
+        # For each potential shift point, analyze sentiment before and after
+        for shift_date in shift_points:
+            # Calculate before and after periods (14 days each)
+            before_start = shift_date - datetime.timedelta(days=14)
             before_end = shift_date
             after_start = shift_date
-            after_end = shift_date + datetime.timedelta(days=30)
+            after_end = shift_date + datetime.timedelta(days=14)
             
-            # Format the time period string
-            time_period = f"{before_start.strftime('%b %d, %Y')} to {after_end.strftime('%b %d, %Y')}"
+            # Base queries for reviews before and after shift
+            before_query = {
+                "date": {
+                    "$gte": before_start,
+                    "$lt": before_end
+                }
+            }
+            after_query = {
+                "date": {
+                    "$gte": after_start,
+                    "$lt": after_end
+                }
+            }
             
-            # Generate sample shifts with alternating directions
-            shift_direction = 1 if i % 2 == 0 else -1
-            shift_magnitude = 0.15 + (random.random() * 0.1)
+            # Add filter for product or category
+            if filter_type == 'product' and entity_id and entity_id != 'all':
+                before_query["product_id"] = ObjectId(entity_id)
+                after_query["product_id"] = ObjectId(entity_id)
+            elif filter_type == 'category' and entity_id and entity_id != 'all':
+                # Get all products in this category
+                products_in_category = list(db.products.find({"category": entity_id}, {"_id": 1}))
+                product_ids = [p["_id"] for p in products_in_category]
+                if product_ids:
+                    before_query["product_id"] = {"$in": product_ids}
+                    after_query["product_id"] = {"$in": product_ids}
+                else:
+                    continue  # Skip if no products in category
             
-            before_score = 0.6 + (random.random() * 0.2)
-            after_score = max(0.1, min(0.9, before_score + (shift_direction * shift_magnitude)))
+            # Query for reviews before and after shift
+            before_reviews = list(db.reviews.find(before_query))
+            after_reviews = list(db.reviews.find(after_query))
             
-            # Realistic review counts
-            reviews_before = random.randint(40, 120)
-            reviews_after = random.randint(40, 120)
+            # Need minimum reviews to detect significant shifts
+            if len(before_reviews) < 5 or len(after_reviews) < 5:
+                continue
             
-            # Calculate shift significance and p-value text
-            significance = abs(after_score - before_score) * 10
-            p_value = "p < 0.01" if significance > 1.5 else "p < 0.05"
+            # Extract sentiment scores
+            before_scores = [r.get("sentiment_score", 0.5) for r in before_reviews]
+            after_scores = [r.get("sentiment_score", 0.5) for r in after_reviews]
             
-            shifts.append({
-                'time_period': time_period,
-                'before_score': round(before_score, 2),
-                'after_score': round(after_score, 2),
-                'change': round(after_score - before_score, 2),
-                'reviews_before': int(reviews_before),
-                'reviews_after': int(reviews_after),
-                'significance': p_value
-            })
-        
-        # Sort by significance (absolute change amount)
-        shifts.sort(key=lambda x: abs(x['change']), reverse=True)
-        
-        return shifts
+            # Calculate average scores
+            before_score = sum(before_scores) / len(before_scores)
+            after_score = sum(after_scores) / len(after_scores)
+            
+            # Calculate percentage change
+            change = after_score - before_score
+            
+            # Only consider meaningful changes
+            if abs(change) < 0.05:
+                continue
+            
+            # Perform T-test to measure statistical significance
+            try:
+                t_stat, p_value = stats.ttest_ind(before_scores, after_scores)
+                
+                # Only include statistically significant shifts
+                if p_value > 0.05:  # Not significant
+                    continue
+                
+                significance_label = "p < 0.01" if p_value < 0.01 else "p < 0.05"
+                
+                # Format the time period string
+                time_period = f"{before_start.strftime('%b %d, %Y')} to {after_end.strftime('%b %d, %Y')}"
+                
+                # Add to shifts
+                shifts.append({
+                    'time_period': time_period,
+                    'before_score': round(before_score, 2),
+                    'after_score': round(after_score, 2),
+                    'change': round(change, 2),
+                    'reviews_before': len(before_reviews),
+                    'reviews_after': len(after_reviews),
+                    'significance': significance_label
+                })
+            except:
+                # Skip if t-test fails (can happen with constant values)
+                continue
     
-    # Use entity_id to create a unique but consistent pattern
-    seed = sum(ord(c) for c in entity_id) % 100
-    random.seed(seed)
+    except Exception as e:
+        print(f"Error detecting sentiment shifts: {e}")
     
-    # Number of shifts to generate
-    num_shifts = random.randint(1, 3)
-    
-    # Generate shifts spread across the time period
-    time_range = (end_date - start_date).days
-    
-    for i in range(num_shifts):
-        # Calculate a point in time for the shift
-        shift_days = int(time_range * (0.3 + (i * 0.25)))
-        shift_date = start_date + datetime.timedelta(days=shift_days)
-        
-        # Calculate before and after periods
-        before_start = shift_date - datetime.timedelta(days=30)
-        before_end = shift_date
-        after_start = shift_date
-        after_end = shift_date + datetime.timedelta(days=30)
-        
-        # Format the time period string
-        time_period = f"{before_end.strftime('%b %d, %Y')} to {after_start.strftime('%b %d, %Y')}"
-        
-        # Generate before and after scores
-        # Significant shift (positive or negative)
-        shift_direction = 1 if random.random() > 0.5 else -1
-        shift_magnitude = 0.1 + (random.random() * 0.2)
-        
-        before_score = 0.5 + (random.random() * 0.3)
-        after_score = max(0.1, min(0.9, before_score + (shift_direction * shift_magnitude)))
-        
-        # Generate review counts
-        reviews_before = random.randint(20, 100)
-        reviews_after = reviews_before * (0.8 + (random.random() * 0.4))
-        
-        # Calculate shift significance
-        significance = abs(after_score - before_score) * 2 * (reviews_after / (reviews_before + reviews_after))
-        
-        shifts.append({
-            'time_period': time_period,
-            'before_score': round(before_score, 2),
-            'after_score': round(after_score, 2),
-            'change': round(after_score - before_score, 2),
-            'reviews_before': int(reviews_before),
-            'reviews_after': int(reviews_after),
-            'significance': "p < 0.01" if significance > 0.3 else "p < 0.05"
-        })
-    
-    # Sort by the absolute value of the change (not by significance string)
+    # Sort by the absolute value of the change
     shifts.sort(key=lambda x: abs(x['change']), reverse=True)
     
-    return shifts
+    # Limit to top 5 most significant shifts
+    return shifts[:5]
 
 def generate_insights(time_series, seasonal_data, sentiment_shifts, filter_type, entity_id):
     """
