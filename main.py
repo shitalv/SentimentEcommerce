@@ -70,6 +70,16 @@ def hype_reality_standalone():
     """Serve the standalone Hype vs Reality page"""
     return send_from_directory('templates/admin/reports', 'hype_reality_standalone.html')
 
+# Direct access to Sentiment Trends dashboard
+@app.route('/admin/reports/sentiment-trends')
+def sentiment_trends_dashboard():
+    """Serve the sentiment trends monitoring dashboard"""
+    try:
+        return render_template('admin/reports/sentiment_trends.html')
+    except Exception as e:
+        logger.error(f"Error rendering sentiment_trends template: {e}")
+        return f"<h1>Sentiment Trend Monitoring</h1><p>Error rendering template: {e}</p>"
+
 # Add time series analysis to the standalone page
 @app.route('/api/time-series/<product_id>')
 def time_series_data(product_id):
@@ -82,6 +92,25 @@ def time_series_data(product_id):
         "product_id": product_id
     }
     return jsonify(data)
+
+# API endpoints for sentiment trend monitoring
+@app.route('/admin/api/reports/sentiment-trends', methods=['GET'])
+def api_sentiment_trends():
+    """API endpoint for sentiment trend data"""
+    from templates.admin.reports.sentiment_trends_api import get_sentiment_trends
+    return get_sentiment_trends()
+
+@app.route('/admin/api/reports/product-comparison', methods=['GET'])
+def api_product_comparison():
+    """API endpoint for product comparison data"""
+    from templates.admin.reports.sentiment_trends_api import get_product_comparison
+    return get_product_comparison()
+
+@app.route('/admin/api/reports/sentiment-forecast', methods=['GET'])
+def api_sentiment_forecast():
+    """API endpoint for sentiment forecast data"""
+    from templates.admin.reports.sentiment_trends_api import get_sentiment_forecast
+    return get_sentiment_forecast()
 
 # Admin direct access routes - ensure all of these work
 @app.route('/admin-portal')
@@ -137,6 +166,7 @@ def emergency_direct():
                         <a href="/admin/reviews" class="list-group-item list-group-item-action">Reviews Management</a>
                         <a href="/admin/users" class="list-group-item list-group-item-action">Users Management</a>
                         <a href="/admin/reports/sentiment" class="list-group-item list-group-item-action">Sentiment Reports</a>
+                        <a href="/admin/reports/sentiment-trends" class="list-group-item list-group-item-action">Sentiment Trends</a>
                         <a href="/admin/reports/hype-reality" class="list-group-item list-group-item-action">Hype vs Reality</a>
                         <a href="/api/status" class="list-group-item list-group-item-action">API Status Check</a>
                     </div>
@@ -194,6 +224,7 @@ if __name__ == "__main__":
                                     <div class="d-grid gap-2">
                                         <a href="/admin" class="btn btn-primary">Admin Dashboard</a>
                                         <a href="/admin/reports/sentiment" class="btn btn-info">Sentiment Reports</a>
+                                        <a href="/admin/reports/sentiment-trends" class="btn btn-info">Sentiment Trends</a>
                                         <a href="/admin/reports/hype-reality" class="btn btn-warning">Hype vs. Reality</a>
                                         <a href="/admin/products" class="btn btn-success">Products</a>
                                         <a href="/admin/reviews" class="btn btn-danger">Reviews</a>
