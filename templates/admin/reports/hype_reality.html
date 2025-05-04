@@ -617,8 +617,8 @@ function getProductData(productId) {
     return products[productId];
 }
 
-// This is the main function that updates the UI with analysis results
-function updateAnalysisUI(productData) {
+// Note: updateAnalysisUI is already defined above. This duplicate definition is causing errors.
+/* function updateAnalysisUI(productData) { */
     // Update product info
     document.getElementById('product-name').textContent = productData.name;
     document.getElementById('product-description').textContent = productData.description;
@@ -707,50 +707,9 @@ function updateAnalysisUI(productData) {
     
     // Show success message
     showSuccess('Analysis completed successfully.');
-}
+/* } */
 
-// Show success message
-function showSuccess(message) {
-    // Create alert element
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-success alert-dismissible fade show';
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    
-    // Insert at the top of the content area
-    const contentArea = document.querySelector('main');
-    contentArea.insertBefore(alertDiv, contentArea.firstChild);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 150);
-    }, 5000);
-}
-
-// Show error message
-function showError(message) {
-    // Create alert element
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    
-    // Insert at the top of the content area
-    const contentArea = document.querySelector('main');
-    contentArea.insertBefore(alertDiv, contentArea.firstChild);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-        alertDiv.classList.remove('show');
-        setTimeout(() => alertDiv.remove(), 150);
-    }, 5000);
-}
+// Note: The showSuccess and showError functions are already defined earlier in the file
+// These duplicate definitions cause JavaScript errors
 </script>
 {% endblock %}
