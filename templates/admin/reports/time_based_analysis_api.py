@@ -98,9 +98,8 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     review_volume = []
     
     try:
-        # Get MongoDB client
-        client = get_mongo_client()
-        db = client.sentiment_ecommerce
+        # Get MongoDB client and db - note the unpacking of the tuple
+        _, db = get_mongo_client()
         
         # Process each time period
         for period_start, period_end in periods:
@@ -112,7 +111,7 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
                 query["product_id"] = ObjectId(entity_id)
             elif filter_type == 'category' and entity_id and entity_id != 'all':
                 # Get all products in this category
-                products_in_category = list(db.products.find({"category": entity_id}, {"_id": 1}))
+                products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
                 product_ids = [p["_id"] for p in products_in_category]
                 if product_ids:
                     query["product_id"] = {"$in": product_ids}
@@ -121,7 +120,7 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
                     query["product_id"] = {"$in": []}
             
             # Query for reviews in this period
-            reviews = list(db.reviews.find(query))
+            reviews = list(db["reviews"].find(query))
             
             # Calculate aggregate metrics
             count = len(reviews)
@@ -191,9 +190,8 @@ def get_seasonal_trends(filter_type, entity_id):
     previous_year_data = [None] * 12
     
     try:
-        # Get MongoDB client
-        client = get_mongo_client()
-        db = client.sentiment_ecommerce
+        # Get MongoDB client and db - note the unpacking of the tuple
+        _, db = get_mongo_client()
         
         # Process each month
         for month in range(1, 13):
@@ -246,8 +244,8 @@ def get_seasonal_trends(filter_type, entity_id):
                     previous_year_query["product_id"] = {"$in": []}
             
             # Query for reviews in current and previous year
-            current_year_reviews = list(db.reviews.find(current_year_query))
-            previous_year_reviews = list(db.reviews.find(previous_year_query))
+            current_year_reviews = list(db["reviews"].find(current_year_query))
+            previous_year_reviews = list(db["reviews"].find(previous_year_query))
             
             # Calculate average sentiment for current year
             if current_year_reviews:
@@ -296,9 +294,8 @@ def get_monthly_distribution(filter_type, entity_id):
         # Get current year
         current_year = datetime.datetime.now().year
         
-        # Get MongoDB client
-        client = get_mongo_client()
-        db = client.sentiment_ecommerce
+        # Get MongoDB client and db
+        _, db = get_mongo_client()
         
         # Process each month
         for month in range(1, 13):
@@ -333,15 +330,15 @@ def get_monthly_distribution(filter_type, entity_id):
             # Count reviews by sentiment class
             pos_query = query.copy()
             pos_query["sentiment_class"] = "positive"
-            pos_count = db.reviews.count_documents(pos_query)
+            pos_count = db["reviews"].count_documents(pos_query)
             
             neut_query = query.copy()
             neut_query["sentiment_class"] = "neutral"
-            neut_count = db.reviews.count_documents(neut_query)
+            neut_count = db["reviews"].count_documents(neut_query)
             
             neg_query = query.copy()
             neg_query["sentiment_class"] = "negative"
-            neg_count = db.reviews.count_documents(neg_query)
+            neg_count = db["reviews"].count_documents(neg_query)
             
             # Store counts for this month
             positive[month - 1] = pos_count
@@ -379,9 +376,8 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
     shifts = []
     
     try:
-        # Get MongoDB client
-        client = get_mongo_client()
-        db = client.sentiment_ecommerce
+        # Get MongoDB client and db
+        _, db = get_mongo_client()
         
         # Calculate potential shift points at 2-week intervals
         total_days = (end_date - start_date).days
