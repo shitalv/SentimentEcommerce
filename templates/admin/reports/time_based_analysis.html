@@ -244,6 +244,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // First check if all elements exist to prevent errors
+    const validateElements = () => {
+        const requiredElements = [
+            'product-selector-container', 
+            'category-selector-container',
+            'refresh-btn',
+            'export-btn',
+            'time-period',
+            'apply-filters-btn'
+        ];
+        
+        for (const id of requiredElements) {
+            if (!document.getElementById(id)) {
+                console.error(`Element with ID "${id}" not found`);
+                return false;
+            }
+        }
+        return true;
+    };
+    
+    if (!validateElements()) {
+        console.error("Some required elements are missing, initialization aborted");
+        return;
+    }
+    
     // Set up filter toggle functionality
     document.querySelectorAll('input[name="filter-type"]').forEach(input => {
         input.addEventListener('change', function() {
@@ -486,113 +511,132 @@ function showEmptyState() {
 }
 
 function updateTimeSeriesChart(timeSeriesData) {
-    // Reset container and create new canvas
-    document.getElementById('time-series-chart-container').innerHTML = 
-        '<canvas id="time-series-chart"></canvas>';
-    
-    const ctx = document.getElementById('time-series-chart').getContext('2d');
-    
-    // If no data, show empty state
-    if (!timeSeriesData || !timeSeriesData.labels || timeSeriesData.labels.length === 0) {
+    try {
+        // Reset container and create new canvas
         document.getElementById('time-series-chart-container').innerHTML = 
-            '<div class="alert alert-info text-center m-3">No time series data available for the selected filters</div>';
-        return;
-    }
-    
-    // Create chart
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: timeSeriesData.labels,
-            datasets: [
-                {
-                    label: 'Overall Sentiment',
-                    data: timeSeriesData.overall_sentiment,
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false
-                },
-                {
-                    label: 'Positive Sentiment',
-                    data: timeSeriesData.positive_sentiment,
-                    borderColor: 'rgba(40, 167, 69, 1)',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false
-                },
-                {
-                    label: 'Negative Sentiment',
-                    data: timeSeriesData.negative_sentiment,
-                    borderColor: 'rgba(220, 53, 69, 1)',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false
-                },
-                {
-                    label: 'Review Volume',
-                    data: timeSeriesData.review_volume,
-                    borderColor: 'rgba(108, 117, 125, 1)',
-                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    tension: 0.4,
-                    fill: false,
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Sentiment Evolution Over Time',
-                    font: {
-                        size: 16
-                    }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
-                },
-                legend: {
-                    position: 'top'
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Time Period'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    max: 1,
-                    title: {
-                        display: true,
-                        text: 'Sentiment Score'
-                    }
-                },
-                y1: {
-                    beginAtZero: true,
-                    position: 'right',
-                    grid: {
-                        drawOnChartArea: false
+            '<canvas id="time-series-chart"></canvas>';
+        
+        const chartElement = document.getElementById('time-series-chart');
+        if (!chartElement) {
+            console.error("Chart element 'time-series-chart' not found after creation");
+            showEmptyState();
+            return;
+        }
+        
+        const ctx = chartElement.getContext('2d');
+        if (!ctx) {
+            console.error("Failed to get 2D context from canvas");
+            document.getElementById('time-series-chart-container').innerHTML = 
+                '<div class="alert alert-danger text-center m-3">Failed to initialize chart context. Please try reloading the page.</div>';
+            return;
+        }
+        
+        // If no data, show empty state
+        if (!timeSeriesData || !timeSeriesData.labels || timeSeriesData.labels.length === 0) {
+            document.getElementById('time-series-chart-container').innerHTML = 
+                '<div class="alert alert-info text-center m-3">No time series data available for the selected filters</div>';
+            return;
+        }
+        
+        // Create chart
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: timeSeriesData.labels,
+                datasets: [
+                    {
+                        label: 'Overall Sentiment',
+                        data: timeSeriesData.overall_sentiment,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false
                     },
+                    {
+                        label: 'Positive Sentiment',
+                        data: timeSeriesData.positive_sentiment,
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false
+                    },
+                    {
+                        label: 'Negative Sentiment',
+                        data: timeSeriesData.negative_sentiment,
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false
+                    },
+                    {
+                        label: 'Review Volume',
+                        data: timeSeriesData.review_volume,
+                        borderColor: 'rgba(108, 117, 125, 1)',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        fill: false,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
                     title: {
                         display: true,
-                        text: 'Review Count'
+                        text: 'Sentiment Evolution Over Time',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time Period'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        title: {
+                            display: true,
+                            text: 'Sentiment Score'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Review Count'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error("Error creating time series chart:", error);
+        document.getElementById('time-series-chart-container').innerHTML = 
+            `<div class="alert alert-danger text-center m-3">Error creating chart: ${error.message}</div>`;
+    }
 }
 
 function updateSeasonalChart(seasonalData) {
