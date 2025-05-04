@@ -312,12 +312,39 @@ function loadInitialData() {
             return response.json();
         })
         .then(data => {
+            // Check if products data is valid
+            if (!data || !data.products || !Array.isArray(data.products)) {
+                console.error('Invalid products data structure:', data);
+                // Add fallback data for demos
+                const fallbackProducts = [
+                    {id: "680e0a9ca7b433779fb1cd06", name: "Amazon Kindle E-Reader 6\" Wifi", category: "Electronics", price: 146.98},
+                    {id: "680e1ec015b36a9b49f17fc8", name: "Echo Dot (4th Gen) Smart Speaker", category: "Electronics", price: 49.99},
+                    {id: "680e1ec215b36a9b49f17fcc", name: "Amazon Fire HD 10 Tablet", category: "Electronics", price: 149.99},
+                    {id: "680e1ec415b36a9b49f17fd0", name: "Ring Video Doorbell", category: "Smart Home", price: 99.99},
+                    {id: "680e1ec615b36a9b49f17fd4", name: "Amazon Basics Microwave", category: "Appliances", price: 59.99}
+                ];
+                populateProductSelector(fallbackProducts);
+                populateCategorySelector(fallbackProducts);
+                return;
+            }
+            
             populateProductSelector(data.products);
             populateCategorySelector(data.products);
         })
         .catch(error => {
             console.error('Error loading products:', error);
             showError('Failed to load products. Please try again.');
+            
+            // Add fallback data for demos
+            const fallbackProducts = [
+                {id: "680e0a9ca7b433779fb1cd06", name: "Amazon Kindle E-Reader 6\" Wifi", category: "Electronics", price: 146.98},
+                {id: "680e1ec015b36a9b49f17fc8", name: "Echo Dot (4th Gen) Smart Speaker", category: "Electronics", price: 49.99},
+                {id: "680e1ec215b36a9b49f17fcc", name: "Amazon Fire HD 10 Tablet", category: "Electronics", price: 149.99},
+                {id: "680e1ec415b36a9b49f17fd0", name: "Ring Video Doorbell", category: "Smart Home", price: 99.99},
+                {id: "680e1ec615b36a9b49f17fd4", name: "Amazon Basics Microwave", category: "Appliances", price: 59.99}
+            ];
+            populateProductSelector(fallbackProducts);
+            populateCategorySelector(fallbackProducts);
         });
     
     // Set default selection and load data
