@@ -7,7 +7,7 @@ This module sets up the application and serves as the entry point.
 import os
 import sys
 import logging
-from flask import redirect, render_template, Flask, jsonify
+from flask import redirect, render_template, Flask, jsonify, send_from_directory
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -63,6 +63,25 @@ def root_page():
     logger.info("ROOT PAGE ACCESSED - Serving frontend application")
     from flask import send_from_directory
     return send_from_directory('frontend/public', 'index.html')
+
+# Direct access to Hype vs Reality standalone page
+@app.route('/hype-reality-standalone')
+def hype_reality_standalone():
+    """Serve the standalone Hype vs Reality page"""
+    return send_from_directory('templates/admin/reports', 'hype_reality_standalone.html')
+
+# Add time series analysis to the standalone page
+@app.route('/api/time-series/<product_id>')
+def time_series_data(product_id):
+    """API endpoint for time series data"""
+    # Example time series data
+    data = {
+        "dates": ["2025-01-01", "2025-02-01", "2025-03-01", "2025-04-01", "2025-05-01"],
+        "sentiment_scores": [0.65, 0.72, 0.68, 0.81, 0.79],
+        "review_counts": [2, 3, 2, 5, 4],
+        "product_id": product_id
+    }
+    return jsonify(data)
 
 # Admin direct access routes - ensure all of these work
 @app.route('/admin-portal')
@@ -126,6 +145,7 @@ def emergency_direct():
                     <div class="list-group mt-2">
                         <a href="/direct/sentiment" class="list-group-item list-group-item-action list-group-item-success">Sentiment Reports (Direct)</a>
                         <a href="/direct/hype-reality" class="list-group-item list-group-item-action list-group-item-success">Hype vs Reality (Direct)</a>
+                        <a href="/hype-reality-standalone" class="list-group-item list-group-item-action list-group-item-success">Hype vs Reality (Standalone Version)</a>
                         <a href="/direct/products" class="list-group-item list-group-item-action list-group-item-success">Products Report (Direct)</a>
                     </div>
                 </div>

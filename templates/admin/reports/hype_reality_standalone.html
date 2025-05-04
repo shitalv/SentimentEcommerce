@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hype vs. Reality Analysis | Sentiment Platform</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        main {
+            padding-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+                <div class="sidebar-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/products">
+                                <i class="fas fa-box me-2"></i>Products
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/reviews">
+                                <i class="fas fa-comment me-2"></i>Reviews
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="fas fa-users me-2"></i>Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/settings">
+                                <i class="fas fa-cog me-2"></i>Settings
+                            </a>
+                        </li>
+                    </ul>
+
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>Reports</span>
+                    </h6>
+                    <ul class="nav flex-column mb-2">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/reports/sentiment">
+                                <i class="fas fa-chart-bar me-2"></i>Sentiment Analysis
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/reports/products">
+                                <i class="fas fa-chart-line me-2"></i>Product Performance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/reports/hype-reality">
+                                <i class="fas fa-balance-scale me-2"></i>Hype vs. Reality
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Hype vs. Reality Analysis</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-analysis">
+                                <i class="fas fa-sync me-1"></i>Refresh
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="export-analysis">
+                                <i class="fas fa-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Introduction Card -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-dark-subtle">
+                                <h5 class="mb-0">Understanding Hype vs. Reality Analysis</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>This analysis compares marketing claims found in product descriptions (the "hype") with actual customer experiences shared in reviews (the "reality"). The system identifies:</p>
+                                <ul>
+                                    <li><span class="badge bg-success me-2">Confirmed Claims</span> Marketing points that are supported by customer reviews</li>
+                                    <li><span class="badge bg-danger me-2">Contradicted Claims</span> Marketing points that are contradicted by customer reviews</li>
+                                    <li><span class="badge bg-secondary me-2">Unmentioned Claims</span> Marketing points that customers don't mention at all</li>
+                                </ul>
+                                <p>This helps identify potential gaps between marketing and customer experience, allowing for more authentic product positioning.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Analysis -->
+                <div class="row">
+                    <!-- Product Selector Card -->
+                    <div class="col-md-12 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-dark-subtle">
+                                <h5 class="mb-0">Select Product</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <select class="form-select" id="product-selector">
+                                            <option value="" selected disabled>Choose a product to analyze...</option>
+                                            <option value="1">Amazon Kindle E-Reader 6" Wifi (8th Generation, 2016)</option>
+                                            <option value="2">Echo Dot (4th Gen) Smart Speaker</option>
+                                            <option value="3">Amazon Fire HD 10 Tablet</option>
+                                            <option value="4">Amazon Basics Microfiber Cleaning Cloth</option>
+                                            <option value="5">Amazon Essentials Men's Slim-Fit T-Shirt</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-grid">
+                                            <button type="button" class="btn btn-primary" id="analyze-button">
+                                                <i class="fas fa-balance-scale me-2"></i>Analyze
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Results -->
+                    <div class="col-md-12">
+                        <div class="card shadow-sm" id="analysis-card" style="display: none;">
+                            <div class="card-header bg-dark-subtle d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0" id="product-name">Product Analysis</h5>
+                                <span class="badge bg-info" id="review-count-badge">Based on 0 reviews</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h6 class="border-bottom pb-2 mb-3">Product Description (Marketing Claims)</h6>
+                                        <p id="product-description" class="bg-light p-3 rounded">Select a product to view its description.</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="border-bottom pb-2 mb-3">Customer Review Highlights</h6>
+                                        <div id="review-highlights" class="bg-light p-3 rounded">
+                                            <p class="text-muted">Select a product to view review highlights.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h6 class="border-bottom pb-2 mb-3">Hype vs. Reality Analysis</h6>
+                                
+                                <!-- Analysis Summary -->
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <div class="card bg-light h-100">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-title text-success">Confirmed Claims</h6>
+                                                <div class="display-4 mb-2" id="confirmed-count">0</div>
+                                                <p class="card-text text-muted">Marketing claims supported by customer reviews</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light h-100">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-title text-danger">Contradicted Claims</h6>
+                                                <div class="display-4 mb-2" id="contradicted-count">0</div>
+                                                <p class="card-text text-muted">Marketing claims contradicted by customer reviews</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card bg-light h-100">
+                                            <div class="card-body text-center">
+                                                <h6 class="card-title text-secondary">Unmentioned Claims</h6>
+                                                <div class="display-4 mb-2" id="unmentioned-count">0</div>
+                                                <p class="card-text text-muted">Marketing claims not mentioned in reviews</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Reality Score -->
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <h6>Reality Score</h6>
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar bg-success" id="reality-score-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                        </div>
+                                        <small class="text-muted">
+                                            The Reality Score measures how well marketing claims align with customer experiences. 
+                                            Higher scores indicate better alignment between marketing and reality.
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Time Series Analysis -->
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <h6 class="border-bottom pb-2 mb-3">Sentiment Time Series Analysis</h6>
+                                        <canvas id="time-series-chart" style="height: 300px;"></canvas>
+                                        <small class="text-muted mt-2">
+                                            This chart shows how customer sentiment has changed over time, based on review dates.
+                                            Higher scores indicate more positive sentiment.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Detailed Analysis Table -->
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col" style="width: 50%">Marketing Claim</th>
+                                                <th scope="col" style="width: 15%">Status</th>
+                                                <th scope="col" style="width: 35%">Customer Feedback</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="analysis-table-body">
+                                            <tr>
+                                                <td colspan="3" class="text-center">Select a product to view analysis.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper (required for Bootstrap components) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js library for time series visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up event listeners
+        document.getElementById('analyze-button').addEventListener('click', analyzeProduct);
+        document.getElementById('refresh-analysis').addEventListener('click', function() {
+            const productSelect = document.getElementById('product-selector');
+            if (productSelect.value) {
+                analyzeProduct();
+            } else {
+                showError('Please select a product to analyze.');
+            }
+        });
+        
+        // Export analysis
+        document.getElementById('export-analysis').addEventListener('click', function() {
+            const productSelect = document.getElementById('product-selector');
+            if (productSelect.value) {
+                showSuccess('Exporting analysis as PDF...');
+                // Add export functionality here
+            } else {
+                showError('Please select a product to analyze first.');
+            }
+        });
+    });
+
+    // Show error message
+    function showError(message) {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = message + 
+            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+        
+        // Insert at the top of the content area
+        const contentArea = document.querySelector('main');
+        contentArea.insertBefore(alertDiv, contentArea.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, 5000);
+    }
+
+    // Show success message
+    function showSuccess(message) {
+        // Create alert element
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = message +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+        
+        // Insert at the top of the content area
+        const contentArea = document.querySelector('main');
+        contentArea.insertBefore(alertDiv, contentArea.firstChild);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 150);
+        }, 5000);
+    }
+
+    // Analyze selected product
+    function analyzeProduct() {
+        const productId = document.getElementById('product-selector').value;
+        
+        if (!productId) {
+            showError('Please select a product to analyze.');
+            return;
+        }
+        
+        // Show loading state
+        document.getElementById('analyze-button').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
+        document.getElementById('analyze-button').disabled = true;
+        
+        try {
+            // Get product data
+            const productData = getProductData(productId);
+            
+            // Reset button state
+            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+            document.getElementById('analyze-button').disabled = false;
+            
+            // Show analysis card
+            document.getElementById('analysis-card').style.display = 'block';
+            
+            // Update product info
+            document.getElementById('product-name').textContent = productData.name;
+            document.getElementById('product-description').textContent = productData.description;
+            
+            // Update review count badge
+            document.getElementById('review-count-badge').textContent = `Based on ${productData.reviewCount} reviews`;
+            
+            // Update review highlights
+            const reviewHighlightsEl = document.getElementById('review-highlights');
+            let highlightsHtml = '';
+            
+            productData.reviewHighlights.forEach(highlight => {
+                let badgeClass = 'bg-secondary';
+                if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
+                if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+                
+                highlightsHtml += 
+                    '<div class="mb-2">' +
+                    '<span class="badge ' + badgeClass + ' me-2">' + highlight.sentiment + '</span>' +
+                    '"' + highlight.text + '"' +
+                    '</div>';
+            });
+            
+            reviewHighlightsEl.innerHTML = highlightsHtml;
+            
+            // Update analysis counts
+            const confirmedClaims = productData.claims.filter(claim => claim.status === 'confirmed').length;
+            const contradictedClaims = productData.claims.filter(claim => claim.status === 'contradicted').length;
+            const unmentionedClaims = productData.claims.filter(claim => claim.status === 'unmentioned').length;
+            
+            document.getElementById('confirmed-count').textContent = confirmedClaims;
+            document.getElementById('contradicted-count').textContent = contradictedClaims;
+            document.getElementById('unmentioned-count').textContent = unmentionedClaims;
+            
+            // Update reality score
+            const realityScoreBar = document.getElementById('reality-score-bar');
+            realityScoreBar.style.width = productData.realityScore + '%';
+            realityScoreBar.textContent = productData.realityScore + '%';
+            realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
+            
+            // Set color based on score
+            if (productData.realityScore >= 80) {
+                realityScoreBar.className = 'progress-bar bg-success';
+            } else if (productData.realityScore >= 60) {
+                realityScoreBar.className = 'progress-bar bg-warning';
+            } else {
+                realityScoreBar.className = 'progress-bar bg-danger';
+            }
+            
+            // Update detailed analysis table
+            const tableBody = document.getElementById('analysis-table-body');
+            tableBody.innerHTML = '';
+            
+            productData.claims.forEach(claim => {
+                const row = document.createElement('tr');
+                
+                // Set row background based on status
+                if (claim.status === 'confirmed') {
+                    row.className = 'table-success';
+                } else if (claim.status === 'contradicted') {
+                    row.className = 'table-danger';
+                } else {
+                    row.className = 'table-secondary';
+                }
+                
+                // Create status badge
+                let badgeClass = 'bg-secondary';
+                let statusText = 'Unmentioned';
+                
+                if (claim.status === 'confirmed') {
+                    badgeClass = 'bg-success';
+                    statusText = 'Confirmed';
+                } else if (claim.status === 'contradicted') {
+                    badgeClass = 'bg-danger';
+                    statusText = 'Contradicted';
+                }
+                
+                const statusBadge = '<span class="badge ' + badgeClass + '">' + statusText + '</span>';
+                
+                row.innerHTML = 
+                    '<td>' + claim.text + '</td>' +
+                    '<td class="text-center">' + statusBadge + '</td>' +
+                    '<td>' + claim.feedback + '</td>';
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Scroll to analysis results
+            document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
+            
+            // Load time series data
+            loadTimeSeriesData(productId);
+            
+            // Show success message
+            showSuccess('Analysis completed successfully.');
+        } catch (error) {
+            // Reset button state
+            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+            document.getElementById('analyze-button').disabled = false;
+            
+            // Show error
+            showError('Failed to analyze product. Please try again.');
+            console.error('Error analyzing product:', error);
+        }
+    }
+    
+    // Chart instance for time series
+    let timeSeriesChart = null;
+    
+    // Load time series data for a product
+    function loadTimeSeriesData(productId) {
+        // Clear existing chart if any
+        if (timeSeriesChart) {
+            timeSeriesChart.destroy();
+        }
+        
+        // Fetch time series data from API
+        fetch(`/api/time-series/${productId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Create the chart
+                const ctx = document.getElementById('time-series-chart').getContext('2d');
+                
+                timeSeriesChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.dates,
+                        datasets: [
+                            {
+                                label: 'Sentiment Score',
+                                data: data.sentiment_scores,
+                                borderColor: 'rgba(40, 167, 69, 1)',
+                                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Review Count',
+                                data: data.review_counts,
+                                borderColor: 'rgba(0, 123, 255, 1)',
+                                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.3,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                min: 0,
+                                max: 1,
+                                title: {
+                                    display: true,
+                                    text: 'Sentiment Score (0-1)'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                min: 0,
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Review Count'
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching time series data:', error);
+                showError('Failed to load time series data');
+            });
+        }
+    }
+
+    // Get product data function
+    function getProductData(productId) {
+        // Demo product data
+        const products = {
+            "1": {
+                name: "Amazon Kindle E-Reader 6\" Wifi (8th Generation, 2016)",
+                description: "The all-new Kindle e-reader is our best yet, featuring a high-resolution display with excellent contrast for crisp, clear text. The perfect reading experience with no screen glare, even in bright sunlight. With innovative built-in adjustable light for reading day and night. Enjoy a fantastic battery life that lasts for weeks on a single charge. Lightweight and comfortable to hold for hours of effortless reading. Our advanced page-turning technology makes navigation intuitive and responsive. The perfect companion for book lovers!",
+                reviewCount: 9,
+                reviewHighlights: [
+                    { 
+                        sentiment: "positive",
+                        text: "The screen is perfect for reading, no eye strain even after hours"
+                    },
+                    { 
+                        sentiment: "positive",
+                        text: "Battery life is amazing, lasts for weeks"
+                    },
+                    { 
+                        sentiment: "negative",
+                        text: "Page turning is sometimes sluggish"
+                    }
+                ],
+                claims: [
+                    { 
+                        text: "High-resolution display with excellent contrast", 
+                        status: "confirmed", 
+                        feedback: "Multiple reviews praise the display quality and readability." 
+                    },
+                    { 
+                        text: "No screen glare even in sunlight", 
+                        status: "confirmed", 
+                        feedback: "Users specifically mention reading outdoors without glare issues." 
+                    },
+                    { 
+                        text: "Built-in adjustable light for reading day and night", 
+                        status: "confirmed", 
+                        feedback: "Night reading capability is mentioned positively in several reviews." 
+                    },
+                    { 
+                        text: "Fantastic battery life that lasts for weeks", 
+                        status: "confirmed", 
+                        feedback: "Battery life is consistently praised in reviews, confirming the weeks-long claim." 
+                    },
+                    { 
+                        text: "Advanced page-turning technology makes navigation intuitive", 
+                        status: "contradicted", 
+                        feedback: "Several reviews mention sluggish or inconsistent page turning." 
+                    }
+                ],
+                realityScore: 80
+            },
+            "2": {
+                name: "Echo Dot (4th Gen) Smart Speaker",
+                description: "Experience the revolutionary Echo with Alexa, featuring premium sound quality for an immersive listening experience. The most advanced voice recognition technology responds instantly to your commands. Expertly designed with high-quality speakers for rich, detailed audio that fills the room. Control your smart home with superior reliability and performance. The sleek, modern design complements any room decor. The best smart speaker on the market, with unparalleled voice recognition accuracy and response time.",
+                reviewCount: 3,
+                reviewHighlights: [
+                    { 
+                        sentiment: "positive",
+                        text: "Sound quality is excellent for a speaker this size"
+                    },
+                    { 
+                        sentiment: "positive",
+                        text: "Alexa responds quickly to most commands"
+                    },
+                    { 
+                        sentiment: "negative",
+                        text: "Sometimes misunderstands commands in noisy environments"
+                    }
+                ],
+                claims: [
+                    { 
+                        text: "Premium sound quality for an immersive listening experience", 
+                        status: "confirmed", 
+                        feedback: "Sound quality is praised in most reviews, though some mention limitations due to size." 
+                    },
+                    { 
+                        text: "Most advanced voice recognition technology responds instantly", 
+                        status: "contradicted", 
+                        feedback: "While response time is generally quick, several reviews mention recognition issues in certain conditions." 
+                    },
+                    { 
+                        text: "Rich, detailed audio that fills the room", 
+                        status: "contradicted", 
+                        feedback: "Multiple reviews mention the sound is good for its size but doesn't fill larger rooms." 
+                    },
+                    { 
+                        text: "Superior reliability and performance for smart home control", 
+                        status: "unmentioned", 
+                        feedback: "Few reviews discuss smart home control capabilities in detail." 
+                    },
+                    { 
+                        text: "Sleek, modern design complements any room decor", 
+                        status: "confirmed", 
+                        feedback: "Design is frequently praised in reviews." 
+                    }
+                ],
+                realityScore: 65
+            },
+            "3": {
+                name: "Amazon Fire HD 10 Tablet",
+                description: "The Fire tablet delivers exceptional performance at an incredible value. Experience lightning-fast processing speeds for smooth multitasking. Featuring a stunning high-definition display with vivid colors and outstanding clarity. The perfect balance of power and portability for on-the-go entertainment. Incredibly durable construction with excellent battery life that lasts all day. Award-winning customer service and support. The best tablet experience in its price range, with unmatched reliability and versatility.",
+                reviewCount: 3,
+                reviewHighlights: [
+                    { 
+                        sentiment: "positive",
+                        text: "Great value for the price point"
+                    },
+                    { 
+                        sentiment: "positive",
+                        text: "Screen quality is excellent for media consumption"
+                    },
+                    { 
+                        sentiment: "negative",
+                        text: "Performance lags when running multiple apps"
+                    }
+                ],
+                claims: [
+                    { 
+                        text: "Exceptional performance with lightning-fast processing", 
+                        status: "contradicted", 
+                        feedback: "Multiple reviews mention performance lags, especially with multiple apps." 
+                    },
+                    { 
+                        text: "Stunning high-definition display with vivid colors", 
+                        status: "confirmed", 
+                        feedback: "Display quality is consistently praised across reviews." 
+                    },
+                    { 
+                        text: "Perfect balance of power and portability", 
+                        status: "confirmed", 
+                        feedback: "Many reviews specifically mention the good balance of features and portability." 
+                    },
+                    { 
+                        text: "Incredibly durable construction", 
+                        status: "unmentioned", 
+                        feedback: "Few reviews discuss durability or build quality in detail." 
+                    },
+                    { 
+                        text: "Excellent battery life that lasts all day", 
+                        status: "confirmed", 
+                        feedback: "Battery life is frequently praised as lasting a full day of use." 
+                    }
+                ],
+                realityScore: 70
+            },
+            "4": {
+                name: "Amazon Basics Microfiber Cleaning Cloth",
+                description: "Premium quality microfiber cloths designed for superior cleaning performance. Ultra-absorbent material picks up dust, dirt, and grime without scratching delicate surfaces. Versatile cleaning solution for all household needs, from kitchens to electronics. Each cloth can be washed and reused hundreds of times for exceptional value. Engineered with advanced microfiber technology to clean effectively with just water, reducing the need for chemical cleaners. Eco-friendly and cost-effective solution for the modern home.",
+                reviewCount: 2,
+                reviewHighlights: [
+                    { 
+                        sentiment: "positive",
+                        text: "Cleans screens and glasses without leaving streaks"
+                    },
+                    { 
+                        sentiment: "positive",
+                        text: "Holds up well after multiple washes"
+                    },
+                    { 
+                        sentiment: "neutral",
+                        text: "Standard microfiber cloths, nothing special but they work"
+                    }
+                ],
+                claims: [
+                    { 
+                        text: "Premium quality microfiber cloths for superior cleaning", 
+                        status: "contradicted", 
+                        feedback: "Many reviews describe them as standard or basic, not premium." 
+                    },
+                    { 
+                        text: "Ultra-absorbent material picks up dust, dirt and grime", 
+                        status: "confirmed", 
+                        feedback: "Cleaning ability is generally praised across reviews." 
+                    },
+                    { 
+                        text: "Doesn't scratch delicate surfaces", 
+                        status: "confirmed", 
+                        feedback: "Safe use on screens and other delicate surfaces is frequently mentioned." 
+                    },
+                    { 
+                        text: "Each cloth can be washed and reused hundreds of times", 
+                        status: "confirmed", 
+                        feedback: "Durability through washing is mentioned positively in multiple reviews." 
+                    },
+                    { 
+                        text: "Advanced microfiber technology to clean effectively with just water", 
+                        status: "unmentioned", 
+                        feedback: "Few reviews specifically discuss using the cloths with just water versus cleaning solutions." 
+                    }
+                ],
+                realityScore: 75
+            },
+            "5": {
+                name: "Amazon Essentials Men's Slim-Fit T-Shirt",
+                description: "Premium cotton blend t-shirt designed for exceptional comfort and durability. Tailored with a modern slim fit that flatters your physique without restricting movement. Featuring super soft jersey fabric with a lightweight feel that's perfect for everyday wear. Comfortable, tag-free neck prevents irritation while ribbed collar maintains its shape wash after wash. Versatile essential available in a range of colors to complement any wardrobe. Superior quality construction ensures these shirts maintain their fit and color even after multiple washes.",
+                reviewCount: 1,
+                reviewHighlights: [
+                    { 
+                        sentiment: "positive",
+                        text: "Comfortable fit that's not too tight or loose"
+                    },
+                    { 
+                        sentiment: "positive",
+                        text: "Fabric feels soft against the skin"
+                    },
+                    { 
+                        sentiment: "neutral",
+                        text: "Standard t-shirt, good value for the price"
+                    }
+                ],
+                claims: [
+                    { 
+                        text: "Premium cotton blend for exceptional comfort", 
+                        status: "confirmed", 
+                        feedback: "Comfort is frequently mentioned positively in reviews." 
+                    },
+                    { 
+                        text: "Modern slim fit that flatters your physique", 
+                        status: "confirmed", 
+                        feedback: "Multiple reviews praise the flattering slim fit without being too tight." 
+                    },
+                    { 
+                        text: "Super soft jersey fabric with a lightweight feel", 
+                        status: "confirmed", 
+                        feedback: "Users consistently mention the soft fabric and comfort." 
+                    },
+                    { 
+                        text: "Comfortable, tag-free neck", 
+                        status: "confirmed", 
+                        feedback: "The tag-free design is specifically appreciated in several reviews." 
+                    }
+                ],
+                realityScore: 95
+            }
+        };
+        
+        return products[productId];
+    }
+    </script>
+</body>
+</html>
