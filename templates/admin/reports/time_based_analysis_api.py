@@ -431,8 +431,8 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
             'significance': "p < 0.01" if significance > 0.3 else "p < 0.05"
         })
     
-    # Sort by significance
-    shifts.sort(key=lambda x: x['significance'], reverse=True)
+    # Sort by the absolute value of the change (not by significance string)
+    shifts.sort(key=lambda x: abs(x['change']), reverse=True)
     
     return shifts
 

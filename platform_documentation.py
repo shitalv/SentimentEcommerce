@@ -390,16 +390,25 @@ def generate_pdf():
     story.append(Paragraph("Anomaly Detection Parameter Tuning", styles['Heading3']))
     anomaly_items = [
         ListItem(Paragraph(
-            "<b>Sensitivity Thresholds:</b> Calibrated to identify true sentiment shifts while minimizing false positives.",
+            "<b>Sensitivity Thresholds:</b> Calibrated to identify true sentiment shifts while minimizing false positives. "
+            "Shifts are considered significant when they exceed a minimum relative change of 15% in sentiment score with sufficient "
+            "review volume to ensure statistical validity.",
             styles['Justify']
         )),
         ListItem(Paragraph(
             "<b>Statistical Significance Testing:</b> Implemented t-tests with p-value thresholds of 0.05 to ensure detected shifts "
-            "are statistically significant.",
+            "are statistically significant (p < 0.05 indicates 95% confidence that the change is not due to random variation, "
+            "while p < 0.01 indicates 99% confidence level for more dramatic shifts).",
             styles['Justify']
         )),
         ListItem(Paragraph(
-            "<b>Moving Window Size:</b> Optimized to 14-day windows for short-term shifts and 30-day windows for longer-term trend detection.",
+            "<b>Moving Window Size:</b> Optimized to 14-day windows for short-term shifts and 30-day windows for longer-term trend detection. "
+            "The comparison is made between equal-sized windows before and after the potential shift point to ensure a fair comparison.",
+            styles['Justify']
+        )),
+        ListItem(Paragraph(
+            "<b>Volume Weighting:</b> Review volume is considered in the significance calculation, giving more weight to shifts "
+            "supported by larger sample sizes. The minimum threshold for a reliable shift detection is 20 reviews in each comparison window.",
             styles['Justify']
         ))
     ]
