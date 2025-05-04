@@ -53,67 +53,16 @@ def direct_links_page():
         logger.error(f"Error rendering direct_links template: {e}")
         return f"<h1>Direct Links</h1><p>Error rendering template: {e}</p>"
 
-# Direct access to the frontend React app without authentication
-@app.route('/frontend_direct')
-def frontend_direct():
-    """Direct access to the frontend React app without authentication
-    
-    This route serves the React app directly without any authentication checks
-    """
-    from flask import send_from_directory
-    return send_from_directory('frontend/public', 'index.html')
-
-# Root URL handler - ensure there's something at the root path
+# Root URL handler - serve the frontend application
 @app.route('/')
 def root_page():
     """Root page - single source of truth for root URL handling
 
-    Serve a static emergency page with links to all important sections.
-    This ensures something is always visible at the root URL.
+    Serve the frontend application with product listings that don't require authentication
     """
-    logger.info("ROOT PAGE ACCESSED - Serving static HTML")
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Sentiment E-commerce Platform</title>
-        <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-            body { padding: 20px; }
-            .btn { margin: 5px; }
-            .container { max-width: 900px; margin: 0 auto; }
-            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Sentiment E-commerce Platform</h1>
-            <p>AI-powered product insights based on customer sentiment analysis</p>
-
-            <div class="card bg-primary text-white mb-4 p-4">
-                <h2>Direct Navigation</h2>
-                <div class="grid">
-                    <a href="/admin" class="btn btn-light">Admin Dashboard</a>
-                    <a href="/admin/products" class="btn btn-light">Products</a>
-                    <a href="/admin/reviews" class="btn btn-light">Reviews</a>
-                    <a href="/admin/reports/sentiment" class="btn btn-light">Sentiment Reports</a>
-                    <a href="/admin/reports/hype-reality" class="btn btn-light">Hype vs Reality</a>
-                    <a href="/emergency" class="btn btn-light">Emergency Navigation</a>
-                </div>
-                
-                <h3 class="mt-4 text-light">Direct Access Links (No Login Required)</h3>
-                <div class="grid">
-                    <a href="/direct/sentiment" class="btn btn-success">Sentiment Reports (Direct)</a>
-                    <a href="/direct/hype-reality" class="btn btn-success">Hype vs Reality (Direct)</a>
-                    <a href="/direct/products" class="btn btn-success">Products Report (Direct)</a>
-                    <a href="/frontend_direct" class="btn btn-success">View Product Listings (Direct)</a>
-                </div>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    logger.info("ROOT PAGE ACCESSED - Serving frontend application")
+    from flask import send_from_directory
+    return send_from_directory('frontend/public', 'index.html')
 
 # Admin direct access routes - ensure all of these work
 @app.route('/admin-portal')
