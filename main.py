@@ -82,6 +82,42 @@ def sentiment_trends_dashboard():
         logger.error(f"Error rendering sentiment_trends template: {e}")
         return f"<h1>Sentiment Trend Monitoring</h1><p>Error rendering template: {e}</p>"
 
+# Direct access to Time-Based Analysis dashboard
+@app.route('/admin/reports/time-based-analysis')
+def time_based_analysis_dashboard():
+    """Serve the time-based sentiment analysis dashboard"""
+    try:
+        return render_template('admin/reports/time_based_analysis.html')
+    except Exception as e:
+        logger.error(f"Error rendering time_based_analysis template: {e}")
+        return f"<h1>Time-Based Sentiment Analysis</h1><p>Error rendering template: {e}</p>"
+
+# API endpoint for time-based analysis data
+@app.route('/admin/api/reports/time-based-analysis', methods=['GET'])
+def time_based_analysis_api():
+    """API endpoint for time-based sentiment analysis data"""
+    try:
+        # Import the API module
+        from templates.admin.reports.time_based_analysis_api import get_time_based_analysis
+        # Call the API function
+        return get_time_based_analysis()
+    except Exception as e:
+        logger.error(f"Error in time_based_analysis_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# API endpoint for time-based analysis export
+@app.route('/admin/api/reports/time-based-analysis/export', methods=['GET'])
+def time_based_analysis_export_api():
+    """API endpoint for exporting time-based analysis data"""
+    try:
+        # Import the API module
+        from templates.admin.reports.time_based_analysis_api import export_time_based_analysis
+        # Call the export function
+        return export_time_based_analysis()
+    except Exception as e:
+        logger.error(f"Error in time_based_analysis_export_api: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # Add time series analysis to the standalone page
 @app.route('/api/time-series/<product_id>')
 def time_series_data(product_id):

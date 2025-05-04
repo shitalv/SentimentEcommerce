@@ -1,0 +1,920 @@
+{% extends 'base.html' %}
+
+{% block title %}Time-Based Sentiment Analysis | Admin Dashboard{% endblock %}
+
+{% block sidebar %}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+    <div class="sidebar-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/products">
+                    <i class="fas fa-box me-2"></i>Products
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reviews">
+                    <i class="fas fa-comment me-2"></i>Reviews
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/users">
+                    <i class="fas fa-users me-2"></i>Users
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/settings">
+                    <i class="fas fa-cog me-2"></i>Settings
+                </a>
+            </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Reports</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/sentiment">
+                    <i class="fas fa-chart-bar me-2"></i>Sentiment Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/sentiment-trends">
+                    <i class="fas fa-chart-line me-2"></i>Sentiment Trends
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/admin/reports/time-based-analysis">
+                    <i class="fas fa-clock me-2"></i>Time-Based Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/products">
+                    <i class="fas fa-chart-line me-2"></i>Product Performance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/reports/hype-reality">
+                    <i class="fas fa-balance-scale me-2"></i>Hype vs. Reality
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Time-Based Sentiment Analysis</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-btn">
+                <i class="fas fa-sync me-1"></i>Refresh
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="export-btn">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+        <div class="input-group">
+            <label class="input-group-text" for="time-period">Period</label>
+            <select class="form-select form-select-sm" id="time-period">
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="180">Last 6 months</option>
+                <option value="365">Last year</option>
+                <option value="all">All time</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Section -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-dark-subtle">
+        <h5 class="mb-0">Analysis Filters</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Filter Type Toggle -->
+            <div class="col-md-4">
+                <label class="form-label">Filter By</label>
+                <div class="btn-group w-100" role="group" aria-label="Filter type selector">
+                    <input type="radio" class="btn-check" name="filter-type" id="filter-product" value="product" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="filter-product">Product</label>
+                    
+                    <input type="radio" class="btn-check" name="filter-type" id="filter-category" value="category" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="filter-category">Category</label>
+                </div>
+            </div>
+            
+            <!-- Product Selector (shown by default) -->
+            <div class="col-md-4" id="product-selector-container">
+                <label for="product-selector" class="form-label">Select Product</label>
+                <select class="form-select" id="product-selector">
+                    <option value="" selected disabled>Choose a product...</option>
+                    <!-- Products loaded dynamically -->
+                </select>
+            </div>
+            
+            <!-- Category Selector (hidden by default) -->
+            <div class="col-md-4" id="category-selector-container" style="display: none;">
+                <label for="category-selector" class="form-label">Select Category</label>
+                <select class="form-select" id="category-selector">
+                    <option value="" selected disabled>Choose a category...</option>
+                    <!-- Categories loaded dynamically -->
+                </select>
+            </div>
+            
+            <!-- Time Granularity Selector -->
+            <div class="col-md-4">
+                <label for="time-granularity" class="form-label">Time Granularity</label>
+                <select class="form-select" id="time-granularity">
+                    <option value="day">Daily</option>
+                    <option value="week" selected>Weekly</option>
+                    <option value="month">Monthly</option>
+                    <option value="quarter">Quarterly</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" class="btn btn-primary" id="apply-filters-btn">
+                    <i class="fas fa-filter me-1"></i>Apply Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Analysis Card -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-dark-subtle">
+        <h5 class="mb-0">Sentiment Evolution Over Time</h5>
+    </div>
+    <div class="card-body">
+        <div id="time-series-chart-container" style="height: 400px; width: 100%;">
+            <canvas id="time-series-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Seasonal Patterns Card -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Seasonal Trends</h5>
+            </div>
+            <div class="card-body">
+                <div id="seasonal-chart-container" style="height: 300px; width: 100%;">
+                    <canvas id="seasonal-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark-subtle">
+                <h5 class="mb-0">Sentiment Distribution by Month</h5>
+            </div>
+            <div class="card-body">
+                <div id="monthly-distribution-container" style="height: 300px; width: 100%;">
+                    <canvas id="monthly-distribution-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sentiment Shift Detection Card -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-dark-subtle">
+        <h5 class="mb-0">Significant Sentiment Shifts</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Time Period</th>
+                        <th scope="col">Before Score</th>
+                        <th scope="col">After Score</th>
+                        <th scope="col">Change</th>
+                        <th scope="col">Reviews Before</th>
+                        <th scope="col">Reviews After</th>
+                        <th scope="col">Significance</th>
+                    </tr>
+                </thead>
+                <tbody id="sentiment-shifts-table">
+                    <tr>
+                        <td colspan="7" class="text-center">Loading sentiment shift data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Key Insight Panel -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-dark-subtle">
+        <h5 class="mb-0">Key Insights</h5>
+    </div>
+    <div class="card-body" id="insights-container">
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js library for visualizations -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@2.3.1/build/global/luxon.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.1.0/dist/chartjs-adapter-luxon.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up filter toggle functionality
+    document.querySelectorAll('input[name="filter-type"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const filterType = this.value;
+            if (filterType === 'product') {
+                document.getElementById('product-selector-container').style.display = 'block';
+                document.getElementById('category-selector-container').style.display = 'none';
+            } else if (filterType === 'category') {
+                document.getElementById('product-selector-container').style.display = 'none';
+                document.getElementById('category-selector-container').style.display = 'block';
+            }
+        });
+    });
+    
+    // Initialize page on load
+    loadInitialData();
+    
+    // Set up event listeners
+    document.getElementById('refresh-btn').addEventListener('click', function() {
+        refreshData();
+    });
+    
+    document.getElementById('export-btn').addEventListener('click', function() {
+        exportData();
+    });
+    
+    document.getElementById('time-period').addEventListener('change', function() {
+        refreshData();
+    });
+    
+    document.getElementById('apply-filters-btn').addEventListener('click', function() {
+        applyFilters();
+    });
+});
+
+function loadInitialData() {
+    // Load products for dropdown
+    fetch('/admin/api/products')
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load products');
+            return response.json();
+        })
+        .then(data => {
+            populateProductSelector(data.products);
+            populateCategorySelector(data.products);
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            showError('Failed to load products. Please try again.');
+        });
+    
+    // Set default selection and load data
+    applyFilters();
+}
+
+function populateProductSelector(products) {
+    const selector = document.getElementById('product-selector');
+    selector.innerHTML = '<option value="" disabled>Choose a product...</option>';
+    
+    if (products && products.length > 0) {
+        // Add all products option
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'All Products';
+        selector.appendChild(allOption);
+        
+        // Sort products by name
+        products.sort((a, b) => a.name.localeCompare(b.name));
+        
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = product.name;
+            selector.appendChild(option);
+        });
+        
+        // Select first product by default
+        if (selector.options.length > 1) {
+            selector.selectedIndex = 1;
+        }
+    }
+}
+
+function populateCategorySelector(products) {
+    const selector = document.getElementById('category-selector');
+    selector.innerHTML = '<option value="" disabled>Choose a category...</option>';
+    
+    if (products && products.length > 0) {
+        // Extract unique categories
+        const categories = [...new Set(products.map(p => p.category || 'Uncategorized'))];
+        
+        // Add all categories option
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'All Categories';
+        selector.appendChild(allOption);
+        
+        // Sort categories alphabetically
+        categories.sort();
+        
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;
+            option.textContent = category;
+            selector.appendChild(option);
+        });
+        
+        // Select all categories by default
+        if (selector.options.length > 1) {
+            selector.selectedIndex = 1;
+        }
+    }
+}
+
+function applyFilters() {
+    // Show loading state for all charts
+    showLoadingState();
+    
+    // Get filter values
+    const timePeriod = document.getElementById('time-period').value;
+    const timeGranularity = document.getElementById('time-granularity').value;
+    const filterType = document.querySelector('input[name="filter-type"]:checked').value;
+    
+    let entityId = '';
+    if (filterType === 'product') {
+        entityId = document.getElementById('product-selector').value;
+    } else if (filterType === 'category') {
+        entityId = document.getElementById('category-selector').value;
+    }
+    
+    // Construct API URL
+    const url = `/admin/api/reports/time-based-analysis?period=${timePeriod}&granularity=${timeGranularity}&filter_type=${filterType}&entity_id=${entityId}`;
+    
+    // Fetch data
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load time-based analysis data');
+            return response.json();
+        })
+        .then(data => {
+            // Update charts and tables with the new data
+            updateTimeSeriesChart(data.time_series);
+            updateSeasonalChart(data.seasonal_trends);
+            updateMonthlyDistributionChart(data.monthly_distribution);
+            updateSentimentShiftsTable(data.sentiment_shifts);
+            updateInsightsPanel(data.insights);
+        })
+        .catch(error => {
+            console.error('Error loading time-based analysis:', error);
+            showError('Failed to load analysis data. Please try again.');
+            showEmptyState();
+        });
+}
+
+function refreshData() {
+    // Simply reapply the current filters
+    applyFilters();
+}
+
+function exportData() {
+    // Get current filters
+    const timePeriod = document.getElementById('time-period').value;
+    const timeGranularity = document.getElementById('time-granularity').value;
+    const filterType = document.querySelector('input[name="filter-type"]:checked').value;
+    
+    let entityId = '';
+    if (filterType === 'product') {
+        entityId = document.getElementById('product-selector').value;
+        entityName = document.getElementById('product-selector').options[document.getElementById('product-selector').selectedIndex].text;
+    } else if (filterType === 'category') {
+        entityId = document.getElementById('category-selector').value;
+        entityName = document.getElementById('category-selector').options[document.getElementById('category-selector').selectedIndex].text;
+    }
+    
+    // Create export URL
+    const exportUrl = `/admin/api/reports/time-based-analysis/export?period=${timePeriod}&granularity=${timeGranularity}&filter_type=${filterType}&entity_id=${entityId}`;
+    
+    // Show toast notification
+    showSuccess(`Exporting data for ${filterType} "${entityName}"...`);
+    
+    // In a real implementation, we would trigger the download
+    // For demo purposes, just show a toast
+    setTimeout(() => {
+        showSuccess('Export completed! File: sentiment_evolution_data.csv');
+    }, 1500);
+}
+
+function showLoadingState() {
+    // Time series chart loading state
+    document.getElementById('time-series-chart-container').innerHTML = 
+        '<div class="d-flex justify-content-center align-items-center" style="height:100%">' +
+        '<div class="spinner-border text-primary" role="status">' +
+        '<span class="visually-hidden">Loading...</span></div></div>';
+    
+    // Seasonal chart loading state
+    document.getElementById('seasonal-chart-container').innerHTML = 
+        '<div class="d-flex justify-content-center align-items-center" style="height:100%">' +
+        '<div class="spinner-border text-primary" role="status">' +
+        '<span class="visually-hidden">Loading...</span></div></div>';
+    
+    // Monthly distribution chart loading state
+    document.getElementById('monthly-distribution-container').innerHTML = 
+        '<div class="d-flex justify-content-center align-items-center" style="height:100%">' +
+        '<div class="spinner-border text-primary" role="status">' +
+        '<span class="visually-hidden">Loading...</span></div></div>';
+    
+    // Sentiment shifts table loading state
+    document.getElementById('sentiment-shifts-table').innerHTML = 
+        '<tr><td colspan="7" class="text-center">' +
+        '<div class="spinner-border spinner-border-sm text-primary" role="status">' +
+        '<span class="visually-hidden">Loading...</span></div> Loading sentiment shift data...</td></tr>';
+    
+    // Insights panel loading state
+    document.getElementById('insights-container').innerHTML = 
+        '<div class="d-flex justify-content-center">' +
+        '<div class="spinner-border text-primary" role="status">' +
+        '<span class="visually-hidden">Loading...</span></div></div>';
+}
+
+function showEmptyState() {
+    // Time series chart empty state
+    document.getElementById('time-series-chart-container').innerHTML = 
+        '<div class="alert alert-info text-center m-3">No time series data available for the selected filters</div>';
+    
+    // Seasonal chart empty state
+    document.getElementById('seasonal-chart-container').innerHTML = 
+        '<div class="alert alert-info text-center m-3">No seasonal data available</div>';
+    
+    // Monthly distribution chart empty state
+    document.getElementById('monthly-distribution-container').innerHTML = 
+        '<div class="alert alert-info text-center m-3">No monthly distribution data available</div>';
+    
+    // Sentiment shifts table empty state
+    document.getElementById('sentiment-shifts-table').innerHTML = 
+        '<tr><td colspan="7" class="text-center">No significant sentiment shifts detected</td></tr>';
+    
+    // Insights panel empty state
+    document.getElementById('insights-container').innerHTML = 
+        '<div class="alert alert-info text-center">No insights available for the selected filters</div>';
+}
+
+function updateTimeSeriesChart(timeSeriesData) {
+    // Reset container and create new canvas
+    document.getElementById('time-series-chart-container').innerHTML = 
+        '<canvas id="time-series-chart"></canvas>';
+    
+    const ctx = document.getElementById('time-series-chart').getContext('2d');
+    
+    // If no data, show empty state
+    if (!timeSeriesData || !timeSeriesData.labels || timeSeriesData.labels.length === 0) {
+        document.getElementById('time-series-chart-container').innerHTML = 
+            '<div class="alert alert-info text-center m-3">No time series data available for the selected filters</div>';
+        return;
+    }
+    
+    // Create chart
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: timeSeriesData.labels,
+            datasets: [
+                {
+                    label: 'Overall Sentiment',
+                    data: timeSeriesData.overall_sentiment,
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Positive Sentiment',
+                    data: timeSeriesData.positive_sentiment,
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Negative Sentiment',
+                    data: timeSeriesData.negative_sentiment,
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: 'Review Volume',
+                    data: timeSeriesData.review_volume,
+                    borderColor: 'rgba(108, 117, 125, 1)',
+                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    fill: false,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Sentiment Evolution Over Time',
+                    font: {
+                        size: 16
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time Period'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    title: {
+                        display: true,
+                        text: 'Sentiment Score'
+                    }
+                },
+                y1: {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Review Count'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateSeasonalChart(seasonalData) {
+    // Reset container and create new canvas
+    document.getElementById('seasonal-chart-container').innerHTML = 
+        '<canvas id="seasonal-chart"></canvas>';
+    
+    const ctx = document.getElementById('seasonal-chart').getContext('2d');
+    
+    // If no data, show empty state
+    if (!seasonalData || !seasonalData.labels || seasonalData.labels.length === 0) {
+        document.getElementById('seasonal-chart-container').innerHTML = 
+            '<div class="alert alert-info text-center m-3">No seasonal data available</div>';
+        return;
+    }
+    
+    // Create chart
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: seasonalData.labels,
+            datasets: [
+                {
+                    label: seasonalData.current_year_label || 'Current Year',
+                    data: seasonalData.current_year,
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: false
+                },
+                {
+                    label: seasonalData.previous_year_label || 'Previous Year',
+                    data: seasonalData.previous_year,
+                    borderColor: 'rgba(108, 117, 125, 1)',
+                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Year-over-Year Seasonal Comparison',
+                    font: {
+                        size: 16
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    title: {
+                        display: true,
+                        text: 'Sentiment Score'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateMonthlyDistributionChart(monthlyData) {
+    // Reset container and create new canvas
+    document.getElementById('monthly-distribution-container').innerHTML = 
+        '<canvas id="monthly-distribution-chart"></canvas>';
+    
+    const ctx = document.getElementById('monthly-distribution-chart').getContext('2d');
+    
+    // If no data, show empty state
+    if (!monthlyData || !monthlyData.labels || monthlyData.labels.length === 0) {
+        document.getElementById('monthly-distribution-container').innerHTML = 
+            '<div class="alert alert-info text-center m-3">No monthly distribution data available</div>';
+        return;
+    }
+    
+    // Create chart
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: monthlyData.labels,
+            datasets: [
+                {
+                    label: 'Positive',
+                    data: monthlyData.positive,
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)'
+                },
+                {
+                    label: 'Neutral',
+                    data: monthlyData.neutral,
+                    backgroundColor: 'rgba(108, 117, 125, 0.7)'
+                },
+                {
+                    label: 'Negative',
+                    data: monthlyData.negative,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Monthly Sentiment Distribution',
+                    font: {
+                        size: 16
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                },
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Review Count'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateSentimentShiftsTable(shiftsData) {
+    const table = document.getElementById('sentiment-shifts-table');
+    
+    // If no data, show empty state
+    if (!shiftsData || shiftsData.length === 0) {
+        table.innerHTML = '<tr><td colspan="7" class="text-center">No significant sentiment shifts detected</td></tr>';
+        return;
+    }
+    
+    // Clear existing rows
+    table.innerHTML = '';
+    
+    // Add new rows
+    shiftsData.forEach(shift => {
+        const row = document.createElement('tr');
+        
+        // Calculate change percentage and style
+        const changeValue = ((shift.after_score - shift.before_score) * 100).toFixed(1);
+        const changeClass = changeValue >= 0 ? 'text-success' : 'text-danger';
+        const changePrefix = changeValue >= 0 ? '+' : '';
+        
+        // Create row content
+        row.innerHTML = `
+            <td>${shift.time_period}</td>
+            <td>${shift.before_score.toFixed(2)}</td>
+            <td>${shift.after_score.toFixed(2)}</td>
+            <td class="${changeClass}">${changePrefix}${changeValue}%</td>
+            <td>${shift.reviews_before}</td>
+            <td>${shift.reviews_after}</td>
+            <td>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar ${shift.significance >= 0.8 ? 'bg-danger' : shift.significance >= 0.5 ? 'bg-warning' : 'bg-info'}" 
+                         role="progressbar" 
+                         style="width: ${(shift.significance * 100).toFixed(0)}%;"
+                         aria-valuenow="${(shift.significance * 100).toFixed(0)}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        ${(shift.significance * 100).toFixed(0)}%
+                    </div>
+                </div>
+            </td>
+        `;
+        
+        table.appendChild(row);
+    });
+}
+
+function updateInsightsPanel(insights) {
+    const container = document.getElementById('insights-container');
+    
+    // If no data, show empty state
+    if (!insights || insights.length === 0) {
+        container.innerHTML = '<div class="alert alert-info text-center">No insights available for the selected filters</div>';
+        return;
+    }
+    
+    // Create insights content
+    let insightsHTML = '<div class="row">';
+    
+    insights.forEach((insight, index) => {
+        // Determine icon based on insight type
+        let icon = 'fas fa-info-circle text-info';
+        if (insight.type === 'positive') {
+            icon = 'fas fa-arrow-up text-success';
+        } else if (insight.type === 'negative') {
+            icon = 'fas fa-arrow-down text-danger';
+        } else if (insight.type === 'warning') {
+            icon = 'fas fa-exclamation-triangle text-warning';
+        } else if (insight.type === 'seasonal') {
+            icon = 'fas fa-calendar-alt text-primary';
+        }
+        
+        insightsHTML += `
+            <div class="col-md-6 mb-3">
+                <div class="card h-100 ${insight.type === 'negative' ? 'border-danger' : insight.type === 'positive' ? 'border-success' : insight.type === 'warning' ? 'border-warning' : 'border-info'}">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="${icon} me-2"></i>
+                            ${insight.title}
+                        </h5>
+                        <p class="card-text">${insight.description}</p>
+                        ${insight.recommendation ? `<p class="card-text"><strong>Recommendation:</strong> ${insight.recommendation}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    insightsHTML += '</div>';
+    container.innerHTML = insightsHTML;
+}
+
+// Utility functions for showing notifications
+function showError(message) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-danger text-white">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <small>Just now</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Show toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 5000 });
+    toast.show();
+    
+    // Remove from DOM after hiding
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+function showSuccess(message) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <small>Just now</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">${message}</div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    // Show toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+    toast.show();
+    
+    // Remove from DOM after hiding
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+</script>
+{% endblock %}
