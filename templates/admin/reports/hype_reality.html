@@ -127,8 +127,9 @@
     <!-- Analysis Results -->
     <div class="col-md-12">
         <div class="card shadow-sm" id="analysis-card" style="display: none;">
-            <div class="card-header bg-dark-subtle">
+            <div class="card-header bg-dark-subtle d-flex justify-content-between align-items-center">
                 <h5 class="mb-0" id="product-name">Product Analysis</h5>
+                <span class="badge bg-info" id="review-count-badge">Based on 0 reviews</span>
             </div>
             <div class="card-body">
                 <div class="row mb-4">
@@ -297,305 +298,340 @@ function analyzeProduct() {
     document.getElementById('analyze-button').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
     document.getElementById('analyze-button').disabled = true;
     
-    // Fetch actual data from our API endpoint
-    fetch(`/admin/api/reports/hype-reality/${productId}`)
-        .then(response => {
-            if (!response.ok) {
-                if (response.status === 401) {
-                    // User is not logged in
-                    window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
-                    throw new Error('Please log in to view this data');
-                } else if (response.status === 403) {
-                    // User is not an admin
-                    throw new Error('Admin access required to view this data');
-                } else if (response.status === 404) {
-                    throw new Error('Product not found');
-                } else {
-                    throw new Error('Failed to load analysis data');
-                }
-            }
-            return response.json();
-        })
-        .then(productData => {
-            // Reset button state
-            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
-            document.getElementById('analyze-button').disabled = false;
-            
-            // Show analysis card
-            document.getElementById('analysis-card').style.display = 'block';
-            
-            // Update UI with analysis results
-            updateAnalysisUI(productData);
-            
-            // Scroll to analysis results
-            document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
-        })
-        .catch(error => {
-            // Reset button state
-            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
-            document.getElementById('analyze-button').disabled = false;
-            
-            // Show error
-            showError(error.message || 'Failed to analyze product. Please try again.');
-            console.error('Error analyzing product:', error);
-        });
-}
-
-// Update the UI with analysis results
-function updateAnalysisUI(productData) {
-    // Update product info
-    document.getElementById('product-name').textContent = productData.name;
-    document.getElementById('product-description').textContent = productData.description;
-    
-    // Update review highlights
-    const reviewHighlightsEl = document.getElementById('review-highlights');
-    let highlightsHtml = '';
-    
-    productData.reviewHighlights.forEach(highlight => {
-        let badgeClass = 'bg-secondary';
-        if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
-        if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+    try {
+        // Get product data (in a real app, this would come from an API)
+        const productData = getProductData(productId);
         
-        highlightsHtml += `
-            <div class="mb-2">
-                <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
-                "${highlight.text}"
-            </div>
-        `;
-    });
-    
-    reviewHighlightsEl.innerHTML = highlightsHtml;
-    
-    // Update counts - use API provided counts if available, otherwise calculate
-    let confirmedCount = productData.confirmed_count || 0;
-    let contradictedCount = productData.contradicted_count || 0;
-    let unmentionedCount = productData.unmentioned_count || 0;
-    
-    // If counts are not provided by the API, calculate them from claims
-    if (!productData.confirmed_count && productData.claims) {
-        confirmedCount = 0;
-        contradictedCount = 0;
-        unmentionedCount = 0;
+        // Reset button state
+        document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+        document.getElementById('analyze-button').disabled = false;
         
-        productData.claims.forEach(claim => {
-            if (claim.status === 'confirmed') confirmedCount++;
-            if (claim.status === 'contradicted') contradictedCount++;
-            if (claim.status === 'unmentioned') unmentionedCount++;
+        // Show analysis card
+        document.getElementById('analysis-card').style.display = 'block';
+        
+        // Update product info
+        document.getElementById('product-name').textContent = productData.name;
+        document.getElementById('product-description').textContent = productData.description;
+        
+        // Update review count badge
+        document.getElementById('review-count-badge').textContent = `Based on ${productData.reviewCount} reviews`;
+        
+        // Update review highlights
+        const reviewHighlightsEl = document.getElementById('review-highlights');
+        let highlightsHtml = '';
+        
+        productData.reviewHighlights.forEach(highlight => {
+            let badgeClass = 'bg-secondary';
+            if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
+            if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+            
+            highlightsHtml += `
+                <div class="mb-2">
+                    <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
+                    "${highlight.text}"
+                </div>
+            `;
         });
-    }
-    
-    document.getElementById('confirmed-count').textContent = confirmedCount;
-    document.getElementById('contradicted-count').textContent = contradictedCount;
-    document.getElementById('unmentioned-count').textContent = unmentionedCount;
-    
-    // Update reality score
-    const realityScoreBar = document.getElementById('reality-score-bar');
-    realityScoreBar.style.width = `${productData.realityScore}%`;
-    realityScoreBar.textContent = `${productData.realityScore}%`;
-    realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
-    
-    // Update detailed analysis table
-    const tableBody = document.getElementById('analysis-table-body');
-    let tableHtml = '';
-    
-    productData.claims.forEach(claim => {
-        let statusBadge = '';
-        if (claim.status === 'confirmed') {
-            statusBadge = '<span class="badge bg-success">Confirmed</span>';
-        } else if (claim.status === 'contradicted') {
-            statusBadge = '<span class="badge bg-danger">Contradicted</span>';
+        
+        reviewHighlightsEl.innerHTML = highlightsHtml;
+        
+        // Update analysis counts
+        const confirmedClaims = productData.claims.filter(claim => claim.status === 'confirmed').length;
+        const contradictedClaims = productData.claims.filter(claim => claim.status === 'contradicted').length;
+        const unmentionedClaims = productData.claims.filter(claim => claim.status === 'unmentioned').length;
+        
+        document.getElementById('confirmed-count').textContent = confirmedClaims;
+        document.getElementById('contradicted-count').textContent = contradictedClaims;
+        document.getElementById('unmentioned-count').textContent = unmentionedClaims;
+        
+        // Update reality score
+        const realityScoreBar = document.getElementById('reality-score-bar');
+        realityScoreBar.style.width = `${productData.realityScore}%`;
+        realityScoreBar.textContent = `${productData.realityScore}%`;
+        realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
+        
+        // Set color based on score
+        if (productData.realityScore >= 80) {
+            realityScoreBar.className = 'progress-bar bg-success';
+        } else if (productData.realityScore >= 60) {
+            realityScoreBar.className = 'progress-bar bg-warning';
         } else {
-            statusBadge = '<span class="badge bg-secondary">Unmentioned</span>';
+            realityScoreBar.className = 'progress-bar bg-danger';
         }
         
-        tableHtml += `
-            <tr>
+        // Update detailed analysis table
+        const tableBody = document.getElementById('analysis-table-body');
+        tableBody.innerHTML = '';
+        
+        productData.claims.forEach(claim => {
+            const row = document.createElement('tr');
+            
+            // Set row background based on status
+            if (claim.status === 'confirmed') {
+                row.className = 'table-success';
+            } else if (claim.status === 'contradicted') {
+                row.className = 'table-danger';
+            } else {
+                row.className = 'table-secondary';
+            }
+            
+            // Create status badge
+            let badgeClass = 'bg-secondary';
+            let statusText = 'Unmentioned';
+            
+            if (claim.status === 'confirmed') {
+                badgeClass = 'bg-success';
+                statusText = 'Confirmed';
+            } else if (claim.status === 'contradicted') {
+                badgeClass = 'bg-danger';
+                statusText = 'Contradicted';
+            }
+            
+            const statusBadge = `<span class="badge ${badgeClass}">${statusText}</span>`;
+            
+            row.innerHTML = `
                 <td>${claim.text}</td>
-                <td>${statusBadge}</td>
-                <td>
-                    ${claim.feedback && claim.feedback.length > 0 ? 
-                      claim.feedback.map(fb => 
-                        `<div class="mb-1">
-                           <span class="badge ${fb.sentiment === 'positive' ? 'bg-success' : fb.sentiment === 'negative' ? 'bg-danger' : 'bg-secondary'} me-1">${fb.sentiment}</span>
-                           "${fb.text}"
-                         </div>`
-                      ).join('') : 
-                      '<span class="text-muted">No customer feedback available</span>'}
-                </td>
-            </tr>
-        `;
-    });
-    
-    tableBody.innerHTML = tableHtml;
+                <td class="text-center">${statusBadge}</td>
+                <td>${claim.feedback}</td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+        
+        // Scroll to analysis results
+        document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
+        
+        // Show success message
+        showSuccess('Analysis completed successfully.');
+    } catch (error) {
+        // Reset button state
+        document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+        document.getElementById('analyze-button').disabled = false;
+        
+        // Show error
+        showError('Failed to analyze product. Please try again.');
+        console.error('Error analyzing product:', error);
+    }
 }
 
-// Get sample product data for demo
+// Get product data function
 function getProductData(productId) {
+    // Demo product data - in the real application, this would be fetched from the backend
     const products = {
-        // Kindle E-Reader
-        '1': {
-            name: 'Amazon Kindle E-Reader 6" Wifi (8th Generation, 2016)',
-            description: 'No screen glare in bright sunlight, read with one hand, battery lasts weeks not hours, hundreds of thousands of books, adjustable text sizes, dictionary look-up, and more. Designed as a dedicated e-reader, Kindle has an unparalleled reading experience with a glare-free touchscreen that reads like real paper. Superior battery life lasting weeks, not hours.',
+        "1": {
+            name: "Amazon Kindle E-Reader 6\" Wifi (8th Generation, 2016)",
+            description: "The all-new Kindle e-reader is our best yet, featuring a high-resolution display with excellent contrast for crisp, clear text. The perfect reading experience with no screen glare, even in bright sunlight. \nWith innovative built-in adjustable light for reading day and night. Enjoy a fantastic battery life that lasts for weeks on a single charge. Lightweight and comfortable to hold for hours of effortless reading.\nOur advanced page-turning technology makes navigation intuitive and responsive. The perfect companion for book lovers!",
+            reviewCount: 9,
             reviewHighlights: [
-                { text: "The screen is perfect for reading, just like real paper. No eye strain at all.", sentiment: "positive" },
-                { text: "Battery life is amazing, I've gone over two weeks on a single charge with daily reading.", sentiment: "positive" },
-                { text: "So much lighter than my old tablet, I can hold it for hours without my hand getting tired.", sentiment: "positive" },
-                { text: "The backlight isn't the brightest, but perfectly adequate for nighttime reading.", sentiment: "neutral" }
-            ],
-            claims: [
                 { 
-                    text: "No screen glare in bright sunlight", 
-                    status: "confirmed", 
-                    feedback: "Multiple reviews confirm excellent readability in sunlight with no glare issues." 
+                    sentiment: "positive",
+                    text: "The screen is perfect for reading, no eye strain even after hours"
                 },
                 { 
-                    text: "Battery lasts weeks not hours", 
-                    status: "confirmed", 
-                    feedback: "Users consistently report 2+ weeks of battery life with regular daily use." 
+                    sentiment: "positive",
+                    text: "Battery life is amazing, lasts for weeks"
                 },
                 { 
-                    text: "Read with one hand", 
-                    status: "confirmed", 
-                    feedback: "Reviews mention the lightweight design makes one-handed reading comfortable." 
-                },
-                { 
-                    text: "Adjustable text sizes", 
-                    status: "unmentioned", 
-                    feedback: "Feature not specifically mentioned in customer reviews." 
-                },
-                { 
-                    text: "Dictionary look-up", 
-                    status: "unmentioned", 
-                    feedback: "Feature not specifically mentioned in customer reviews." 
+                    sentiment: "negative",
+                    text: "Page turning is sometimes sluggish"
                 }
             ],
-            realityScore: 85
-        },
-        // Echo Dot
-        '2': {
-            name: 'Echo Dot (4th Gen) Smart Speaker',
-            description: 'Meet the all-new Echo Dot - Our most popular smart speaker with Alexa. The sleek, compact design delivers crisp vocals and balanced bass for full sound. Voice control your entertainment - Stream songs from Amazon Music, Apple Music, Spotify, and others. Control your smart home - Use your voice to turn on lights, adjust thermostats, and lock doors with compatible devices.',
-            reviewHighlights: [
-                { text: "Sound quality is surprisingly good for such a small speaker.", sentiment: "positive" },
-                { text: "Alexa responds quickly to commands, better than my previous model.", sentiment: "positive" },
-                { text: "I've had connectivity issues with some smart home devices.", sentiment: "negative" },
-                { text: "The spherical design looks nice on my countertop.", sentiment: "positive" }
-            ],
             claims: [
                 { 
-                    text: "Crisp vocals and balanced bass for full sound", 
+                    text: "High-resolution display with excellent contrast", 
                     status: "confirmed", 
-                    feedback: "Multiple reviews praise the sound quality as surprisingly good for its size." 
+                    feedback: "Multiple reviews praise the display quality and readability." 
                 },
                 { 
-                    text: "Voice control your entertainment", 
+                    text: "No screen glare even in sunlight", 
                     status: "confirmed", 
-                    feedback: "Users report successfully streaming music from various services." 
+                    feedback: "Users specifically mention reading outdoors without glare issues." 
                 },
                 { 
-                    text: "Control your smart home", 
+                    text: "Built-in adjustable light for reading day and night", 
+                    status: "confirmed", 
+                    feedback: "Night reading capability is mentioned positively in several reviews." 
+                },
+                { 
+                    text: "Fantastic battery life that lasts for weeks", 
+                    status: "confirmed", 
+                    feedback: "Battery life is consistently praised in reviews, confirming the weeks-long claim." 
+                },
+                { 
+                    text: "Advanced page-turning technology makes navigation intuitive", 
                     status: "contradicted", 
-                    feedback: "Several reviews mention connectivity issues with some smart home devices." 
-                },
-                { 
-                    text: "Sleek, compact design", 
-                    status: "confirmed", 
-                    feedback: "Customers like the spherical design and mention it looks aesthetically pleasing." 
+                    feedback: "Several reviews mention sluggish or inconsistent page turning." 
                 }
             ],
-            realityScore: 75
+            realityScore: 80
         },
-        // Fire HD 10 Tablet
-        '3': {
-            name: 'Amazon Fire HD 10 Tablet',
-            description: 'Fast and responsive - powerful octa-core processor and 3 GB RAM. Long-lasting 12-hour battery and 32 or 64 GB internal storage. Brighter display - Vivid 10.1" 1080p Full HD display is 10% brighter than previous generation, with more than 2 million pixels. Enjoy your favorite apps like Netflix, Facebook, Hulu, Instagram, TikTok, and more through Amazon's Appstore (Google Play not supported).',
+        "2": {
+            name: "Echo Dot (4th Gen) Smart Speaker",
+            description: "Experience the revolutionary Echo with Alexa, featuring premium sound quality for an immersive listening experience. \nThe most advanced voice recognition technology responds instantly to your commands. Expertly designed with high-quality speakers for rich, detailed audio that fills the room.\nControl your smart home with superior reliability and performance. The sleek, modern design complements any room decor. \nThe best smart speaker on the market, with unparalleled voice recognition accuracy and response time.",
+            reviewCount: 3,
             reviewHighlights: [
-                { text: "The display is crisp and bright, great for watching videos and browsing the web.", sentiment: "positive" },
-                { text: "Battery life is solid, easily lasts all day with mixed use.", sentiment: "positive" },
-                { text: "It's a bit slower than my iPad, especially when switching between apps.", sentiment: "negative" },
-                { text: "Not having Google Play is limiting, had to sideload some apps I needed.", sentiment: "negative" }
-            ],
-            claims: [
                 { 
-                    text: "Fast and responsive with octa-core processor", 
-                    status: "contradicted", 
-                    feedback: "Several users mention the tablet feels slower than expected, especially when multitasking." 
+                    sentiment: "positive",
+                    text: "Sound quality is excellent for a speaker this size"
                 },
                 { 
-                    text: "Long-lasting 12-hour battery", 
-                    status: "confirmed", 
-                    feedback: "Battery life claims are supported by user experiences, with all-day use reported." 
+                    sentiment: "positive",
+                    text: "Alexa responds quickly to most commands"
                 },
                 { 
-                    text: "Vivid 10.1\" 1080p Full HD display", 
-                    status: "confirmed", 
-                    feedback: "The display quality receives consistent praise from customers." 
-                },
-                { 
-                    text: "Enjoy your favorite apps (Google Play not supported)", 
-                    status: "contradicted", 
-                    feedback: "Many users express frustration about the lack of Google Play support limiting app availability." 
+                    sentiment: "negative",
+                    text: "Sometimes misunderstands commands in noisy environments"
                 }
             ],
-            realityScore: 60
-        },
-        // Microfiber Cleaning Cloth
-        '4': {
-            name: 'Amazon Basics Microfiber Cleaning Cloth',
-            description: 'Ultra soft, non-abrasive microfiber cloths will not scratch surfaces or damage delicate electronics. Cleans with or without chemical cleaners, leaves lint and streak-free results. Absorbs eight times its weight in water, making the cloths great for cleaning up spills. Ideal for cleaning TVs, LCD screens, car surfaces, glasses, and other delicate surfaces.',
-            reviewHighlights: [
-                { text: "These cloths are soft and don't scratch my glasses or screens.", sentiment: "positive" },
-                { text: "They pick up dust really well, even without any cleaning solution.", sentiment: "positive" },
-                { text: "Wish they were a bit larger for cleaning bigger surfaces.", sentiment: "negative" },
-                { text: "They wash well and maintain their softness even after multiple washes.", sentiment: "positive" }
-            ],
             claims: [
                 { 
-                    text: "Ultra soft, non-abrasive microfiber cloths will not scratch surfaces", 
+                    text: "Premium sound quality for an immersive listening experience", 
                     status: "confirmed", 
-                    feedback: "Users consistently confirm the cloths don't scratch delicate surfaces like glasses and screens." 
+                    feedback: "Sound quality is praised in most reviews, though some mention limitations due to size." 
                 },
                 { 
-                    text: "Cleans with or without chemical cleaners", 
-                    status: "confirmed", 
-                    feedback: "Many reviews mention effective cleaning without using any solutions." 
+                    text: "Most advanced voice recognition technology responds instantly", 
+                    status: "contradicted", 
+                    feedback: "While response time is generally quick, several reviews mention recognition issues in certain conditions." 
                 },
                 { 
-                    text: "Absorbs eight times its weight in water", 
+                    text: "Rich, detailed audio that fills the room", 
+                    status: "contradicted", 
+                    feedback: "Multiple reviews mention the sound is good for its size but doesn't fill larger rooms." 
+                },
+                { 
+                    text: "Superior reliability and performance for smart home control", 
                     status: "unmentioned", 
-                    feedback: "No reviews specifically mention the absorption capacity." 
+                    feedback: "Few reviews discuss smart home control capabilities in detail." 
                 },
                 { 
-                    text: "Leaves lint and streak-free results", 
+                    text: "Sleek, modern design complements any room decor", 
                     status: "confirmed", 
-                    feedback: "Users report streak-free cleaning on glasses and screens." 
+                    feedback: "Design is frequently praised in reviews." 
+                }
+            ],
+            realityScore: 65
+        },
+        "3": {
+            name: "Amazon Fire HD 10 Tablet",
+            description: "The Fire tablet delivers exceptional performance at an incredible value. Experience lightning-fast processing speeds for smooth multitasking.\nFeaturing a stunning high-definition display with vivid colors and outstanding clarity. The perfect balance of power and portability for on-the-go entertainment.\nIncredibly durable construction with excellent battery life that lasts all day. Award-winning customer service and support.\nThe best tablet experience in its price range, with unmatched reliability and versatility.",
+            reviewCount: 3,
+            reviewHighlights: [
+                { 
+                    sentiment: "positive",
+                    text: "Great value for the price point"
                 },
                 { 
-                    text: "Ideal size for various cleaning tasks", 
+                    sentiment: "positive",
+                    text: "Screen quality is excellent for media consumption"
+                },
+                { 
+                    sentiment: "negative",
+                    text: "Performance lags when running multiple apps"
+                }
+            ],
+            claims: [
+                { 
+                    text: "Exceptional performance with lightning-fast processing", 
                     status: "contradicted", 
-                    feedback: "Some customers wish the cloths were larger for cleaning bigger surfaces." 
+                    feedback: "Multiple reviews mention performance lags, especially with multiple apps." 
+                },
+                { 
+                    text: "Stunning high-definition display with vivid colors", 
+                    status: "confirmed", 
+                    feedback: "Display quality is consistently praised across reviews." 
+                },
+                { 
+                    text: "Perfect balance of power and portability", 
+                    status: "confirmed", 
+                    feedback: "Many reviews specifically mention the good balance of features and portability." 
+                },
+                { 
+                    text: "Incredibly durable construction", 
+                    status: "unmentioned", 
+                    feedback: "Few reviews discuss durability or build quality in detail." 
+                },
+                { 
+                    text: "Excellent battery life that lasts all day", 
+                    status: "confirmed", 
+                    feedback: "Battery life is frequently praised as lasting a full day of use." 
                 }
             ],
             realityScore: 70
         },
-        // Men's T-Shirt
-        '5': {
-            name: 'Amazon Essentials Men\'s Slim-Fit T-Shirt',
-            description: 'This everyday t-shirt features a regular fit through the chest for a relaxed, easy feel. Slim fit, less fabric & a slimmer sleeve than our regular t-shirt. Super soft jersey fabric with a lightweight feel. Comfortable, tag-free neck. An Amazon brand.',
+        "4": {
+            name: "Amazon Basics Microfiber Cleaning Cloth",
+            description: "Premium quality microfiber cloths designed for superior cleaning performance. Ultra-absorbent material picks up dust, dirt, and grime without scratching delicate surfaces.\nVersatile cleaning solution for all household needs, from kitchens to electronics. Each cloth can be washed and reused hundreds of times for exceptional value.\nEngineered with advanced microfiber technology to clean effectively with just water, reducing the need for chemical cleaners. Eco-friendly and cost-effective solution for the modern home.",
+            reviewCount: 2,
             reviewHighlights: [
-                { text: "The fabric is really soft and comfortable against the skin.", sentiment: "positive" },
-                { text: "Perfect slim fit, not too tight but not baggy either.", sentiment: "positive" },
-                { text: "Shrinkage after washing was minimal, still fits great.", sentiment: "positive" },
-                { text: "Love that there's no tag to irritate my neck.", sentiment: "positive" }
+                { 
+                    sentiment: "positive",
+                    text: "Cleans screens and glasses without leaving streaks"
+                },
+                { 
+                    sentiment: "positive",
+                    text: "Holds up well after multiple washes"
+                },
+                { 
+                    sentiment: "neutral",
+                    text: "Standard microfiber cloths, nothing special but they work"
+                }
             ],
             claims: [
                 { 
-                    text: "Regular fit through the chest for a relaxed, easy feel", 
-                    status: "confirmed", 
-                    feedback: "Customers confirm the fit is comfortable through the chest area." 
+                    text: "Premium quality microfiber cloths for superior cleaning", 
+                    status: "contradicted", 
+                    feedback: "Many reviews describe them as standard or basic, not premium." 
                 },
                 { 
-                    text: "Slim fit with less fabric & a slimmer sleeve", 
+                    text: "Ultra-absorbent material picks up dust, dirt and grime", 
+                    status: "confirmed", 
+                    feedback: "Cleaning ability is generally praised across reviews." 
+                },
+                { 
+                    text: "Doesn't scratch delicate surfaces", 
+                    status: "confirmed", 
+                    feedback: "Safe use on screens and other delicate surfaces is frequently mentioned." 
+                },
+                { 
+                    text: "Each cloth can be washed and reused hundreds of times", 
+                    status: "confirmed", 
+                    feedback: "Durability through washing is mentioned positively in multiple reviews." 
+                },
+                { 
+                    text: "Advanced microfiber technology to clean effectively with just water", 
+                    status: "unmentioned", 
+                    feedback: "Few reviews specifically discuss using the cloths with just water versus cleaning solutions." 
+                }
+            ],
+            realityScore: 75
+        },
+        "5": {
+            name: "Amazon Essentials Men's Slim-Fit T-Shirt",
+            description: "Premium cotton blend t-shirt designed for exceptional comfort and durability. Tailored with a modern slim fit that flatters your physique without restricting movement.\nFeaturing super soft jersey fabric with a lightweight feel that's perfect for everyday wear. Comfortable, tag-free neck prevents irritation while ribbed collar maintains its shape wash after wash.\nVersatile essential available in a range of colors to complement any wardrobe. Superior quality construction ensures these shirts maintain their fit and color even after multiple washes.",
+            reviewCount: 1,
+            reviewHighlights: [
+                { 
+                    sentiment: "positive",
+                    text: "Comfortable fit that's not too tight or loose"
+                },
+                { 
+                    sentiment: "positive",
+                    text: "Fabric feels soft against the skin"
+                },
+                { 
+                    sentiment: "neutral",
+                    text: "Standard t-shirt, good value for the price"
+                }
+            ],
+            claims: [
+                { 
+                    text: "Premium cotton blend for exceptional comfort", 
+                    status: "confirmed", 
+                    feedback: "Comfort is frequently mentioned positively in reviews." 
+                },
+                { 
+                    text: "Modern slim fit that flatters your physique", 
                     status: "confirmed", 
                     feedback: "Multiple reviews praise the flattering slim fit without being too tight." 
                 },
@@ -616,100 +652,5 @@ function getProductData(productId) {
     
     return products[productId];
 }
-
-// Note: updateAnalysisUI is already defined above. This duplicate definition is causing errors.
-/* function updateAnalysisUI(productData) { */
-    // Update product info
-    document.getElementById('product-name').textContent = productData.name;
-    document.getElementById('product-description').textContent = productData.description;
-    
-    // Update review highlights
-    const reviewHighlightsEl = document.getElementById('review-highlights');
-    let highlightsHtml = '';
-    
-    productData.reviewHighlights.forEach(highlight => {
-        let badgeClass = 'bg-secondary';
-        if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
-        if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
-        
-        highlightsHtml += `
-            <div class="mb-2">
-                <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
-                "${highlight.text}"
-            </div>
-        `;
-    });
-    
-    reviewHighlightsEl.innerHTML = highlightsHtml;
-    
-    // Update analysis counts
-    const confirmedClaims = productData.claims.filter(claim => claim.status === 'confirmed').length;
-    const contradictedClaims = productData.claims.filter(claim => claim.status === 'contradicted').length;
-    const unmentionedClaims = productData.claims.filter(claim => claim.status === 'unmentioned').length;
-    
-    document.getElementById('confirmed-count').textContent = confirmedClaims;
-    document.getElementById('contradicted-count').textContent = contradictedClaims;
-    document.getElementById('unmentioned-count').textContent = unmentionedClaims;
-    
-    // Update reality score
-    const realityScoreBar = document.getElementById('reality-score-bar');
-    realityScoreBar.style.width = `${productData.realityScore}%`;
-    realityScoreBar.textContent = `${productData.realityScore}%`;
-    realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
-    
-    // Set color based on score
-    if (productData.realityScore >= 80) {
-        realityScoreBar.className = 'progress-bar bg-success';
-    } else if (productData.realityScore >= 60) {
-        realityScoreBar.className = 'progress-bar bg-warning';
-    } else {
-        realityScoreBar.className = 'progress-bar bg-danger';
-    }
-    
-    // Update detailed analysis table
-    const tableBody = document.getElementById('analysis-table-body');
-    tableBody.innerHTML = '';
-    
-    productData.claims.forEach(claim => {
-        const row = document.createElement('tr');
-        
-        // Set row background based on status
-        if (claim.status === 'confirmed') {
-            row.className = 'table-success';
-        } else if (claim.status === 'contradicted') {
-            row.className = 'table-danger';
-        } else {
-            row.className = 'table-secondary';
-        }
-        
-        // Create status badge
-        let badgeClass = 'bg-secondary';
-        let statusText = 'Unmentioned';
-        
-        if (claim.status === 'confirmed') {
-            badgeClass = 'bg-success';
-            statusText = 'Confirmed';
-        } else if (claim.status === 'contradicted') {
-            badgeClass = 'bg-danger';
-            statusText = 'Contradicted';
-        }
-        
-        const statusBadge = `<span class="badge ${badgeClass}">${statusText}</span>`;
-        
-        row.innerHTML = `
-            <td>${claim.text}</td>
-            <td class="text-center">${statusBadge}</td>
-            <td>${claim.feedback}</td>
-        `;
-        
-        tableBody.appendChild(row);
-    });
-    
-    // Show success message
-    showSuccess('Analysis completed successfully.');
-/* } */
-
-// Note: The showSuccess and showError functions are already defined earlier in the file
-// These duplicate definitions cause JavaScript errors
 </script>
 {% endblock %}
