@@ -165,12 +165,12 @@
                                 <div class="row mb-4">
                                     <div class="col-md-6">
                                         <h6 class="border-bottom pb-2 mb-3">Product Description (Marketing Claims)</h6>
-                                        <p id="product-description" class="bg-light p-3 rounded">Select a product to view its description.</p>
+                                        <p id="product-description" class="bg-secondary text-white p-3 rounded">Select a product to view its description.</p>
                                     </div>
                                     <div class="col-md-6">
                                         <h6 class="border-bottom pb-2 mb-3">Customer Review Highlights</h6>
-                                        <div id="review-highlights" class="bg-light p-3 rounded">
-                                            <p class="text-muted">Select a product to view review highlights.</p>
+                                        <div id="review-highlights" class="bg-dark text-white p-3 rounded">
+                                            <p class="text-light">Select a product to view review highlights.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -180,29 +180,29 @@
                                 <!-- Analysis Summary -->
                                 <div class="row mb-4">
                                     <div class="col-md-4">
-                                        <div class="card bg-light h-100">
+                                        <div class="card bg-success bg-opacity-75 text-white h-100">
                                             <div class="card-body text-center">
-                                                <h6 class="card-title text-success">Confirmed Claims</h6>
+                                                <h6 class="card-title">Confirmed Claims</h6>
                                                 <div class="display-4 mb-2" id="confirmed-count">0</div>
-                                                <p class="card-text text-muted">Marketing claims supported by customer reviews</p>
+                                                <p class="card-text">Marketing claims supported by customer reviews</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="card bg-light h-100">
+                                        <div class="card bg-danger bg-opacity-75 text-white h-100">
                                             <div class="card-body text-center">
-                                                <h6 class="card-title text-danger">Contradicted Claims</h6>
+                                                <h6 class="card-title">Contradicted Claims</h6>
                                                 <div class="display-4 mb-2" id="contradicted-count">0</div>
-                                                <p class="card-text text-muted">Marketing claims contradicted by customer reviews</p>
+                                                <p class="card-text">Marketing claims contradicted by customer reviews</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="card bg-light h-100">
+                                        <div class="card bg-secondary bg-opacity-75 text-white h-100">
                                             <div class="card-body text-center">
-                                                <h6 class="card-title text-secondary">Unmentioned Claims</h6>
+                                                <h6 class="card-title">Unmentioned Claims</h6>
                                                 <div class="display-4 mb-2" id="unmentioned-count">0</div>
-                                                <p class="card-text text-muted">Marketing claims not mentioned in reviews</p>
+                                                <p class="card-text">Marketing claims not mentioned in reviews</p>
                                             </div>
                                         </div>
                                     </div>
@@ -236,8 +236,8 @@
 
                                 <!-- Detailed Analysis Table -->
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-hover">
-                                        <thead class="table-light">
+                                    <table class="table table-bordered table-hover table-dark">
+                                        <thead class="table-secondary text-dark">
                                             <tr>
                                                 <th scope="col" style="width: 50%">Marketing Claim</th>
                                                 <th scope="col" style="width: 15%">Status</th>
@@ -411,11 +411,11 @@
                 
                 // Set row background based on status
                 if (claim.status === 'confirmed') {
-                    row.className = 'table-success';
+                    row.className = 'bg-success bg-opacity-50 text-white';
                 } else if (claim.status === 'contradicted') {
-                    row.className = 'table-danger';
+                    row.className = 'bg-danger bg-opacity-50 text-white';
                 } else {
-                    row.className = 'table-secondary';
+                    row.className = 'bg-secondary bg-opacity-50 text-white';
                 }
                 
                 // Create status badge
