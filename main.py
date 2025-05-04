@@ -53,6 +53,16 @@ def direct_links_page():
         logger.error(f"Error rendering direct_links template: {e}")
         return f"<h1>Direct Links</h1><p>Error rendering template: {e}</p>"
 
+# Direct access to the frontend React app without authentication
+@app.route('/frontend_direct')
+def frontend_direct():
+    """Direct access to the frontend React app without authentication
+    
+    This route serves the React app directly without any authentication checks
+    """
+    from flask import send_from_directory
+    return send_from_directory('frontend/public', 'index.html')
+
 # Root URL handler - ensure there's something at the root path
 @app.route('/')
 def root_page():
@@ -97,6 +107,7 @@ def root_page():
                     <a href="/direct/sentiment" class="btn btn-success">Sentiment Reports (Direct)</a>
                     <a href="/direct/hype-reality" class="btn btn-success">Hype vs Reality (Direct)</a>
                     <a href="/direct/products" class="btn btn-success">Products Report (Direct)</a>
+                    <a href="/frontend_direct" class="btn btn-success">View Product Listings (Direct)</a>
                 </div>
             </div>
         </div>
