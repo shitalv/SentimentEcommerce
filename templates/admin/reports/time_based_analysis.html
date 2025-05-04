@@ -532,7 +532,7 @@ function updateTimeSeriesChart(timeSeriesData) {
         
         const ctx = chartElement.getContext('2d');
         if (!ctx) {
-            console.error("Failed to get 2D context from canvas");
+            console.error("Failed to get 2D context from canvas", chartElement);
             document.getElementById('time-series-chart-container').innerHTML = 
                 '<div class="alert alert-danger text-center m-3">Failed to initialize chart context. Please try reloading the page.</div>';
             return;
@@ -647,18 +647,32 @@ function updateTimeSeriesChart(timeSeriesData) {
 }
 
 function updateSeasonalChart(seasonalData) {
-    // Reset container and create new canvas
-    document.getElementById('seasonal-chart-container').innerHTML = 
-        '<canvas id="seasonal-chart"></canvas>';
-    
-    const ctx = document.getElementById('seasonal-chart').getContext('2d');
-    
-    // If no data, show empty state
-    if (!seasonalData || !seasonalData.labels || seasonalData.labels.length === 0) {
+    try {
+        // Reset container and create new canvas
         document.getElementById('seasonal-chart-container').innerHTML = 
-            '<div class="alert alert-info text-center m-3">No seasonal data available</div>';
-        return;
-    }
+            '<canvas id="seasonal-chart"></canvas>';
+        
+        const chartElement = document.getElementById('seasonal-chart');
+        if (!chartElement) {
+            console.error("Chart element 'seasonal-chart' not found after creation");
+            showEmptyState();
+            return;
+        }
+        
+        const ctx = chartElement.getContext('2d');
+        if (!ctx) {
+            console.error("Failed to get 2D context from canvas", chartElement);
+            document.getElementById('seasonal-chart-container').innerHTML = 
+                '<div class="alert alert-danger text-center m-3">Failed to initialize chart context. Please try reloading the page.</div>';
+            return;
+        }
+        
+        // If no data, show empty state
+        if (!seasonalData || !seasonalData.labels || seasonalData.labels.length === 0) {
+            document.getElementById('seasonal-chart-container').innerHTML = 
+                '<div class="alert alert-info text-center m-3">No seasonal data available</div>';
+            return;
+        }
     
     // Create chart
     new Chart(ctx, {
