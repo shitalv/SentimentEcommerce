@@ -186,6 +186,26 @@ def load_sample_data():
     
     logger.info("Loading sample data for the application")
     
+    # Initialize users dict if it doesn't exist
+    if "users" not in mock_db:
+        mock_db["users"] = {}
+    
+    # Add a default admin user for testing
+    from werkzeug.security import generate_password_hash
+    from datetime import datetime
+    
+    # Create admin user if it doesn't exist
+    admin_user = {
+        "_id": "admin_user_id",
+        "username": "admin",
+        "email": "admin@example.com",
+        "password_hash": generate_password_hash("admin123"),
+        "created_at": datetime.utcnow(),
+        "is_admin": True
+    }
+    mock_db["users"]["admin_user_id"] = admin_user
+    logger.info("Added default admin user (username: admin, password: admin123)")
+    
     # Sample product data
     products = [
         {
