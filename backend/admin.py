@@ -759,25 +759,44 @@ def add_admin_field_to_users():
             logger.error("Failed to connect to MongoDB")
             return False
         
-        # Check if any users exist
-        result = db.users.update_many(
-            {"is_admin": {"$exists": False}},
-            {"$set": {"is_admin": False}}
-        )
+        # Handle both real MongoDB and mock database
+        if hasattr(db, 'users'):
+            # Real MongoDB collection
+            # Check if any users exist
+            result = db.users.update_many(
+                {"is_admin": {"$exists": False}},
+                {"$set": {"is_admin": False}}
+            )
+            
+            modified_count = result.modified_count
+            
+            # Make the first user an admin if no admins exist
+            admin_count = db.users.count_documents({"is_admin": True})
+            if admin_count == 0:
+                first_user = db.users.find_one({})
+                if first_user:
+                    db.users.update_one(
+                        {"_id": first_user.get("_id")},
+                        {"$set": {"is_admin": True}}
+                    )
+                    logger.info(f"Made user {first_user.get('username')} an admin")
+        else:
+            # Mock database (dictionary)
+            modified_count = 0
+            for user_id, user in db.get("users", {}).items():
+                if "is_admin" not in user:
+                    user["is_admin"] = False
+                    modified_count += 1
+            
+            # Make the first user an admin if no admins exist
+            admin_count = sum(1 for user in db.get("users", {}).values() if user.get("is_admin", False))
+            if admin_count == 0 and db.get("users", {}):
+                first_user_id = next(iter(db.get("users", {})))
+                if first_user_id:
+                    db["users"][first_user_id]["is_admin"] = True
+                    logger.info(f"Made user {db['users'][first_user_id].get('username')} an admin")
         
-        logger.info(f"Added is_admin field to {result.modified_count} users")
-        
-        # Make the first user an admin if no admins exist
-        admin_count = db.users.count_documents({"is_admin": True})
-        if admin_count == 0:
-            first_user = db.users.find_one({})
-            if first_user:
-                db.users.update_one(
-                    {"_id": first_user.get("_id")},
-                    {"$set": {"is_admin": True}}
-                )
-                logger.info(f"Made user {first_user.get('username')} an admin")
-        
+        logger.info(f"Added is_admin field to {modified_count} users")
         return True
     
     except Exception as e:
