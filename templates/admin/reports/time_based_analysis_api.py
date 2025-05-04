@@ -72,6 +72,9 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     Returns:
     - Dictionary with time series data
     """
+    from mongo_config import get_mongo_client
+    from bson.objectid import ObjectId
+    
     # Generate time periods based on granularity
     periods = generate_time_periods(start_date, end_date, granularity)
     
@@ -88,62 +91,71 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
             quarter = (period_start.month - 1) // 3 + 1
             labels.append(f"Q{quarter} {period_start.year}")
     
-    # Generate sample data trends
-    # In a real implementation, this would query the database for actual review data
+    # Initialize data arrays
     overall_sentiment = []
     positive_sentiment = []
     negative_sentiment = []
     review_volume = []
     
-    # Base values - will be adjusted based on entity_id to create unique patterns
-    base_sentiment = 0.7
-    base_positive = 0.75
-    base_negative = 0.25
-    base_volume = 50
+    try:
+        # Get MongoDB client
+        client = get_mongo_client()
+        db = client.sentiment_ecommerce
+        
+        # Process each time period
+        for period_start, period_end in periods:
+            # Base query for reviews in this time period
+            query = {"date": {"$gte": period_start, "$lt": period_end}}
+            
+            # Add filter for product or category
+            if filter_type == 'product' and entity_id and entity_id != 'all':
+                query["product_id"] = ObjectId(entity_id)
+            elif filter_type == 'category' and entity_id and entity_id != 'all':
+                # Get all products in this category
+                products_in_category = list(db.products.find({"category": entity_id}, {"_id": 1}))
+                product_ids = [p["_id"] for p in products_in_category]
+                if product_ids:
+                    query["product_id"] = {"$in": product_ids}
+                else:
+                    # No products in this category, add impossible condition to return no results
+                    query["product_id"] = {"$in": []}
+            
+            # Query for reviews in this period
+            reviews = list(db.reviews.find(query))
+            
+            # Calculate aggregate metrics
+            count = len(reviews)
+            if count > 0:
+                # Calculate average sentiment scores
+                avg_sentiment = sum(r.get("sentiment_score", 0.5) for r in reviews) / count
+                
+                # Count positive, neutral, negative reviews
+                positive_count = sum(1 for r in reviews if r.get("sentiment_class") == "positive")
+                negative_count = sum(1 for r in reviews if r.get("sentiment_class") == "negative")
+                
+                # Calculate normalized sentiment values
+                pos_ratio = positive_count / count if count > 0 else 0
+                neg_ratio = negative_count / count if count > 0 else 0
+                
+                # Add to result arrays
+                overall_sentiment.append(avg_sentiment)
+                positive_sentiment.append(pos_ratio)
+                negative_sentiment.append(neg_ratio)
+                review_volume.append(count)
+            else:
+                # No reviews for this period
+                overall_sentiment.append(None)  # Use None for gaps in chart data
+                positive_sentiment.append(None)
+                negative_sentiment.append(None)
+                review_volume.append(0)
     
-    if entity_id and entity_id != 'all':
-        # Use entity_id to create a unique but consistent pattern
-        seed = sum(ord(c) for c in entity_id) % 100
-        random.seed(seed)
-        
-        # Adjust base values
-        base_sentiment = 0.5 + (random.random() * 0.3)
-        base_positive = base_sentiment + (random.random() * 0.1)
-        base_negative = 1 - base_positive
-        base_volume = 30 + (random.random() * 70)
-    
-    # Generate time series with trends and seasonal patterns
-    for i, (period_start, _) in enumerate(periods):
-        # Trend component - gradual change over time
-        time_factor = i / max(1, len(periods))
-        trend = 0.05 * math.sin(time_factor * math.pi * 2)  # Gradual up and down trend
-        
-        # Seasonal component - higher in summer months, lower in winter
-        month = period_start.month
-        season_factor = 0.05 * math.sin((month - 1) / 12 * math.pi * 2)
-        
-        # Random component
-        random_factor = (random.random() - 0.5) * 0.1
-        
-        # Calculate final values
-        sentiment = max(0.1, min(0.9, base_sentiment + trend + season_factor + random_factor))
-        positive = max(0.1, min(0.9, base_positive + trend + season_factor + random_factor))
-        negative = max(0.1, min(0.9, base_negative - trend - season_factor - random_factor))
-        
-        # Volume with seasonal pattern - higher during holiday seasons
-        holiday_factor = 1.0
-        if month in [11, 12]:  # November, December - holiday season
-            holiday_factor = 1.5
-        elif month in [1, 2]:  # January, February - post-holiday slump
-            holiday_factor = 0.7
-        
-        volume = max(5, int(base_volume * (1 + 0.2 * math.sin(time_factor * math.pi * 3)) * holiday_factor))
-        
-        # Add to arrays
-        overall_sentiment.append(sentiment)
-        positive_sentiment.append(positive)
-        negative_sentiment.append(negative)
-        review_volume.append(volume)
+    except Exception as e:
+        print(f"Error getting time series data: {e}")
+        # Fill with empty data to avoid breaking charts
+        overall_sentiment = [None] * len(periods)
+        positive_sentiment = [None] * len(periods)
+        negative_sentiment = [None] * len(periods)
+        review_volume = [0] * len(periods)
     
     return {
         'labels': labels,
@@ -164,6 +176,9 @@ def get_seasonal_trends(filter_type, entity_id):
     Returns:
     - Dictionary with seasonal trend data
     """
+    from mongo_config import get_mongo_client
+    from bson.objectid import ObjectId
+    
     # Generate month labels
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     
@@ -171,43 +186,81 @@ def get_seasonal_trends(filter_type, entity_id):
     current_year = datetime.datetime.now().year
     previous_year = current_year - 1
     
-    # Generate sample data for year-over-year comparison
-    # In a real implementation, this would query the database for actual review data
+    # Initialize data arrays with None values
+    current_year_data = [None] * 12
+    previous_year_data = [None] * 12
     
-    # Base patterns with seasonal variations
-    base_pattern = [
-        0.65,  # Jan
-        0.68,  # Feb
-        0.72,  # Mar
-        0.75,  # Apr
-        0.78,  # May
-        0.80,  # Jun
-        0.82,  # Jul
-        0.81,  # Aug
-        0.79,  # Sep
-        0.76,  # Oct
-        0.74,  # Nov
-        0.71   # Dec
-    ]
-    
-    if entity_id and entity_id != 'all':
-        # Use entity_id to create a unique but consistent pattern
-        seed = sum(ord(c) for c in entity_id) % 100
-        random.seed(seed)
+    try:
+        # Get MongoDB client
+        client = get_mongo_client()
+        db = client.sentiment_ecommerce
         
-        # Adjust base pattern
-        base_pattern = [max(0.1, min(0.9, val + (random.random() - 0.5) * 0.2)) for val in base_pattern]
+        # Process each month
+        for month in range(1, 13):
+            # Calculate date ranges for current and previous year
+            current_year_start = datetime.datetime(current_year, month, 1)
+            if month == 12:
+                current_year_end = datetime.datetime(current_year + 1, 1, 1)
+            else:
+                current_year_end = datetime.datetime(current_year, month + 1, 1)
+                
+            previous_year_start = datetime.datetime(previous_year, month, 1)
+            if month == 12:
+                previous_year_end = datetime.datetime(previous_year + 1, 1, 1)
+            else:
+                previous_year_end = datetime.datetime(previous_year, month + 1, 1)
+            
+            # Skip future months
+            if current_year_start > datetime.datetime.now():
+                continue
+            
+            # Base queries for current and previous year
+            current_year_query = {
+                "date": {
+                    "$gte": current_year_start,
+                    "$lt": current_year_end
+                }
+            }
+            
+            previous_year_query = {
+                "date": {
+                    "$gte": previous_year_start,
+                    "$lt": previous_year_end
+                }
+            }
+            
+            # Add filter for product or category
+            if filter_type == 'product' and entity_id and entity_id != 'all':
+                current_year_query["product_id"] = ObjectId(entity_id)
+                previous_year_query["product_id"] = ObjectId(entity_id)
+            elif filter_type == 'category' and entity_id and entity_id != 'all':
+                # Get all products in this category
+                products_in_category = list(db.products.find({"category": entity_id}, {"_id": 1}))
+                product_ids = [p["_id"] for p in products_in_category]
+                if product_ids:
+                    current_year_query["product_id"] = {"$in": product_ids}
+                    previous_year_query["product_id"] = {"$in": product_ids}
+                else:
+                    # No products in this category, add impossible condition
+                    current_year_query["product_id"] = {"$in": []}
+                    previous_year_query["product_id"] = {"$in": []}
+            
+            # Query for reviews in current and previous year
+            current_year_reviews = list(db.reviews.find(current_year_query))
+            previous_year_reviews = list(db.reviews.find(previous_year_query))
+            
+            # Calculate average sentiment for current year
+            if current_year_reviews:
+                current_year_score = sum(r.get("sentiment_score", 0.5) for r in current_year_reviews) / len(current_year_reviews)
+                current_year_data[month - 1] = current_year_score
+            
+            # Calculate average sentiment for previous year
+            if previous_year_reviews:
+                previous_year_score = sum(r.get("sentiment_score", 0.5) for r in previous_year_reviews) / len(previous_year_reviews)
+                previous_year_data[month - 1] = previous_year_score
     
-    # Create current year data - slight improvement over previous year
-    current_year_data = [max(0.1, min(0.9, val + 0.05 + (random.random() - 0.5) * 0.1)) for val in base_pattern]
-    
-    # Create previous year data
-    previous_year_data = base_pattern.copy()
-    
-    # Adjust for partial current year data
-    current_month = datetime.datetime.now().month
-    for i in range(current_month, 12):
-        current_year_data[i] = None
+    except Exception as e:
+        print(f"Error getting seasonal trends data: {e}")
     
     return {
         'labels': labels,
@@ -228,79 +281,75 @@ def get_monthly_distribution(filter_type, entity_id):
     Returns:
     - Dictionary with monthly distribution data
     """
+    from mongo_config import get_mongo_client
+    from bson.objectid import ObjectId
+    
     # Generate month labels
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     
-    # Generate sample data for sentiment distribution
-    # In a real implementation, this would query the database for actual review counts
+    # Initialize arrays
+    positive = [0] * 12
+    neutral = [0] * 12
+    negative = [0] * 12
     
-    if entity_id and entity_id != 'all':
-        # Use entity_id to create a unique but consistent pattern
-        seed = sum(ord(c) for c in entity_id) % 100
-        random.seed(seed)
+    try:
+        # Get current year
+        current_year = datetime.datetime.now().year
         
-        # Base volume varies by entity
-        base_volume = 30 + (random.random() * 70)
-    else:
-        base_volume = 100
-    
-    # Generate monthly counts with seasonal patterns
-    positive = []
-    neutral = []
-    negative = []
-    
-    for month_idx, month in enumerate(labels):
-        # Seasonal factors
-        if month_idx in [10, 11]:  # Holiday season
-            seasonal_factor = 1.5
-            positive_ratio = 0.7
-            neutral_ratio = 0.2
-            negative_ratio = 0.1
-        elif month_idx in [0, 1]:  # Post-holiday
-            seasonal_factor = 0.7
-            positive_ratio = 0.5
-            neutral_ratio = 0.3
-            negative_ratio = 0.2
-        elif month_idx in [5, 6, 7]:  # Summer
-            seasonal_factor = 1.2
-            positive_ratio = 0.65
-            neutral_ratio = 0.25
-            negative_ratio = 0.1
-        else:
-            seasonal_factor = 1.0
-            positive_ratio = 0.6
-            neutral_ratio = 0.25
-            negative_ratio = 0.15
+        # Get MongoDB client
+        client = get_mongo_client()
+        db = client.sentiment_ecommerce
         
-        # Total volume for the month
-        total_volume = int(base_volume * seasonal_factor * (0.8 + (random.random() * 0.4)))
-        
-        # Add some randomness to distribution
-        pos_factor = 0.9 + (random.random() * 0.2)
-        neut_factor = 0.9 + (random.random() * 0.2)
-        neg_factor = 0.9 + (random.random() * 0.2)
-        
-        # Normalize factors
-        total_factor = (positive_ratio * pos_factor) + (neutral_ratio * neut_factor) + (negative_ratio * neg_factor)
-        pos_factor = pos_factor / total_factor
-        neut_factor = neut_factor / total_factor
-        neg_factor = neg_factor / total_factor
-        
-        # Calculate counts
-        pos_count = int(total_volume * positive_ratio * pos_factor)
-        neut_count = int(total_volume * neutral_ratio * neut_factor)
-        neg_count = int(total_volume * negative_ratio * neg_factor)
-        
-        # Adjust for partial current year data
-        current_month = datetime.datetime.now().month - 1  # 0-indexed
-        if month_idx > current_month:
-            pos_count = 0
-            neut_count = 0
-            neg_count = 0
-        
-        positive.append(pos_count)
-        neutral.append(neut_count)
-        negative.append(neg_count)
+        # Process each month
+        for month in range(1, 13):
+            # Calculate date range for this month
+            if month == 12:
+                date_start = datetime.datetime(current_year, month, 1)
+                date_end = datetime.datetime(current_year + 1, 1, 1)
+            else:
+                date_start = datetime.datetime(current_year, month, 1)
+                date_end = datetime.datetime(current_year, month + 1, 1)
+            
+            # Skip future months
+            if date_start > datetime.datetime.now():
+                continue
+            
+            # Base query for this month
+            query = {"date": {"$gte": date_start, "$lt": date_end}}
+            
+            # Add filter for product or category
+            if filter_type == 'product' and entity_id and entity_id != 'all':
+                query["product_id"] = ObjectId(entity_id)
+            elif filter_type == 'category' and entity_id and entity_id != 'all':
+                # Get all products in this category
+                products_in_category = list(db.products.find({"category": entity_id}, {"_id": 1}))
+                product_ids = [p["_id"] for p in products_in_category]
+                if product_ids:
+                    query["product_id"] = {"$in": product_ids}
+                else:
+                    # No products in this category, add impossible condition
+                    query["product_id"] = {"$in": []}
+            
+            # Count reviews by sentiment class
+            pos_query = query.copy()
+            pos_query["sentiment_class"] = "positive"
+            pos_count = db.reviews.count_documents(pos_query)
+            
+            neut_query = query.copy()
+            neut_query["sentiment_class"] = "neutral"
+            neut_count = db.reviews.count_documents(neut_query)
+            
+            neg_query = query.copy()
+            neg_query["sentiment_class"] = "negative"
+            neg_count = db.reviews.count_documents(neg_query)
+            
+            # Store counts for this month
+            positive[month - 1] = pos_count
+            neutral[month - 1] = neut_count
+            negative[month - 1] = neg_count
+            
+    except Exception as e:
+        print(f"Error getting monthly distribution data: {e}")
     
     return {
         'labels': labels,
