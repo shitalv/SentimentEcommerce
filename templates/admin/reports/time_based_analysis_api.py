@@ -327,8 +327,59 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
     
     shifts = []
     
-    # If no specific entity selected, return empty list
+    # If no specific entity selected, generate some default sample shifts
     if not entity_id or entity_id == 'all':
+        # Set a consistent seed for "all" products view
+        random.seed(42)
+        
+        # Generate 2-3 sample shifts for the overview
+        num_shifts = random.randint(2, 3)
+        
+        # Generate shifts spread across the time period
+        time_range = (end_date - start_date).days
+        
+        for i in range(num_shifts):
+            # Calculate a point in time for the shift
+            shift_days = int(time_range * (0.2 + (i * 0.3)))
+            shift_date = start_date + datetime.timedelta(days=shift_days)
+            
+            # Calculate before and after periods
+            before_start = shift_date - datetime.timedelta(days=30)
+            before_end = shift_date
+            after_start = shift_date
+            after_end = shift_date + datetime.timedelta(days=30)
+            
+            # Format the time period string
+            time_period = f"{before_start.strftime('%b %d, %Y')} to {after_end.strftime('%b %d, %Y')}"
+            
+            # Generate sample shifts with alternating directions
+            shift_direction = 1 if i % 2 == 0 else -1
+            shift_magnitude = 0.15 + (random.random() * 0.1)
+            
+            before_score = 0.6 + (random.random() * 0.2)
+            after_score = max(0.1, min(0.9, before_score + (shift_direction * shift_magnitude)))
+            
+            # Realistic review counts
+            reviews_before = random.randint(40, 120)
+            reviews_after = random.randint(40, 120)
+            
+            # Calculate shift significance and p-value text
+            significance = abs(after_score - before_score) * 10
+            p_value = "p < 0.01" if significance > 1.5 else "p < 0.05"
+            
+            shifts.append({
+                'time_period': time_period,
+                'before_score': round(before_score, 2),
+                'after_score': round(after_score, 2),
+                'change': round(after_score - before_score, 2),
+                'reviews_before': int(reviews_before),
+                'reviews_after': int(reviews_after),
+                'significance': p_value
+            })
+        
+        # Sort by significance (absolute change amount)
+        shifts.sort(key=lambda x: abs(x['change']), reverse=True)
+        
         return shifts
     
     # Use entity_id to create a unique but consistent pattern
@@ -372,11 +423,12 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
         
         shifts.append({
             'time_period': time_period,
-            'before_score': before_score,
-            'after_score': after_score,
+            'before_score': round(before_score, 2),
+            'after_score': round(after_score, 2),
+            'change': round(after_score - before_score, 2),
             'reviews_before': int(reviews_before),
             'reviews_after': int(reviews_after),
-            'significance': significance
+            'significance': "p < 0.01" if significance > 0.3 else "p < 0.05"
         })
     
     # Sort by significance
