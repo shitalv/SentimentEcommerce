@@ -5,10 +5,24 @@ This module sets up the MongoDB connection and initializes the database with col
 """
 
 import os
-from flask_pymongo import PyMongo
-from pymongo import MongoClient
 import logging
 import json
+
+# Load environment variables from .env file if it exists (for local development)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv not installed, using environment variables directly
+
+try:
+    from flask_pymongo import PyMongo
+    from pymongo import MongoClient
+except ImportError:
+    # Add helpful error message
+    import sys
+    print("ERROR: Required packages not installed. Please run: pip install flask-pymongo pymongo python-dotenv")
+    sys.exit(1)
 
 # Create a logger
 logger = logging.getLogger(__name__)
@@ -62,18 +76,17 @@ def init_mongo(app):
     
     # Check if we have a MongoDB URI
     if not MONGO_URI:
-        logger.warning("No MongoDB URI provided. Using sample data mode.")
+        logger.warning("No MongoDB URI provided. Cannot proceed without connection.")
         USE_MOCK_DB = True
         app.config['USING_SAMPLE_DATA'] = True
         return None
     
     try:
-        # Use the same direct connection method that works in test_mongo_connection.py
-        logger.info("Trying direct MongoDB connection using test script approach")
+        # Use the MongoDB URI from environment variables
+        logger.info("Trying direct MongoDB connection with URI from environment")
         
-        # Use exact same connection string as in test_mongo_connection.py
-        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
-        client = MongoClient(test_mongo_uri)
+        # Use the URI from environment variables
+        client = MongoClient(MONGO_URI)
         
         # Verify connection works
         client.admin.command('ping')
@@ -86,7 +99,7 @@ def init_mongo(app):
         app.config['MONGO_DB'] = db
         
         # Configure Flask-PyMongo too, for compatibility
-        app.config["MONGO_URI"] = test_mongo_uri
+        app.config["MONGO_URI"] = MONGO_URI
         app.config["MONGO_DBNAME"] = DB_NAME
         
         # Initialize PyMongo with the app
@@ -97,9 +110,8 @@ def init_mongo(app):
     except Exception as e:
         full_error = getattr(e, 'details', {})
         logger.error(f"Error connecting to MongoDB: {str(e)}, full error: {full_error}")
-        logger.warning("Falling back to sample data mode")
-        USE_MOCK_DB = True
-        app.config['USING_SAMPLE_DATA'] = True
+        # Don't fall back to sample data anymore
+        raise Exception(f"Failed to connect to MongoDB: {str(e)}")
         return None
 
 def get_db():
@@ -296,14 +308,13 @@ def load_sample_data():
 # Direct connection for scripts outside of Flask context
 def get_mongo_client():
     """Get a direct MongoDB client connection"""
-    if USE_MOCK_DB:
-        logger.error("MongoDB connection is not available")
+    if not MONGO_URI:
+        logger.error("MongoDB connection string is not available")
         raise Exception("MongoDB connection is not available. Please check your MongoDB configuration.")
         
     try:
-        # Use the same direct connection method that works in test_mongo_connection.py
-        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
-        client = MongoClient(test_mongo_uri)
+        # Use the MongoDB URI from environment variables
+        client = MongoClient(MONGO_URI)
         db = client[DB_NAME]
         
         # Test the connection with a simple query
