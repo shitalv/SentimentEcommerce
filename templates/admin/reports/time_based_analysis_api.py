@@ -450,8 +450,9 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
             
             # Add filter for product or category
             if filter_type == 'product' and entity_id and entity_id != 'all':
-                before_query["product_id"] = ObjectId(entity_id)
-                after_query["product_id"] = ObjectId(entity_id)
+                # Use string format for product_id
+                before_query["product_id"] = entity_id
+                after_query["product_id"] = entity_id
             elif filter_type == 'category' and entity_id and entity_id != 'all':
                 # Get all products in this category
                 products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
