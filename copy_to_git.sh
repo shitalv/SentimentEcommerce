@@ -1,55 +1,35 @@
 #!/bin/bash
-# Script to copy all modified files to a folder for easy access
+# Script to copy the modified files to a directory for later git operations
 
-# Create target directory
-mkdir -p code_export
+# Create a directory to store files for git
+COPY_DIR="code_export"
+mkdir -p "$COPY_DIR"
 
-# Copy all important files
-cp import_amazon_reviews_mongo.py code_export/
-cp quick_import.py code_export/
-cp check_mongo_data.py code_export/
-cp test_mongo_connection.py code_export/
-cp fix_mongo_connection.py code_export/
-cp mongo_config.py code_export/
-cp frontend/public/demo.js code_export/
-cp create_diverse_products.py code_export/
-cp enhanced_import.py code_export/
-cp fix_product_data.py code_export/
+# Copy the modified files
+echo "Copying modified files to $COPY_DIR..."
+cp mongo_config.py "$COPY_DIR/"
+cp direct_mongo_app.py "$COPY_DIR/"
+cp git_changes_summary.txt "$COPY_DIR/"
 
-# Copy recently modified files
-cp templates/admin/reports/time_based_analysis_api.py code_export/
-cp git_changes_summary.txt code_export/
+# Check if templates directory exists in the code_export
+if [ ! -d "$COPY_DIR/templates/admin/reports" ]; then
+    mkdir -p "$COPY_DIR/templates/admin/reports"
+fi
 
-# Create a README file with instructions
-cat > code_export/README.md << 'EOF'
-# MongoDB Integration Files
+# Copy template files if they exist
+if [ -f "templates/admin/reports/time_based_analysis_api.py" ]; then
+    cp "templates/admin/reports/time_based_analysis_api.py" "$COPY_DIR/templates/admin/reports/"
+    echo "Copied time_based_analysis_api.py"
+else
+    echo "Warning: templates/admin/reports/time_based_analysis_api.py not found"
+fi
 
-This folder contains files for MongoDB integration and Amazon review import:
+echo ""
+echo "Files have been copied to the $COPY_DIR directory."
+echo "You can manually copy these files to your local repository and commit them."
+echo ""
+echo "Files copied:"
+find "$COPY_DIR" -type f | sort
 
-1. `mongo_config.py` - MongoDB connection configuration with improved error handling
-2. `test_mongo_connection.py` - Test script for MongoDB connection
-3. `fix_mongo_connection.py` - Script to fix MongoDB connection
-4. `import_amazon_reviews_mongo.py` - Full Amazon review import script
-5. `quick_import.py` - Quick import script for testing
-6. `check_mongo_data.py` - Data verification script
-7. `time_based_analysis_api.py` - Time-based sentiment analysis with proper MongoDB querying
-8. `git_changes_summary.txt` - Summary of recent changes to MongoDB error handling
-
-## How to Use
-
-1. Copy these files to your project root directory
-2. Run the import script:
-   ```
-   python import_amazon_reviews_mongo.py path/to/amazon_reviews.csv [limit]
-   ```
-3. Or use quick import for testing:
-   ```
-   python quick_import.py
-   ```
-4. Verify data import:
-   ```
-   python check_mongo_data.py
-   ```
-EOF
-
-echo "Files exported to code_export/ folder"
+echo ""
+echo "Done!"

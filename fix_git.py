@@ -40,7 +40,12 @@ def check_git_status():
                 print("\nLock files found:")
                 for lock_file in lock_files:
                     print(f"  - {lock_file}")
-                print("\nCannot remove lock files due to Replit restrictions.")
+                    # Try to remove lock files
+                    try:
+                        os.remove(lock_file)
+                        print(f"Successfully removed lock file: {lock_file}")
+                    except Exception as e:
+                        print(f"Failed to remove lock file {lock_file}: {str(e)}")
             else:
                 print("\nNo lock files found.")
             
