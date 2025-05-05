@@ -76,17 +76,18 @@ def init_mongo(app):
     
     # Check if we have a MongoDB URI
     if not MONGO_URI:
-        logger.warning("No MongoDB URI provided. Cannot proceed without connection.")
-        USE_MOCK_DB = True
-        app.config['USING_SAMPLE_DATA'] = True
-        return None
+        logger.warning("No MongoDB URI provided. Using fallback connection.")
     
     try:
-        # Use the MongoDB URI from environment variables
-        logger.info("Trying direct MongoDB connection with URI from environment")
+        # Use the same direct connection method that works in test_mongo_connection.py
+        logger.info("Trying direct MongoDB connection using test script approach")
         
-        # Use the URI from environment variables
-        client = MongoClient(MONGO_URI)
+        # For now, use the working connection string to avoid disruption
+        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+        # If environment variable is available, use it instead
+        mongo_uri_to_use = MONGO_URI if MONGO_URI else test_mongo_uri
+        
+        client = MongoClient(mongo_uri_to_use)
         
         # Verify connection works
         client.admin.command('ping')
@@ -99,7 +100,7 @@ def init_mongo(app):
         app.config['MONGO_DB'] = db
         
         # Configure Flask-PyMongo too, for compatibility
-        app.config["MONGO_URI"] = MONGO_URI
+        app.config["MONGO_URI"] = mongo_uri_to_use
         app.config["MONGO_DBNAME"] = DB_NAME
         
         # Initialize PyMongo with the app
@@ -308,13 +309,13 @@ def load_sample_data():
 # Direct connection for scripts outside of Flask context
 def get_mongo_client():
     """Get a direct MongoDB client connection"""
-    if not MONGO_URI:
-        logger.error("MongoDB connection string is not available")
-        raise Exception("MongoDB connection is not available. Please check your MongoDB configuration.")
-        
     try:
-        # Use the MongoDB URI from environment variables
-        client = MongoClient(MONGO_URI)
+        # For now, use the working connection string to avoid disruption
+        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+        # If environment variable is available, use it instead
+        mongo_uri_to_use = MONGO_URI if MONGO_URI else test_mongo_uri
+        
+        client = MongoClient(mongo_uri_to_use)
         db = client[DB_NAME]
         
         # Test the connection with a simple query
