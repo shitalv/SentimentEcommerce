@@ -304,7 +304,15 @@ def get_mongo_client():
         test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
         client = MongoClient(test_mongo_uri)
         db = client[DB_NAME]
+        
+        # Test the connection with a simple query
+        # This will force an actual connection attempt
+        db.list_collection_names()
+        
+        logger.info("MongoDB client connection successful")
         return client, db
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {str(e)}")
-        return None, None
+        # DO NOT return mock_db here, that's what was causing the problem
+        # Instead, raise an exception so the error is visible
+        raise Exception(f"Failed to connect to MongoDB: {str(e)}")

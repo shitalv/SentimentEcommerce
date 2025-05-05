@@ -674,70 +674,75 @@ function updateSeasonalChart(seasonalData) {
             return;
         }
     
-    // Create chart
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: seasonalData.labels,
-            datasets: [
-                {
-                    label: seasonalData.current_year_label || 'Current Year',
-                    data: seasonalData.current_year,
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                    borderWidth: 2,
-                    tension: 0.4,
-                    fill: false
-                },
-                {
-                    label: seasonalData.previous_year_label || 'Previous Year',
-                    data: seasonalData.previous_year,
-                    borderColor: 'rgba(108, 117, 125, 1)',
-                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    tension: 0.4,
-                    fill: false
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Year-over-Year Seasonal Comparison',
-                    font: {
-                        size: 16
+        // Create chart
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: seasonalData.labels,
+                datasets: [
+                    {
+                        label: seasonalData.current_year_label || 'Current Year',
+                        data: seasonalData.current_year,
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: false
+                    },
+                    {
+                        label: seasonalData.previous_year_label || 'Previous Year',
+                        data: seasonalData.previous_year,
+                        borderColor: 'rgba(108, 117, 125, 1)',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        fill: false
                     }
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false
-                },
-                legend: {
-                    position: 'top'
-                }
+                ]
             },
-            scales: {
-                x: {
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
                     title: {
                         display: true,
-                        text: 'Month'
+                        text: 'Year-over-Year Seasonal Comparison',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    legend: {
+                        position: 'top'
                     }
                 },
-                y: {
-                    beginAtZero: true,
-                    max: 1,
-                    title: {
-                        display: true,
-                        text: 'Sentiment Score'
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Month'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        title: {
+                            display: true,
+                            text: 'Sentiment Score'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        console.error("Error creating seasonal chart:", error);
+        document.getElementById('seasonal-chart-container').innerHTML = 
+            `<div class="alert alert-danger text-center m-3">Error creating chart: ${error.message}</div>`;
+    }
 }
 
 function updateMonthlyDistributionChart(monthlyData) {
