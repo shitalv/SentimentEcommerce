@@ -106,7 +106,7 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     # This will raise an exception if MongoDB is not available
     client, db = get_mongo_client()
     
-    if not db:
+    if db is None:
         logger.error("MongoDB database not available!")
         raise Exception("MongoDB database not available. Please check your database connection.")
     
@@ -211,7 +211,10 @@ def get_seasonal_trends(filter_type, entity_id):
     
     try:
         # Get MongoDB client and db - note the unpacking of the tuple
-        _, db = get_mongo_client()
+        client, db = get_mongo_client()
+        
+        if db is None:
+            raise Exception("MongoDB database not available")
         
         # Process each month
         for month in range(1, 13):
@@ -315,7 +318,10 @@ def get_monthly_distribution(filter_type, entity_id):
         current_year = datetime.datetime.now().year
         
         # Get MongoDB client and db
-        _, db = get_mongo_client()
+        client, db = get_mongo_client()
+        
+        if db is None:
+            raise Exception("MongoDB database not available")
         
         # Process each month
         for month in range(1, 13):
@@ -397,7 +403,10 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
     
     try:
         # Get MongoDB client and db
-        _, db = get_mongo_client()
+        client, db = get_mongo_client()
+        
+        if db is None:
+            raise Exception("MongoDB database not available")
         
         # Calculate potential shift points at 2-week intervals
         total_days = (end_date - start_date).days
