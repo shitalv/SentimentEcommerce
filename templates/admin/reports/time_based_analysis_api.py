@@ -119,10 +119,12 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
             # Add filter for product or category
             if filter_type == 'product' and entity_id and entity_id != 'all':
                 try:
-                    query["product_id"] = ObjectId(entity_id)
-                    logger.info(f"Looking for product_id: {entity_id}")
+                    # Try both string and ObjectId formats
+                    # First attempt with string format (how our reviews store it)
+                    query["product_id"] = entity_id
+                    logger.info(f"Looking for product_id as string: {entity_id}")
                 except Exception as e:
-                    logger.error(f"Invalid ObjectId format for product_id: {entity_id}")
+                    logger.error(f"Error with product_id: {e}")
                     raise ValueError(f"Invalid product ID format: {entity_id}")
             elif filter_type == 'category' and entity_id and entity_id != 'all':
                 # Get all products in this category
@@ -252,8 +254,9 @@ def get_seasonal_trends(filter_type, entity_id):
             
             # Add filter for product or category
             if filter_type == 'product' and entity_id and entity_id != 'all':
-                current_year_query["product_id"] = ObjectId(entity_id)
-                previous_year_query["product_id"] = ObjectId(entity_id)
+                # Use string format for product_id
+                current_year_query["product_id"] = entity_id
+                previous_year_query["product_id"] = entity_id
             elif filter_type == 'category' and entity_id and entity_id != 'all':
                 # Get all products in this category
                 products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
@@ -342,7 +345,8 @@ def get_monthly_distribution(filter_type, entity_id):
             
             # Add filter for product or category
             if filter_type == 'product' and entity_id and entity_id != 'all':
-                query["product_id"] = ObjectId(entity_id)
+                # Use string format for product_id
+                query["product_id"] = entity_id
             elif filter_type == 'category' and entity_id and entity_id != 'all':
                 # Get all products in this category
                 products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
