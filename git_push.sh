@@ -1,15 +1,15 @@
 #!/bin/bash
 # Script to push changes to Git
 
-# Configure Git (adjust with your information)
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
+# Configure Git with project information
+git config --global user.name "Sentiment Analysis Platform"
+git config --global user.email "dev@sentiment-platform.example.com"
 
 # Add the modified files
-git add mongo_config.py templates/admin/reports/time_based_analysis_api.py git_changes_summary.txt
+git add mongo_config.py direct_mongo_app.py templates/admin/reports/time_based_analysis_api.py git_changes_summary.txt
 
 # Commit the changes
-git commit -m "Remove sample data fallbacks and improve MongoDB error handling"
+git commit -m "Fix MongoDB connection by replacing environment variables with direct credentials"
 
 # Push to the repository
 # Note: You might need to set up authentication for this to work
