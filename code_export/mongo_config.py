@@ -105,8 +105,10 @@ def init_mongo(app):
 def get_db():
     """Get the MongoDB database instance"""
     global USE_MOCK_DB
+    # We no longer want to use mock data
     if USE_MOCK_DB:
-        return mock_db
+        # Instead of returning mock_db, raise an exception
+        raise Exception("MongoDB connection is not available. Make sure MONGODB_URI environment variable is set correctly.")
     
     from flask import current_app
     
@@ -122,9 +124,10 @@ def get_db():
             logger.info("Using fallback direct MongoDB connection")
             return current_app.config['MONGO_DB']
         else:
-            logger.error("No fallback MongoDB connection available")
-            USE_MOCK_DB = True
-            return mock_db
+            logger.error("No MongoDB connection available")
+            # Don't set USE_MOCK_DB to True anymore
+            # Don't return mock_db anymore
+            raise Exception("MongoDB connection failed. Please check your MongoDB configuration.")
 
 def create_indexes():
     """Create necessary indexes for performance"""
@@ -157,10 +160,9 @@ def setup_db():
     """Set up database with initial collections if they don't exist"""
     global USE_MOCK_DB
     if USE_MOCK_DB:
-        logger.info("Setting up sample data mode")
-        # Load sample data
-        load_sample_data()
-        return
+        # Don't use sample data anymore
+        logger.error("MongoDB connection is not available, cannot set up database")
+        raise Exception("MongoDB connection is not available. Cannot set up database without a connection.")
         
     try:
         # Create collections if they don't exist
@@ -176,15 +178,34 @@ def setup_db():
         logger.info("MongoDB setup completed successfully")
     except Exception as e:
         logger.error(f"Error setting up MongoDB: {str(e)}")
-        logger.warning("Falling back to sample data mode")
-        USE_MOCK_DB = True
-        load_sample_data()
+        # Do NOT fall back to sample data - instead, raise the exception
+        raise Exception(f"Failed to set up MongoDB: {str(e)}")
 
 def load_sample_data():
     """Load sample data for when MongoDB is unavailable"""
     global mock_db
     
     logger.info("Loading sample data for the application")
+    
+    # Initialize users dict if it doesn't exist
+    if "users" not in mock_db:
+        mock_db["users"] = {}
+    
+    # Add a default admin user for testing
+    from werkzeug.security import generate_password_hash
+    from datetime import datetime
+    
+    # Create admin user if it doesn't exist
+    admin_user = {
+        "_id": "admin_user_id",
+        "username": "admin",
+        "email": "admin@example.com",
+        "password_hash": generate_password_hash("admin123"),
+        "created_at": datetime.utcnow(),
+        "is_admin": True
+    }
+    mock_db["users"]["admin_user_id"] = admin_user
+    logger.info("Added default admin user (username: admin, password: admin123)")
     
     # Sample product data
     products = [
@@ -276,15 +297,23 @@ def load_sample_data():
 def get_mongo_client():
     """Get a direct MongoDB client connection"""
     if USE_MOCK_DB:
-        logger.warning("Using sample data mode - no direct MongoDB client available")
-        return None, mock_db
+        logger.error("MongoDB connection is not available")
+        raise Exception("MongoDB connection is not available. Please check your MongoDB configuration.")
         
     try:
         # Use the same direct connection method that works in test_mongo_connection.py
         test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
         client = MongoClient(test_mongo_uri)
         db = client[DB_NAME]
+        
+        # Test the connection with a simple query
+        # This will force an actual connection attempt
+        db.list_collection_names()
+        
+        logger.info("MongoDB client connection successful")
         return client, db
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {str(e)}")
-        return None, None
+        # DO NOT return mock_db here, that's what was causing the problem
+        # Instead, raise an exception so the error is visible
+        raise Exception(f"Failed to connect to MongoDB: {str(e)}")

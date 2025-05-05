@@ -2,12 +2,14 @@
 
 This folder contains files for MongoDB integration and Amazon review import:
 
-1. `mongo_config.py` - MongoDB connection configuration
+1. `mongo_config.py` - MongoDB connection configuration with improved error handling
 2. `test_mongo_connection.py` - Test script for MongoDB connection
 3. `fix_mongo_connection.py` - Script to fix MongoDB connection
 4. `import_amazon_reviews_mongo.py` - Full Amazon review import script
 5. `quick_import.py` - Quick import script for testing
 6. `check_mongo_data.py` - Data verification script
+7. `time_based_analysis_api.py` - Time-based sentiment analysis with proper MongoDB querying
+8. `git_changes_summary.txt` - Summary of recent changes to MongoDB error handling
 
 ## How to Use
 
