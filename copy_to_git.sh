@@ -10,6 +10,8 @@ echo "Copying modified files to $COPY_DIR..."
 cp mongo_config.py "$COPY_DIR/"
 cp direct_mongo_app.py "$COPY_DIR/"
 cp git_changes_summary.txt "$COPY_DIR/"
+cp check_sentiment_scores.py "$COPY_DIR/"
+cp update_product_sentiment_scores.py "$COPY_DIR/"
 
 # Check if templates directory exists in the code_export
 if [ ! -d "$COPY_DIR/templates/admin/reports" ]; then
