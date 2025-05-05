@@ -72,8 +72,13 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     Returns:
     - Dictionary with time series data
     """
+    import logging
     from mongo_config import get_mongo_client
     from bson.objectid import ObjectId
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Getting time series data from {start_date} to {end_date} with granularity {granularity}")
+    logger.info(f"Filter: {filter_type}={entity_id}")
     
     # Generate time periods based on granularity
     periods = generate_time_periods(start_date, end_date, granularity)
@@ -97,10 +102,15 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     negative_sentiment = []
     review_volume = []
     
+    # Get MongoDB client and db
+    # This will raise an exception if MongoDB is not available
+    client, db = get_mongo_client()
+    
+    if not db:
+        logger.error("MongoDB database not available!")
+        raise Exception("MongoDB database not available. Please check your database connection.")
+    
     try:
-        # Get MongoDB client and db - note the unpacking of the tuple
-        _, db = get_mongo_client()
-        
         # Process each time period
         for period_start, period_end in periods:
             # Base query for reviews in this time period
@@ -108,19 +118,31 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
             
             # Add filter for product or category
             if filter_type == 'product' and entity_id and entity_id != 'all':
-                query["product_id"] = ObjectId(entity_id)
+                try:
+                    query["product_id"] = ObjectId(entity_id)
+                    logger.info(f"Looking for product_id: {entity_id}")
+                except Exception as e:
+                    logger.error(f"Invalid ObjectId format for product_id: {entity_id}")
+                    raise ValueError(f"Invalid product ID format: {entity_id}")
             elif filter_type == 'category' and entity_id and entity_id != 'all':
                 # Get all products in this category
+                logger.info(f"Looking for category: {entity_id}")
                 products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
                 product_ids = [p["_id"] for p in products_in_category]
+                logger.info(f"Found {len(product_ids)} products in category {entity_id}")
+                
                 if product_ids:
                     query["product_id"] = {"$in": product_ids}
                 else:
                     # No products in this category, add impossible condition to return no results
                     query["product_id"] = {"$in": []}
             
+            # Log the query for debugging
+            logger.info(f"MongoDB query: {query}")
+            
             # Query for reviews in this period
             reviews = list(db["reviews"].find(query))
+            logger.info(f"Found {len(reviews)} reviews for period {period_start} to {period_end}")
             
             # Calculate aggregate metrics
             count = len(reviews)
@@ -149,12 +171,10 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
                 review_volume.append(0)
     
     except Exception as e:
-        print(f"Error getting time series data: {e}")
-        # Fill with empty data to avoid breaking charts
-        overall_sentiment = [None] * len(periods)
-        positive_sentiment = [None] * len(periods)
-        negative_sentiment = [None] * len(periods)
-        review_volume = [0] * len(periods)
+        logger.error(f"Error getting time series data: {e}")
+        # Don't return empty data silently anymore - raise the exception
+        # so we can see what's going wrong in the client
+        raise Exception(f"Failed to get time series data: {str(e)}")
     
     return {
         'labels': labels,
