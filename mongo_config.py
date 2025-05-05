@@ -16,6 +16,7 @@ except ImportError:
     pass  # dotenv not installed, using environment variables directly
 
 try:
+    import pymongo
     from flask_pymongo import PyMongo
     from pymongo import MongoClient
 except ImportError:
@@ -27,14 +28,14 @@ except ImportError:
 # Create a logger
 logger = logging.getLogger(__name__)
 
-# MongoDB connection configuration - using MongoDB Atlas
+# MongoDB connection configuration - using MongoDB Atlas with hardcoded credentials
 # Format: mongodb+srv://<username>:<password>@<cluster>.mongodb.net/dbname?retryWrites=true&w=majority
-MONGO_URI = os.environ.get('MONGODB_URI')
-logger.info("Using MongoDB connection string from environment variable")
+MONGO_URI = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
+logger.info("Using hardcoded MongoDB connection string (known to work in test script)")
 
-# We don't have a fallback connection string in the code as it's not secure to include credentials
+# We'll handle errors properly without falling back to sample data
 if not MONGO_URI:
-    logger.warning("No MongoDB URI found in environment variables. Application will run in sample data mode.")
+    logger.warning("MongoDB URI is not defined. This should not happen with hardcoded string.")
 # Extract database name from the URI or use default
 if MONGO_URI and '/' in MONGO_URI:
     parts = MONGO_URI.split('/')
@@ -79,15 +80,14 @@ def init_mongo(app):
         logger.warning("No MongoDB URI provided. Using fallback connection.")
     
     try:
-        # Use the same direct connection method that works in test_mongo_connection.py
-        logger.info("Trying direct MongoDB connection using test script approach")
+        # Use the exact same approach that works in test_mongo_connection.py
+        logger.info("Connecting to MongoDB using the proven direct connection method")
         
-        # For now, use the working connection string to avoid disruption
-        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
-        # If environment variable is available, use it instead
-        mongo_uri_to_use = MONGO_URI if MONGO_URI else test_mongo_uri
+        # Use the hardcoded connection string that we know works
+        mongo_uri_to_use = MONGO_URI
         
-        client = MongoClient(mongo_uri_to_use)
+        # Important: Create client exactly the same way as in test_mongo_connection.py
+        client = pymongo.MongoClient(mongo_uri_to_use)
         
         # Verify connection works
         client.admin.command('ping')
@@ -310,12 +310,19 @@ def load_sample_data():
 def get_mongo_client():
     """Get a direct MongoDB client connection"""
     try:
-        # For now, use the working connection string to avoid disruption
-        test_mongo_uri = "mongodb+srv://testdev01:testdev01@cluster0.kx3tti3.mongodb.net/sentiment_ecommerce?retryWrites=true&w=majority&appName=Cluster0"
-        # If environment variable is available, use it instead
-        mongo_uri_to_use = MONGO_URI if MONGO_URI else test_mongo_uri
+        # Use the exact same approach that works in test_mongo_connection.py
+        logger.info("Using the proven direct connection method from test script")
         
-        client = MongoClient(mongo_uri_to_use)
+        # Use the hardcoded connection string that we know works
+        mongo_uri_to_use = MONGO_URI
+        
+        # Important: Create client exactly the same way as in test_mongo_connection.py
+        client = pymongo.MongoClient(mongo_uri_to_use)
+        
+        # Test the connection with a ping command
+        client.admin.command('ping')
+        
+        # Get database
         db = client[DB_NAME]
         
         # Test the connection with a simple query
