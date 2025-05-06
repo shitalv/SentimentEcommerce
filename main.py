@@ -10,7 +10,7 @@ import logging
 import math
 import random
 import datetime
-from flask import redirect, render_template, Flask, jsonify, send_from_directory, request
+from flask import redirect, render_template, Flask, jsonify, send_from_directory, request, current_app
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -223,6 +223,7 @@ def time_based_analysis_dashboard():
 
 # API endpoint for time-based analysis data
 @app.route('/admin/api/reports/time-based-analysis', methods=['GET'])
+@app.route('/admin/api/reports/time-based', methods=['GET'])  # Add the endpoint the frontend is using
 def time_based_analysis_api():
     """API endpoint for time-based sentiment analysis data"""
     try:
