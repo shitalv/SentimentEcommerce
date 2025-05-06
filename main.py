@@ -535,110 +535,55 @@ def admin_dashboard():
 @app.route('/admin/api/products')
 def admin_api_products():
     """API endpoint for products in admin dashboard"""
-    _, db = get_mongo_client()  # Unpack the tuple correctly
+    client, db = get_mongo_client()  # Unpack the tuple correctly
     
     try:
-        if isinstance(db, dict):  # If we're using the mock database
-            # Handle mock database format
-            products = []
-            for product_id, product_data in db["products"].items():
-                product = {
-                    "id": product_id,
-                    "name": product_data["name"],
-                    "category": product_data.get("category", "Unknown"),
-                    "price": product_data.get("price", 0),
-                    "image_url": product_data.get("image_url", "")
-                }
-                
-                # Count reviews for this product
-                review_count = 0
-                positive = 0
-                neutral = 0
-                negative = 0
-                
-                for review_id, review_data in db["reviews"].items():
-                    if review_data.get("product_id") == product_id:
-                        review_count += 1
-                        sentiment = review_data.get("sentiment_class", "")
-                        if sentiment == "positive":
-                            positive += 1
-                        elif sentiment == "neutral":
-                            neutral += 1
-                        elif sentiment == "negative":
-                            negative += 1
-                
-                product["review_count"] = review_count
-                total = positive + neutral + negative
-                product["sentiment"] = {
-                    "positive": positive / total if total > 0 else 0,
-                    "neutral": neutral / total if total > 0 else 0,
-                    "negative": negative / total if total > 0 else 0
-                }
-                
-                products.append(product)
-        else:
-            # Fetch products from MongoDB
-            products = list(db.products.find({}, {
-                "_id": 1, 
-                "name": 1, 
-                "category": 1,
-                "price": 1,
-                "image_url": 1
-            }))
+        if db is None:
+            raise Exception("MongoDB database not available")
             
-            # Convert ObjectId to string for each product
-            for product in products:
-                product["id"] = str(product.pop("_id"))
-                
-                # Get review count for this product
-                product["review_count"] = db.reviews.count_documents({"product_id": product["id"]})
-                
-                # Calculate sentiment for this product
-                positive = db.reviews.count_documents({"product_id": product["id"], "sentiment_class": "positive"})
-                neutral = db.reviews.count_documents({"product_id": product["id"], "sentiment_class": "neutral"})
-                negative = db.reviews.count_documents({"product_id": product["id"], "sentiment_class": "negative"})
-                
-                total = positive + neutral + negative
-                product["sentiment"] = {
-                    "positive": positive / total if total > 0 else 0,
-                    "neutral": neutral / total if total > 0 else 0,
-                    "negative": negative / total if total > 0 else 0
-                }
+        # Fetch products from MongoDB - using direct method that works
+        products = []
         
+        # Get all products from MongoDB
+        mongo_products = list(db.products.find())
+        logger.info(f"Found {len(mongo_products)} products in database")
+        
+        # Process each product
+        for mongo_product in mongo_products:
+            product = {
+                "id": str(mongo_product.get("_id")),
+                "name": mongo_product.get("name", "Unknown Product"),
+                "category": mongo_product.get("category", "Uncategorized"),
+                "price": mongo_product.get("price", 0.0),
+                "image_url": mongo_product.get("image_url", "")
+            }
+            
+            # Get review count for this product
+            product_id_str = str(mongo_product.get("_id"))
+            reviews = list(db.reviews.find({"product_id": product_id_str}))
+            product["review_count"] = len(reviews)
+            
+            # Calculate sentiment distribution
+            positive = sum(1 for r in reviews if r.get("sentiment_class") == "positive")
+            neutral = sum(1 for r in reviews if r.get("sentiment_class") == "neutral")
+            negative = sum(1 for r in reviews if r.get("sentiment_class") == "negative")
+            
+            total = positive + neutral + negative
+            product["sentiment"] = {
+                "positive": positive / total if total > 0 else 0,
+                "neutral": neutral / total if total > 0 else 0,
+                "negative": negative / total if total > 0 else 0
+            }
+            
+            products.append(product)
+        
+        # Log successful products API call
+        logger.info(f"Successfully fetched {len(products)} products for API")
         return jsonify({"products": products})
     except Exception as e:
         logger.error(f"Error fetching products: {e}")
-        # Return fallback products for error handling
-        fallback_products = [
-            {
-                "id": "1",
-                "name": "Amazon Kindle E-Reader",
-                "category": "Electronics",
-                "price": 129.99,
-                "image_url": "https://example.com/kindle.jpg",
-                "review_count": 9,
-                "sentiment": {"positive": 0.85, "neutral": 0.10, "negative": 0.05}
-            },
-            {
-                "id": "2",
-                "name": "Echo Dot (4th Gen)",
-                "category": "Smart Home",
-                "price": 49.99,
-                "image_url": "https://example.com/echo-dot.jpg",
-                "review_count": 5,
-                "sentiment": {"positive": 0.78, "neutral": 0.12, "negative": 0.10}
-            },
-            {
-                "id": "3",
-                "name": "Fire TV Stick",
-                "category": "Electronics",
-                "price": 39.99,
-                "image_url": "https://example.com/fire-tv.jpg",
-                "review_count": 7,
-                "sentiment": {"positive": 0.82, "neutral": 0.08, "negative": 0.10}
-            }
-        ]
-        return jsonify({"products": fallback_products})
+        # We no longer use fallback data - return error to client
+        return jsonify({"error": f"Failed to fetch products: {str(e)}"}), 500
 
 @app.route('/admin/analytics')
 def admin_analytics():
