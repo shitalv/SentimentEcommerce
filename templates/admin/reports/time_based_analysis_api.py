@@ -56,8 +56,9 @@ def get_time_based_analysis():
                 'fix': 'Please check your MongoDB connection string and network connectivity'
             }), 500
         
-        # Verify MongoDB connection
-        if not db:
+        # Verify MongoDB connection 
+        # (PyMongo raises this error - Database objects don't implement truth value testing)
+        if db is None:  # Use "is None" instead of "not db"
             logger.error("MongoDB database connection failed (db is None)")
             return jsonify({'error': 'Database connection failed'}), 500
         
@@ -383,7 +384,11 @@ def get_monthly_distribution(filter_type, entity_id):
     - Dictionary with monthly distribution data
     """
     from mongo_config import get_mongo_client
-    from bson.objectid import ObjectId
+    import logging
+    import traceback
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Getting monthly distribution for {filter_type}={entity_id}")
     
     # Generate month labels
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -401,59 +406,71 @@ def get_monthly_distribution(filter_type, entity_id):
         client, db = get_mongo_client()
         
         if db is None:
+            logger.error("MongoDB database not available")
             raise Exception("MongoDB database not available")
         
         # Process each month
         for month in range(1, 13):
-            # Calculate date range for this month
-            if month == 12:
-                date_start = datetime.datetime(current_year, month, 1)
-                date_end = datetime.datetime(current_year + 1, 1, 1)
-            else:
-                date_start = datetime.datetime(current_year, month, 1)
-                date_end = datetime.datetime(current_year, month + 1, 1)
-            
-            # Skip future months
-            if date_start > datetime.datetime.now():
-                continue
-            
-            # Base query for this month
-            query = {"date": {"$gte": date_start, "$lt": date_end}}
-            
-            # Add filter for product or category
-            if filter_type == 'product' and entity_id and entity_id != 'all':
-                # Use string format for product_id
-                query["product_id"] = entity_id
-            elif filter_type == 'category' and entity_id and entity_id != 'all':
-                # Get all products in this category
-                products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
-                product_ids = [p["_id"] for p in products_in_category]
-                if product_ids:
-                    query["product_id"] = {"$in": product_ids}
+            try:
+                # Calculate date range for this month
+                if month == 12:
+                    date_start = datetime.datetime(current_year, month, 1)
+                    date_end = datetime.datetime(current_year + 1, 1, 1)
                 else:
-                    # No products in this category, add impossible condition
-                    query["product_id"] = {"$in": []}
-            
-            # Count reviews by sentiment class
-            pos_query = query.copy()
-            pos_query["sentiment_class"] = "positive"
-            pos_count = db["reviews"].count_documents(pos_query)
-            
-            neut_query = query.copy()
-            neut_query["sentiment_class"] = "neutral"
-            neut_count = db["reviews"].count_documents(neut_query)
-            
-            neg_query = query.copy()
-            neg_query["sentiment_class"] = "negative"
-            neg_count = db["reviews"].count_documents(neg_query)
-            
-            # Store counts for this month
-            positive[month - 1] = pos_count
-            neutral[month - 1] = neut_count
-            negative[month - 1] = neg_count
-            
+                    date_start = datetime.datetime(current_year, month, 1)
+                    date_end = datetime.datetime(current_year, month + 1, 1)
+                
+                # Skip future months
+                if date_start > datetime.datetime.now():
+                    continue
+                
+                # Base query for this month
+                query = {"date": {"$gte": date_start, "$lt": date_end}}
+                
+                # Add filter for product or category
+                if filter_type == 'product' and entity_id and entity_id != 'all':
+                    # Use string format for product_id
+                    query["product_id"] = str(entity_id)  # Ensure string format
+                elif filter_type == 'category' and entity_id and entity_id != 'all':
+                    # Get all products in this category
+                    products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
+                    product_ids = [str(p["_id"]) for p in products_in_category]  # Convert to strings
+                    if product_ids:
+                        query["product_id"] = {"$in": product_ids}
+                    else:
+                        # No products in this category, add impossible condition
+                        query["product_id"] = {"$in": []}
+                
+                # Log the query for debugging
+                logger.info(f"Monthly query for month {month}: {query}")
+                
+                # Count reviews by sentiment class
+                pos_query = query.copy()
+                pos_query["sentiment_class"] = "positive"
+                pos_count = db["reviews"].count_documents(pos_query)
+                
+                neut_query = query.copy()
+                neut_query["sentiment_class"] = "neutral"
+                neut_count = db["reviews"].count_documents(neut_query)
+                
+                neg_query = query.copy()
+                neg_query["sentiment_class"] = "negative"
+                neg_count = db["reviews"].count_documents(neg_query)
+                
+                logger.info(f"Month {month} counts: Positive={pos_count}, Neutral={neut_count}, Negative={neg_count}")
+                
+                # Store counts for this month
+                positive[month - 1] = pos_count
+                neutral[month - 1] = neut_count
+                negative[month - 1] = neg_count
+            except Exception as month_error:
+                logger.error(f"Error processing month {month}: {month_error}")
+                logger.error(traceback.format_exc())
+                # Keep zero counts for this month and continue with the next
+    
     except Exception as e:
-        print(f"Error getting monthly distribution data: {e}")
+        logger.error(f"Error getting monthly distribution data: {e}")
+        logger.error(traceback.format_exc())
     
     return {
         'labels': labels,
@@ -476,9 +493,14 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
     - List of sentiment shifts with before/after metrics
     """
     from mongo_config import get_mongo_client
-    from bson.objectid import ObjectId
-    import numpy as np
-    from scipy import stats
+    import logging
+    import traceback
+    
+    # We'll skip importing these until we need them
+    # This helps avoid errors if libraries aren't available
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Getting sentiment shifts for {filter_type}={entity_id} from {start_date} to {end_date}")
     
     shifts = []
     
@@ -486,12 +508,22 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
         # Get MongoDB client and db
         client, db = get_mongo_client()
         
-        if db is None:
+        if db is None:  # Use explicit None check
+            logger.error("MongoDB database not available")
             raise Exception("MongoDB database not available")
+        
+        # Now import optional dependencies
+        try:
+            import numpy as np
+            from scipy import stats
+        except ImportError as e:
+            logger.error(f"Required statistical libraries not available: {e}")
+            return shifts  # Return empty results
         
         # Calculate potential shift points at 2-week intervals
         total_days = (end_date - start_date).days
         if total_days < 30:  # Not enough data for meaningful shifts
+            logger.info(f"Time range too short ({total_days} days) for sentiment shift analysis")
             return shifts
         
         # Create potential shift points (approximately every 15 days)
@@ -503,96 +535,119 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
             shift_day = start_date + datetime.timedelta(days=int(i * total_days / (num_shift_points + 1)))
             shift_points.append(shift_day)
         
+        logger.info(f"Analyzing {len(shift_points)} potential shift points")
+        
         # For each potential shift point, analyze sentiment before and after
         for shift_date in shift_points:
-            # Calculate before and after periods (14 days each)
-            before_start = shift_date - datetime.timedelta(days=14)
-            before_end = shift_date
-            after_start = shift_date
-            after_end = shift_date + datetime.timedelta(days=14)
-            
-            # Base queries for reviews before and after shift
-            before_query = {
-                "date": {
-                    "$gte": before_start,
-                    "$lt": before_end
-                }
-            }
-            after_query = {
-                "date": {
-                    "$gte": after_start,
-                    "$lt": after_end
-                }
-            }
-            
-            # Add filter for product or category
-            if filter_type == 'product' and entity_id and entity_id != 'all':
-                # Use string format for product_id
-                before_query["product_id"] = entity_id
-                after_query["product_id"] = entity_id
-            elif filter_type == 'category' and entity_id and entity_id != 'all':
-                # Get all products in this category
-                products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
-                product_ids = [p["_id"] for p in products_in_category]
-                if product_ids:
-                    before_query["product_id"] = {"$in": product_ids}
-                    after_query["product_id"] = {"$in": product_ids}
-                else:
-                    continue  # Skip if no products in category
-            
-            # Query for reviews before and after shift
-            before_reviews = list(db["reviews"].find(before_query))
-            after_reviews = list(db["reviews"].find(after_query))
-            
-            # Need minimum reviews to detect significant shifts
-            if len(before_reviews) < 5 or len(after_reviews) < 5:
-                continue
-            
-            # Extract sentiment scores
-            before_scores = [r.get("sentiment_score", 0.5) for r in before_reviews]
-            after_scores = [r.get("sentiment_score", 0.5) for r in after_reviews]
-            
-            # Calculate average scores
-            before_score = sum(before_scores) / len(before_scores)
-            after_score = sum(after_scores) / len(after_scores)
-            
-            # Calculate percentage change
-            change = after_score - before_score
-            
-            # Only consider meaningful changes
-            if abs(change) < 0.05:
-                continue
-            
-            # Perform T-test to measure statistical significance
             try:
-                t_stat, p_value = stats.ttest_ind(before_scores, after_scores)
+                # Calculate before and after periods (14 days each)
+                before_start = shift_date - datetime.timedelta(days=14)
+                before_end = shift_date
+                after_start = shift_date
+                after_end = shift_date + datetime.timedelta(days=14)
                 
-                # Only include statistically significant shifts
-                if p_value > 0.05:  # Not significant
+                # Base queries for reviews before and after shift
+                before_query = {
+                    "date": {
+                        "$gte": before_start,
+                        "$lt": before_end
+                    }
+                }
+                after_query = {
+                    "date": {
+                        "$gte": after_start,
+                        "$lt": after_end
+                    }
+                }
+                
+                # Add filter for product or category
+                if filter_type == 'product' and entity_id and entity_id != 'all':
+                    # Use string format for product_id
+                    before_query["product_id"] = str(entity_id)  # Ensure string format
+                    after_query["product_id"] = str(entity_id)
+                elif filter_type == 'category' and entity_id and entity_id != 'all':
+                    # Get all products in this category
+                    products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
+                    product_ids = [str(p["_id"]) for p in products_in_category]  # Convert to strings
+                    if product_ids:
+                        before_query["product_id"] = {"$in": product_ids}
+                        after_query["product_id"] = {"$in": product_ids}
+                    else:
+                        logger.info(f"No products found in category {entity_id}, skipping shift point")
+                        continue  # Skip if no products in category
+                
+                # Log queries for debugging
+                logger.info(f"Before shift query: {before_query}")
+                logger.info(f"After shift query: {after_query}")
+                
+                # Query for reviews before and after shift
+                before_reviews = list(db["reviews"].find(before_query))
+                after_reviews = list(db["reviews"].find(after_query))
+                
+                logger.info(f"Found {len(before_reviews)} reviews before and {len(after_reviews)} reviews after shift point {shift_date}")
+                
+                # Need minimum reviews to detect significant shifts
+                if len(before_reviews) < 5 or len(after_reviews) < 5:
+                    logger.info("Not enough reviews to detect significant shift, skipping point")
                     continue
                 
-                significance_label = "p < 0.01" if p_value < 0.01 else "p < 0.05"
+                # Extract sentiment scores
+                before_scores = [r.get("sentiment_score", 0.5) for r in before_reviews]
+                after_scores = [r.get("sentiment_score", 0.5) for r in after_reviews]
                 
-                # Format the time period string
-                time_period = f"{before_start.strftime('%b %d, %Y')} to {after_end.strftime('%b %d, %Y')}"
+                # Calculate average scores
+                before_score = sum(before_scores) / len(before_scores)
+                after_score = sum(after_scores) / len(after_scores)
                 
-                # Add to shifts
-                shifts.append({
-                    'time_period': time_period,
-                    'before_score': round(before_score, 2),
-                    'after_score': round(after_score, 2),
-                    'change': round(change, 2),
-                    'reviews_before': len(before_reviews),
-                    'reviews_after': len(after_reviews),
-                    'significance': significance_label
-                })
-            except Exception as stats_error:
-                # Skip if t-test fails (can happen with constant values)
-                print(f"Error in statistical calculation: {stats_error}")
+                # Calculate percentage change
+                change = after_score - before_score
+                
+                logger.info(f"Shift point {shift_date}: before={before_score:.2f}, after={after_score:.2f}, change={change:.2f}")
+                
+                # Only consider meaningful changes
+                if abs(change) < 0.05:
+                    logger.info("Change too small to be meaningful, skipping point")
+                    continue
+                
+                # Perform T-test to measure statistical significance
+                try:
+                    t_stat, p_value = stats.ttest_ind(before_scores, after_scores)
+                    
+                    # Only include statistically significant shifts
+                    if p_value > 0.05:  # Not significant
+                        logger.info(f"Change not statistically significant (p={p_value:.3f}), skipping point")
+                        continue
+                    
+                    significance_label = "p < 0.01" if p_value < 0.01 else "p < 0.05"
+                    
+                    # Format the time period string
+                    time_period = f"{before_start.strftime('%b %d, %Y')} to {after_end.strftime('%b %d, %Y')}"
+                    
+                    logger.info(f"Detected significant shift: {time_period}, p-value: {p_value:.3f}")
+                    
+                    # Add to shifts
+                    shifts.append({
+                        'time_period': time_period,
+                        'before_score': round(before_score, 2),
+                        'after_score': round(after_score, 2),
+                        'change': round(change, 2),
+                        'reviews_before': len(before_reviews),
+                        'reviews_after': len(after_reviews),
+                        'significance': significance_label
+                    })
+                except Exception as stats_error:
+                    # Skip if t-test fails (can happen with constant values)
+                    logger.error(f"Error in statistical calculation: {stats_error}")
+                    logger.error(traceback.format_exc())
+                    continue
+            except Exception as shift_error:
+                logger.error(f"Error processing shift point {shift_date}: {shift_error}")
+                logger.error(traceback.format_exc())
                 continue
     
     except Exception as e:
-        print(f"Error detecting sentiment shifts: {e}")
+        logger.error(f"Error detecting sentiment shifts: {e}")
+        logger.error(traceback.format_exc())
     
     # Sort by the absolute value of the change
     shifts.sort(key=lambda x: abs(x['change']), reverse=True)
