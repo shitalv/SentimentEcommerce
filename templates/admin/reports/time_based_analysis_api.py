@@ -520,14 +520,14 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
             logger.error(f"Required statistical libraries not available: {e}")
             return shifts  # Return empty results
         
-        # Calculate potential shift points at 2-week intervals
+        # Calculate potential shift points at smaller intervals for more sensitivity
         total_days = (end_date - start_date).days
-        if total_days < 30:  # Not enough data for meaningful shifts
+        if total_days < 14:  # Allow for smaller time ranges
             logger.info(f"Time range too short ({total_days} days) for sentiment shift analysis")
             return shifts
         
-        # Create potential shift points (approximately every 15 days)
-        num_shift_points = max(1, total_days // 15)
+        # Create potential shift points more frequently (approximately every 7 days)
+        num_shift_points = max(2, total_days // 7)  # At least 2 shift points, ideally more
         shift_points = []
         
         for i in range(1, num_shift_points + 1):
@@ -540,11 +540,11 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
         # For each potential shift point, analyze sentiment before and after
         for shift_date in shift_points:
             try:
-                # Calculate before and after periods (14 days each)
-                before_start = shift_date - datetime.timedelta(days=14)
+                # Calculate before and after periods (smaller 7-day periods for more sensitivity)
+                before_start = shift_date - datetime.timedelta(days=7)
                 before_end = shift_date
                 after_start = shift_date
-                after_end = shift_date + datetime.timedelta(days=14)
+                after_end = shift_date + datetime.timedelta(days=7)
                 
                 # Base queries for reviews before and after shift
                 before_query = {
@@ -605,9 +605,9 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
                 
                 logger.info(f"Shift point {shift_date}: before={before_score:.2f}, after={after_score:.2f}, change={change:.2f}")
                 
-                # Only consider meaningful changes
-                if abs(change) < 0.05:
-                    logger.info("Change too small to be meaningful, skipping point")
+                # Only consider meaningful changes - using a smaller threshold for easier detection
+                if abs(change) < 0.03:
+                    logger.info(f"Change too small to be meaningful (change={change:.3f}), skipping point")
                     continue
                 
                 # Perform T-test to measure statistical significance
