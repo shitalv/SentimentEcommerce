@@ -115,7 +115,7 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     """
     import logging
     from mongo_config import get_mongo_client
-    from bson.objectid import ObjectId
+    import traceback
     
     logger = logging.getLogger(__name__)
     logger.info(f"Getting time series data from {start_date} to {end_date} with granularity {granularity}")
@@ -143,81 +143,101 @@ def get_time_series_data(start_date, end_date, granularity, filter_type, entity_
     negative_sentiment = []
     review_volume = []
     
-    # Get MongoDB client and db
-    # This will raise an exception if MongoDB is not available
-    client, db = get_mongo_client()
-    
-    if db is None:
-        logger.error("MongoDB database not available!")
-        raise Exception("MongoDB database not available. Please check your database connection.")
-    
     try:
+        # Get MongoDB client and db
+        # This will raise an exception if MongoDB is not available
+        client, db = get_mongo_client()
+        
+        if db is None:
+            logger.error("MongoDB database not available!")
+            raise Exception("MongoDB database not available. Please check your database connection.")
+        
         # Process each time period
         for period_start, period_end in periods:
-            # Base query for reviews in this time period
-            query = {"date": {"$gte": period_start, "$lt": period_end}}
-            
-            # Add filter for product or category
-            if filter_type == 'product' and entity_id and entity_id != 'all':
-                try:
-                    # Try both string and ObjectId formats
-                    # First attempt with string format (how our reviews store it)
+            try:
+                # Base query for reviews in this time period
+                # Use explicit datetime objects to avoid serialization issues
+                query = {
+                    "date": {
+                        "$gte": period_start, 
+                        "$lt": period_end
+                    }
+                }
+                
+                # Add filter for product or category
+                if filter_type == 'product' and entity_id and entity_id != 'all':
+                    # Use simple string matching - no need for ObjectId conversion
                     query["product_id"] = entity_id
                     logger.info(f"Looking for product_id as string: {entity_id}")
-                except Exception as e:
-                    logger.error(f"Error with product_id: {e}")
-                    raise ValueError(f"Invalid product ID format: {entity_id}")
-            elif filter_type == 'category' and entity_id and entity_id != 'all':
-                # Get all products in this category
-                logger.info(f"Looking for category: {entity_id}")
-                products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
-                product_ids = [p["_id"] for p in products_in_category]
-                logger.info(f"Found {len(product_ids)} products in category {entity_id}")
+                elif filter_type == 'category' and entity_id and entity_id != 'all':
+                    # Get all products in this category
+                    logger.info(f"Looking for category: {entity_id}")
+                    products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
+                    product_ids = [str(p["_id"]) for p in products_in_category]  # Convert ObjectIds to strings
+                    logger.info(f"Found {len(product_ids)} products in category {entity_id}")
+                    
+                    if product_ids:
+                        query["product_id"] = {"$in": product_ids}
+                    else:
+                        # No products in this category, add impossible condition to return no results
+                        query["product_id"] = {"$in": []}
                 
-                if product_ids:
-                    query["product_id"] = {"$in": product_ids}
+                # Log the query for debugging
+                logger.info(f"MongoDB query: {query}")
+                
+                # Query for reviews in this period
+                reviews = list(db["reviews"].find(query))
+                logger.info(f"Found {len(reviews)} reviews for period {period_start} to {period_end}")
+                
+                # Calculate aggregate metrics
+                count = len(reviews)
+                if count > 0:
+                    # Calculate average sentiment scores
+                    avg_sentiment = sum(r.get("sentiment_score", 0.5) for r in reviews) / count
+                    
+                    # Count positive, neutral, negative reviews
+                    positive_count = sum(1 for r in reviews if r.get("sentiment_class") == "positive")
+                    negative_count = sum(1 for r in reviews if r.get("sentiment_class") == "negative")
+                    
+                    # Calculate normalized sentiment values
+                    pos_ratio = positive_count / count if count > 0 else 0
+                    neg_ratio = negative_count / count if count > 0 else 0
+                    
+                    # Add to result arrays
+                    overall_sentiment.append(avg_sentiment)
+                    positive_sentiment.append(pos_ratio)
+                    negative_sentiment.append(neg_ratio)
+                    review_volume.append(count)
                 else:
-                    # No products in this category, add impossible condition to return no results
-                    query["product_id"] = {"$in": []}
-            
-            # Log the query for debugging
-            logger.info(f"MongoDB query: {query}")
-            
-            # Query for reviews in this period
-            reviews = list(db["reviews"].find(query))
-            logger.info(f"Found {len(reviews)} reviews for period {period_start} to {period_end}")
-            
-            # Calculate aggregate metrics
-            count = len(reviews)
-            if count > 0:
-                # Calculate average sentiment scores
-                avg_sentiment = sum(r.get("sentiment_score", 0.5) for r in reviews) / count
+                    # No reviews for this period
+                    overall_sentiment.append(None)  # Use None for gaps in chart data
+                    positive_sentiment.append(None)
+                    negative_sentiment.append(None)
+                    review_volume.append(0)
+            except Exception as period_error:
+                # Log error for this specific period but continue processing other periods
+                logger.error(f"Error processing period {period_start} to {period_end}: {period_error}")
+                logger.error(traceback.format_exc())
                 
-                # Count positive, neutral, negative reviews
-                positive_count = sum(1 for r in reviews if r.get("sentiment_class") == "positive")
-                negative_count = sum(1 for r in reviews if r.get("sentiment_class") == "negative")
-                
-                # Calculate normalized sentiment values
-                pos_ratio = positive_count / count if count > 0 else 0
-                neg_ratio = negative_count / count if count > 0 else 0
-                
-                # Add to result arrays
-                overall_sentiment.append(avg_sentiment)
-                positive_sentiment.append(pos_ratio)
-                negative_sentiment.append(neg_ratio)
-                review_volume.append(count)
-            else:
-                # No reviews for this period
-                overall_sentiment.append(None)  # Use None for gaps in chart data
+                # Add NULL values for this period
+                overall_sentiment.append(None)
                 positive_sentiment.append(None)
                 negative_sentiment.append(None)
                 review_volume.append(0)
     
     except Exception as e:
         logger.error(f"Error getting time series data: {e}")
-        # Don't return empty data silently anymore - raise the exception
-        # so we can see what's going wrong in the client
-        raise Exception(f"Failed to get time series data: {str(e)}")
+        logger.error(traceback.format_exc())
+        
+        # Return empty data with error message instead of raising exception
+        return {
+            'labels': labels,
+            'overall_sentiment': [None] * len(labels),
+            'positive_sentiment': [None] * len(labels),
+            'negative_sentiment': [None] * len(labels),
+            'review_volume': [0] * len(labels),
+            'error': str(e)
+        }
     
     return {
         'labels': labels,
@@ -239,7 +259,11 @@ def get_seasonal_trends(filter_type, entity_id):
     - Dictionary with seasonal trend data
     """
     from mongo_config import get_mongo_client
-    from bson.objectid import ObjectId
+    import logging
+    import traceback
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Getting seasonal trends for {filter_type}={entity_id}")
     
     # Generate month labels
     labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -257,75 +281,87 @@ def get_seasonal_trends(filter_type, entity_id):
         client, db = get_mongo_client()
         
         if db is None:
+            logger.error("MongoDB database not available")
             raise Exception("MongoDB database not available")
         
         # Process each month
         for month in range(1, 13):
-            # Calculate date ranges for current and previous year
-            current_year_start = datetime.datetime(current_year, month, 1)
-            if month == 12:
-                current_year_end = datetime.datetime(current_year + 1, 1, 1)
-            else:
-                current_year_end = datetime.datetime(current_year, month + 1, 1)
-                
-            previous_year_start = datetime.datetime(previous_year, month, 1)
-            if month == 12:
-                previous_year_end = datetime.datetime(previous_year + 1, 1, 1)
-            else:
-                previous_year_end = datetime.datetime(previous_year, month + 1, 1)
-            
-            # Skip future months
-            if current_year_start > datetime.datetime.now():
-                continue
-            
-            # Base queries for current and previous year
-            current_year_query = {
-                "date": {
-                    "$gte": current_year_start,
-                    "$lt": current_year_end
-                }
-            }
-            
-            previous_year_query = {
-                "date": {
-                    "$gte": previous_year_start,
-                    "$lt": previous_year_end
-                }
-            }
-            
-            # Add filter for product or category
-            if filter_type == 'product' and entity_id and entity_id != 'all':
-                # Use string format for product_id
-                current_year_query["product_id"] = entity_id
-                previous_year_query["product_id"] = entity_id
-            elif filter_type == 'category' and entity_id and entity_id != 'all':
-                # Get all products in this category
-                products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
-                product_ids = [p["_id"] for p in products_in_category]
-                if product_ids:
-                    current_year_query["product_id"] = {"$in": product_ids}
-                    previous_year_query["product_id"] = {"$in": product_ids}
+            try:
+                # Calculate date ranges for current and previous year
+                current_year_start = datetime.datetime(current_year, month, 1)
+                if month == 12:
+                    current_year_end = datetime.datetime(current_year + 1, 1, 1)
                 else:
-                    # No products in this category, add impossible condition
-                    current_year_query["product_id"] = {"$in": []}
-                    previous_year_query["product_id"] = {"$in": []}
-            
-            # Query for reviews in current and previous year
-            current_year_reviews = list(db["reviews"].find(current_year_query))
-            previous_year_reviews = list(db["reviews"].find(previous_year_query))
-            
-            # Calculate average sentiment for current year
-            if current_year_reviews:
-                current_year_score = sum(r.get("sentiment_score", 0.5) for r in current_year_reviews) / len(current_year_reviews)
-                current_year_data[month - 1] = current_year_score
-            
-            # Calculate average sentiment for previous year
-            if previous_year_reviews:
-                previous_year_score = sum(r.get("sentiment_score", 0.5) for r in previous_year_reviews) / len(previous_year_reviews)
-                previous_year_data[month - 1] = previous_year_score
+                    current_year_end = datetime.datetime(current_year, month + 1, 1)
+                    
+                previous_year_start = datetime.datetime(previous_year, month, 1)
+                if month == 12:
+                    previous_year_end = datetime.datetime(previous_year + 1, 1, 1)
+                else:
+                    previous_year_end = datetime.datetime(previous_year, month + 1, 1)
+                
+                # Skip future months
+                if current_year_start > datetime.datetime.now():
+                    continue
+                
+                # Base queries for current and previous year
+                current_year_query = {
+                    "date": {
+                        "$gte": current_year_start,
+                        "$lt": current_year_end
+                    }
+                }
+                
+                previous_year_query = {
+                    "date": {
+                        "$gte": previous_year_start,
+                        "$lt": previous_year_end
+                    }
+                }
+                
+                # Add filter for product or category
+                if filter_type == 'product' and entity_id and entity_id != 'all':
+                    # Use string format for product_id
+                    current_year_query["product_id"] = str(entity_id)  # Ensure string format
+                    previous_year_query["product_id"] = str(entity_id)
+                elif filter_type == 'category' and entity_id and entity_id != 'all':
+                    # Get all products in this category
+                    products_in_category = list(db["products"].find({"category": entity_id}, {"_id": 1}))
+                    product_ids = [str(p["_id"]) for p in products_in_category]  # Convert to strings
+                    if product_ids:
+                        current_year_query["product_id"] = {"$in": product_ids}
+                        previous_year_query["product_id"] = {"$in": product_ids}
+                    else:
+                        # No products in this category, add impossible condition
+                        current_year_query["product_id"] = {"$in": []}
+                        previous_year_query["product_id"] = {"$in": []}
+                
+                # Log queries for debugging
+                logger.info(f"Current year query for month {month}: {current_year_query}")
+                
+                # Query for reviews in current and previous year
+                current_year_reviews = list(db["reviews"].find(current_year_query))
+                previous_year_reviews = list(db["reviews"].find(previous_year_query))
+                
+                logger.info(f"Found {len(current_year_reviews)} reviews for {current_year}/{month} and {len(previous_year_reviews)} reviews for {previous_year}/{month}")
+                
+                # Calculate average sentiment for current year
+                if current_year_reviews:
+                    current_year_score = sum(r.get("sentiment_score", 0.5) for r in current_year_reviews) / len(current_year_reviews)
+                    current_year_data[month - 1] = current_year_score
+                
+                # Calculate average sentiment for previous year
+                if previous_year_reviews:
+                    previous_year_score = sum(r.get("sentiment_score", 0.5) for r in previous_year_reviews) / len(previous_year_reviews)
+                    previous_year_data[month - 1] = previous_year_score
+            except Exception as month_error:
+                logger.error(f"Error processing month {month}: {month_error}")
+                logger.error(traceback.format_exc())
+                # Keep None value for this month and continue with the next
     
     except Exception as e:
-        print(f"Error getting seasonal trends data: {e}")
+        logger.error(f"Error getting seasonal trends data: {e}")
+        logger.error(traceback.format_exc())
     
     return {
         'labels': labels,
