@@ -21,32 +21,67 @@ def get_time_based_analysis():
     filter_type = request.args.get('filter_type', 'product')
     entity_id = request.args.get('entity_id', '')
     
+    # Add detailed logging for debugging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Time-based analysis request with params: period={period}, granularity={granularity}, filter_type={filter_type}, entity_id={entity_id}")
+    
     try:
         # Convert period to int (will be used to calculate date range)
         days = int(period) if period != 'all' else 365*2  # Default to 2 years for 'all'
     except ValueError:
+        logger.error(f"Invalid period parameter: {period}")
         return jsonify({'error': 'Invalid period parameter'}), 400
     
     # Calculate the date range
     end_date = datetime.datetime.utcnow()
     start_date = end_date - datetime.timedelta(days=days)
+    logger.info(f"Calculated date range: {start_date} to {end_date}")
     
     try:
+        # Import here to prevent circular imports
+        from mongo_config import get_mongo_client
+        
+        try:
+            client, db = get_mongo_client()
+            # Log database connection info for debugging
+            logger.info(f"MongoDB client info: {client.address}")
+        except Exception as mongo_err:
+            import traceback
+            logger.error(f"MongoDB connection error: {str(mongo_err)}")
+            logger.error(traceback.format_exc())
+            return jsonify({
+                'error': 'MongoDB connection failed',
+                'detail': str(mongo_err),
+                'fix': 'Please check your MongoDB connection string and network connectivity'
+            }), 500
+        
+        # Verify MongoDB connection
+        if not db:
+            logger.error("MongoDB database connection failed (db is None)")
+            return jsonify({'error': 'Database connection failed'}), 500
+        
         # Get time series data
+        logger.info("Fetching time series data...")
         time_series = get_time_series_data(start_date, end_date, granularity, filter_type, entity_id)
         
         # Get seasonal trends
+        logger.info("Fetching seasonal trends...")
         seasonal_data = get_seasonal_trends(filter_type, entity_id)
         
         # Get monthly distribution
+        logger.info("Fetching monthly distribution...")
         monthly_distribution = get_monthly_distribution(filter_type, entity_id)
         
         # Get sentiment shifts
+        logger.info("Fetching sentiment shifts...")
         sentiment_shifts = get_sentiment_shifts(start_date, end_date, filter_type, entity_id)
         
         # Get insights
+        logger.info("Generating insights...")
         insights = generate_insights(time_series, seasonal_data, sentiment_shifts, filter_type, entity_id)
         
+        logger.info("Successfully completed time-based analysis")
         return jsonify({
             'time_series': time_series,
             'seasonal_trends': seasonal_data,
@@ -55,8 +90,14 @@ def get_time_based_analysis():
             'insights': insights
         })
     except Exception as e:
-        print(f"Error in time-based analysis: {e}")
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        logger.error(f"Error in time-based analysis: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': str(e),
+            'detail': 'See server logs for more information',
+            'fix': 'Please check your MongoDB connection and ensure you have valid review data with dates'
+        }), 500
 
 def get_time_series_data(start_date, end_date, granularity, filter_type, entity_id):
     """

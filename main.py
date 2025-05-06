@@ -232,8 +232,65 @@ def time_based_analysis_api():
         # Call the API function
         return get_time_based_analysis()
     except Exception as e:
+        import traceback
         logger.error(f"Error in time_based_analysis_api: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': str(e),
+            'traceback': 'See server logs for details',
+            'fix': 'This error is often caused by date formatting issues with MongoDB'
+        }), 500
+        
+# Diagnostic API endpoint to help find MongoDB connection issues
+@app.route('/admin/api/mongo-test', methods=['GET'])
+def mongo_test_api():
+    """Test API endpoint to diagnose MongoDB connection issues"""
+    import datetime
+    import traceback
+    from mongo_config import get_mongo_client
+    
+    try:
+        # Test MongoDB connection
+        client, db = get_mongo_client()
+        
+        # Test basic date handling
+        now = datetime.datetime.utcnow()
+        one_month_ago = now - datetime.timedelta(days=30)
+        
+        # Test a query similar to time-based analysis
+        reviews_query = {
+            "date": {
+                "$gte": one_month_ago,
+                "$lt": now
+            }
+        }
+        
+        # Get count of reviews
+        review_count = db.reviews.count_documents(reviews_query)
+        
+        # Get a sample review to check date field
+        sample_review = db.reviews.find_one({}, {"date": 1})
+        date_field = sample_review.get("date") if sample_review else None
+        date_type = str(type(date_field)) if date_field else "None"
+        
+        return jsonify({
+            "status": "success",
+            "mongodb_connection": "OK",
+            "client_address": str(client.address),
+            "review_query_count": review_count,
+            "current_time": str(now),
+            "sample_date_field": str(date_field),
+            "date_field_type": date_type,
+            "collections": db.list_collection_names()
+        })
+    except Exception as e:
+        logger.error(f"MongoDB test error: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 # API endpoint for time-based analysis export
 @app.route('/admin/api/reports/time-based-analysis/export', methods=['GET'])
