@@ -587,8 +587,9 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
                 logger.info(f"Found {len(before_reviews)} reviews before and {len(after_reviews)} reviews after shift point {shift_date}")
                 
                 # Need minimum reviews to detect significant shifts
-                if len(before_reviews) < 5 or len(after_reviews) < 5:
-                    logger.info("Not enough reviews to detect significant shift, skipping point")
+                # Using a lower threshold (3) to work with smaller datasets
+                if len(before_reviews) < 3 or len(after_reviews) < 3:
+                    logger.info(f"Not enough reviews to detect shift (need at least 3, got {len(before_reviews)} before, {len(after_reviews)} after), skipping point")
                     continue
                 
                 # Extract sentiment scores
@@ -614,7 +615,8 @@ def get_sentiment_shifts(start_date, end_date, filter_type, entity_id):
                     t_stat, p_value = stats.ttest_ind(before_scores, after_scores)
                     
                     # Only include statistically significant shifts
-                    if p_value > 0.05:  # Not significant
+                    # Using a more relaxed p-value threshold (0.1) for smaller datasets
+                    if p_value > 0.1:  # Not significant
                         logger.info(f"Change not statistically significant (p={p_value:.3f}), skipping point")
                         continue
                     
