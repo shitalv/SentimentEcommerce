@@ -401,13 +401,22 @@ function applyFilters() {
     
     let entityId = '';
     if (filterType === 'product') {
-        entityId = document.getElementById('product-selector').value;
+        entityId = document.getElementById('product-selector').value || 'all';
+        console.log('Selected product ID:', entityId);
     } else if (filterType === 'category') {
-        entityId = document.getElementById('category-selector').value;
+        entityId = document.getElementById('category-selector').value || 'all';
+        console.log('Selected category:', entityId);
     }
     
-    // Construct API URL - both endpoints work now
+    // Make sure we have a valid entity ID, default to 'all' if missing or invalid
+    if (entityId === ':1' || !entityId) {
+        console.log('Invalid entity ID detected, defaulting to "all"');
+        entityId = 'all';
+    }
+    
+    // Construct API URL
     const url = `/admin/api/reports/time-based?period=${timePeriod}&granularity=${timeGranularity}&filter_type=${filterType}&entity_id=${entityId}`;
+    console.log('Fetching time-based analysis from URL:', url);
     
     // Fetch data
     fetch(url)
@@ -442,12 +451,20 @@ function exportData() {
     const filterType = document.querySelector('input[name="filter-type"]:checked').value;
     
     let entityId = '';
+    let entityName = 'All';
     if (filterType === 'product') {
-        entityId = document.getElementById('product-selector').value;
+        entityId = document.getElementById('product-selector').value || 'all';
         entityName = document.getElementById('product-selector').options[document.getElementById('product-selector').selectedIndex].text;
     } else if (filterType === 'category') {
-        entityId = document.getElementById('category-selector').value;
+        entityId = document.getElementById('category-selector').value || 'all';
         entityName = document.getElementById('category-selector').options[document.getElementById('category-selector').selectedIndex].text;
+    }
+    
+    // Make sure we have a valid entity ID, default to 'all' if missing or invalid
+    if (entityId === ':1' || !entityId) {
+        console.log('Invalid entity ID detected in export, defaulting to "all"');
+        entityId = 'all';
+        entityName = 'All Items';
     }
     
     // Create export URL - use endpoint that matches backend route
