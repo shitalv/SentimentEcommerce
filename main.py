@@ -45,6 +45,134 @@ def sentiment_direct():
 def hype_reality_direct():
     """Direct access to hype-reality reports without authentication"""
     return redirect('/direct/hype-reality', code=307)  # Use 307 to preserve HTTP method
+    
+@app.route('/admin/api/reports/hype-reality-data/<product_id>')
+def admin_hype_reality_data(product_id):
+    """API endpoint for hype vs. reality data without authentication"""
+    try:
+        from mongo_config import get_mongo_client
+        import re
+        
+        client, db = get_mongo_client()
+        if db is None:
+            return jsonify({"error": "Database connection failed"}), 500
+        
+        # Get product data
+        product = None
+        if product_id.isdigit():
+            # Find by sequential ID (for compatibility with frontend)
+            products = list(db.products.find())
+            if len(products) >= int(product_id) and int(product_id) > 0:
+                product = products[int(product_id) - 1]  # Convert to 0-based index
+        else:
+            # Find by MongoDB ID
+            from bson.objectid import ObjectId
+            try:
+                product = db.products.find_one({"_id": ObjectId(product_id)})
+            except:
+                # Try as string ID
+                product = db.products.find_one({"_id": product_id})
+            
+        if not product:
+            return jsonify({"error": "Product not found"}), 404
+            
+        # Get product reviews
+        product_id_str = str(product.get("_id"))
+        reviews = list(db.reviews.find({"product_id": product_id_str}))
+        
+        # Get product description to analyze marketing claims
+        description = product.get("description", "")
+        if not description:
+            return jsonify({"error": "Product has no description to analyze"}), 400
+            
+        # Extract review highlights
+        review_highlights = []
+        for review in reviews[:5]:  # Take up to 5 reviews for highlights
+            sentiment_class = review.get("sentiment_class", "neutral")
+            review_highlights.append({
+                "sentiment": sentiment_class,
+                "text": review.get("text", "")[:100] + "..."  # Truncate long reviews
+            })
+            
+        # Extract marketing claims from description
+        claims = []
+        
+        # Split description into sentences and identify claims
+        sentences = re.split(r'[.!?]+', description)
+        for i, sentence in enumerate(sentences):
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+                
+            # Simple heuristic to identify marketing claims
+            # Look for positive adjectives, superlatives, or feature highlights
+            is_claim = any(keyword in sentence.lower() for keyword in 
+                          ["best", "perfect", "great", "superior", "excellent", 
+                           "advanced", "innovative", "powerful", "unique", "easy",
+                           "fast", "quick", "lightweight", "durable", "no ", "not ",
+                           "high", "low", "improved", "enhanced", "adjustable"])
+                           
+            if is_claim:
+                # Determine if claim is confirmed, contradicted, or unmentioned based on reviews
+                status = "unmentioned"
+                feedback = "This claim isn't specifically mentioned in customer reviews."
+                
+                # Look for related keywords in reviews
+                keywords = [word for word in sentence.lower().split() if len(word) > 3]
+                
+                # Check if any reviews mention these keywords
+                mentions = []
+                for review in reviews:
+                    review_text = review.get("text", "").lower()
+                    if any(keyword in review_text for keyword in keywords):
+                        mentions.append(review)
+                
+                if mentions:
+                    # Determine sentiment of mentions
+                    positive_mentions = [r for r in mentions if r.get("sentiment_class") == "positive"]
+                    negative_mentions = [r for r in mentions if r.get("sentiment_class") == "negative"]
+                    
+                    if len(positive_mentions) > len(negative_mentions):
+                        status = "confirmed"
+                        feedback = "This claim is supported by positive customer reviews."
+                    elif len(negative_mentions) > 0:
+                        status = "contradicted"
+                        feedback = "This claim is contradicted by negative customer reviews."
+                        
+                claims.append({
+                    "text": sentence,
+                    "status": status,
+                    "feedback": feedback
+                })
+        
+        # Calculate reality score (percentage of claims that are confirmed)
+        confirmed_count = len([c for c in claims if c["status"] == "confirmed"])
+        contradicted_count = len([c for c in claims if c["status"] == "contradicted"])
+        unmentioned_count = len([c for c in claims if c["status"] == "unmentioned"])
+        
+        if len(claims) > 0:
+            reality_score = int((confirmed_count / len(claims)) * 100)
+        else:
+            reality_score = 0
+        
+        return jsonify({
+            "name": product.get("name", "Unknown Product"),
+            "description": description,
+            "reviewCount": len(reviews),
+            "review_count": len(reviews),
+            "reviewHighlights": review_highlights,
+            "review_highlights": review_highlights,
+            "claims": claims,
+            "realityScore": reality_score,
+            "reality_score": reality_score,
+            "confirmed_count": confirmed_count,
+            "contradicted_count": contradicted_count,
+            "unmentioned_count": unmentioned_count
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting hype-reality data: {str(e)}")
+        return jsonify({"error": f"Failed to get hype-reality data: {str(e)}"}), 500
 
 # Route for direct links page
 @app.route('/direct-links')

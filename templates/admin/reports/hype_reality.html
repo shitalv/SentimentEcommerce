@@ -214,6 +214,9 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Load products from database
+    loadProductsFromDatabase();
+    
     // Set up event listeners
     document.getElementById('analyze-button').addEventListener('click', analyzeProduct);
     document.getElementById('refresh-analysis').addEventListener('click', function() {
@@ -236,6 +239,44 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Load products from database
+function loadProductsFromDatabase() {
+    // Show loading state
+    const productSelector = document.getElementById('product-selector');
+    productSelector.innerHTML = '<option value="" selected disabled>Loading products...</option>';
+    
+    // Fetch products from API
+    fetch('/admin/api/products?format=json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load products');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Clear loading state
+            productSelector.innerHTML = '<option value="" selected disabled>Choose a product to analyze...</option>';
+            
+            // Add products to selector
+            if (data.products && data.products.length > 0) {
+                data.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = product.name;
+                    productSelector.appendChild(option);
+                });
+            } else {
+                // No products found
+                productSelector.innerHTML = '<option value="" selected disabled>No products found</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading products:', error);
+            productSelector.innerHTML = '<option value="" selected disabled>Error loading products</option>';
+            showError('Failed to load products. Please try again later.');
+        });
+}
 
 // Show error message
 function showError(message) {
@@ -294,125 +335,165 @@ function analyzeProduct() {
     document.getElementById('analyze-button').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzing...';
     document.getElementById('analyze-button').disabled = true;
     
-    try {
-        // Get product data (in a real app, this would come from an API)
-        const productData = getProductData(productId);
-        
-        // Reset button state
-        document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
-        document.getElementById('analyze-button').disabled = false;
-        
-        // Show analysis card
-        document.getElementById('analysis-card').style.display = 'block';
-        
-        // Update product info
-        document.getElementById('product-name').textContent = productData.name;
-        document.getElementById('product-description').textContent = productData.description;
-        
-        // Update review count badge
-        document.getElementById('review-count-badge').textContent = `Based on ${productData.reviewCount} reviews`;
-        
-        // Update review highlights
-        const reviewHighlightsEl = document.getElementById('review-highlights');
-        let highlightsHtml = '';
-        
-        productData.reviewHighlights.forEach(highlight => {
-            let badgeClass = 'bg-secondary';
-            if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
-            if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+    // Get product data from API (returns a Promise)
+    getProductData(productId)
+        .then(productData => {
+            // Reset button state
+            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+            document.getElementById('analyze-button').disabled = false;
             
-            highlightsHtml += `
-                <div class="mb-2">
-                    <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
-                    "${highlight.text}"
-                </div>
-            `;
-        });
-        
-        reviewHighlightsEl.innerHTML = highlightsHtml;
-        
-        // Update analysis counts
-        const confirmedClaims = productData.claims.filter(claim => claim.status === 'confirmed').length;
-        const contradictedClaims = productData.claims.filter(claim => claim.status === 'contradicted').length;
-        const unmentionedClaims = productData.claims.filter(claim => claim.status === 'unmentioned').length;
-        
-        document.getElementById('confirmed-count').textContent = confirmedClaims;
-        document.getElementById('contradicted-count').textContent = contradictedClaims;
-        document.getElementById('unmentioned-count').textContent = unmentionedClaims;
-        
-        // Update reality score
-        const realityScoreBar = document.getElementById('reality-score-bar');
-        realityScoreBar.style.width = `${productData.realityScore}%`;
-        realityScoreBar.textContent = `${productData.realityScore}%`;
-        realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
-        
-        // Set color based on score
-        if (productData.realityScore >= 80) {
-            realityScoreBar.className = 'progress-bar bg-success';
-        } else if (productData.realityScore >= 60) {
-            realityScoreBar.className = 'progress-bar bg-warning';
-        } else {
-            realityScoreBar.className = 'progress-bar bg-danger';
-        }
-        
-        // Update detailed analysis table
-        const tableBody = document.getElementById('analysis-table-body');
-        tableBody.innerHTML = '';
-        
-        productData.claims.forEach(claim => {
-            const row = document.createElement('tr');
+            // Show analysis card
+            document.getElementById('analysis-card').style.display = 'block';
             
-            // Set row background based on status
-            if (claim.status === 'confirmed') {
-                row.className = 'table-success';
-            } else if (claim.status === 'contradicted') {
-                row.className = 'table-danger';
+            // Update product info
+            document.getElementById('product-name').textContent = productData.name;
+            document.getElementById('product-description').textContent = productData.description;
+            
+            // Update review count badge
+            document.getElementById('review-count-badge').textContent = `Based on ${productData.reviewCount} reviews`;
+            
+            // Update review highlights
+            const reviewHighlightsEl = document.getElementById('review-highlights');
+            let highlightsHtml = '';
+            
+            if (productData.reviewHighlights && productData.reviewHighlights.length > 0) {
+                productData.reviewHighlights.forEach(highlight => {
+                    let badgeClass = 'bg-secondary';
+                    if (highlight.sentiment === 'positive') badgeClass = 'bg-success';
+                    if (highlight.sentiment === 'negative') badgeClass = 'bg-danger';
+                    
+                    highlightsHtml += `
+                        <div class="mb-2">
+                            <span class="badge ${badgeClass} me-2">${highlight.sentiment}</span>
+                            "${highlight.text}"
+                        </div>
+                    `;
+                });
             } else {
-                row.className = 'table-secondary';
+                highlightsHtml = '<p class="text-muted">No review highlights available for this product.</p>';
             }
             
-            // Create status badge
-            let badgeClass = 'bg-secondary';
-            let statusText = 'Unmentioned';
+            reviewHighlightsEl.innerHTML = highlightsHtml;
             
-            if (claim.status === 'confirmed') {
-                badgeClass = 'bg-success';
-                statusText = 'Confirmed';
-            } else if (claim.status === 'contradicted') {
-                badgeClass = 'bg-danger';
-                statusText = 'Contradicted';
+            // Update analysis counts
+            const confirmedClaims = productData.claims.filter(claim => claim.status === 'confirmed').length;
+            const contradictedClaims = productData.claims.filter(claim => claim.status === 'contradicted').length;
+            const unmentionedClaims = productData.claims.filter(claim => claim.status === 'unmentioned').length;
+            
+            document.getElementById('confirmed-count').textContent = confirmedClaims;
+            document.getElementById('contradicted-count').textContent = contradictedClaims;
+            document.getElementById('unmentioned-count').textContent = unmentionedClaims;
+            
+            // Update reality score
+            const realityScoreBar = document.getElementById('reality-score-bar');
+            realityScoreBar.style.width = `${productData.realityScore}%`;
+            realityScoreBar.textContent = `${productData.realityScore}%`;
+            realityScoreBar.setAttribute('aria-valuenow', productData.realityScore);
+            
+            // Set color based on score
+            if (productData.realityScore >= 80) {
+                realityScoreBar.className = 'progress-bar bg-success';
+            } else if (productData.realityScore >= 60) {
+                realityScoreBar.className = 'progress-bar bg-warning';
+            } else {
+                realityScoreBar.className = 'progress-bar bg-danger';
             }
             
-            const statusBadge = `<span class="badge ${badgeClass}">${statusText}</span>`;
+            // Update detailed analysis table
+            const tableBody = document.getElementById('analysis-table-body');
+            tableBody.innerHTML = '';
             
-            row.innerHTML = `
-                <td>${claim.text}</td>
-                <td class="text-center">${statusBadge}</td>
-                <td>${claim.feedback}</td>
-            `;
+            if (productData.claims && productData.claims.length > 0) {
+                productData.claims.forEach(claim => {
+                    const row = document.createElement('tr');
+                    
+                    // Set row background based on status
+                    if (claim.status === 'confirmed') {
+                        row.className = 'table-success';
+                    } else if (claim.status === 'contradicted') {
+                        row.className = 'table-danger';
+                    } else {
+                        row.className = 'table-secondary';
+                    }
+                    
+                    // Create status badge
+                    let badgeClass = 'bg-secondary';
+                    let statusText = 'Unmentioned';
+                    
+                    if (claim.status === 'confirmed') {
+                        badgeClass = 'bg-success';
+                        statusText = 'Confirmed';
+                    } else if (claim.status === 'contradicted') {
+                        badgeClass = 'bg-danger';
+                        statusText = 'Contradicted';
+                    }
+                    
+                    const statusBadge = `<span class="badge ${badgeClass}">${statusText}</span>`;
+                    
+                    row.innerHTML = `
+                        <td>${claim.text}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td>${claim.feedback}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+            } else {
+                // No claims available
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="3" class="text-center">No claims analysis available for this product.</td>';
+                tableBody.appendChild(row);
+            }
             
-            tableBody.appendChild(row);
+            // Scroll to analysis results
+            document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
+            
+            // Show success message
+            showSuccess('Analysis completed successfully.');
+        })
+        .catch(error => {
+            // Reset button state
+            document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
+            document.getElementById('analyze-button').disabled = false;
+            
+            // Show error
+            showError('Failed to analyze product. Please try again.');
+            console.error('Error analyzing product:', error);
         });
-        
-        // Scroll to analysis results
-        document.getElementById('analysis-card').scrollIntoView({ behavior: 'smooth' });
-        
-        // Show success message
-        showSuccess('Analysis completed successfully.');
-    } catch (error) {
-        // Reset button state
-        document.getElementById('analyze-button').innerHTML = '<i class="fas fa-balance-scale me-2"></i>Analyze';
-        document.getElementById('analyze-button').disabled = false;
-        
-        // Show error
-        showError('Failed to analyze product. Please try again.');
-        console.error('Error analyzing product:', error);
-    }
 }
 
 // Get product data function
 function getProductData(productId) {
-    // Demo product data - in the real application, this would be fetched from the backend
+    // Fetch actual data from the API
+    return fetch(`/admin/api/reports/hype-reality-data/${productId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch product data');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Process and return the data from API
+            // If the API doesn't return the exact structure needed, transform it here
+            return {
+                name: data.name || "Unknown Product",
+                description: data.description || "No description available",
+                reviewCount: data.review_count || 0,
+                reviewHighlights: data.review_highlights || [],
+                claims: data.claims || [],
+                realityScore: data.reality_score || 0
+            };
+        })
+        .catch(error => {
+            console.error('Error fetching product data:', error);
+            showError(`Error loading product data: ${error.message}`);
+            throw error;
+        });
+}
+
+// This is the old mock data - kept for reference but not used anymore
+function getMockProductData(productId) {
+    // Demo product data that we're replacing with real API data
     const products = {
         "1": {
             name: "Amazon Kindle E-Reader 6\" Wifi (8th Generation, 2016)",
