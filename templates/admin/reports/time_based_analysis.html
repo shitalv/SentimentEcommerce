@@ -406,8 +406,8 @@ function applyFilters() {
         entityId = document.getElementById('category-selector').value;
     }
     
-    // Construct API URL
-    const url = `/admin/api/reports/time-based-analysis?period=${timePeriod}&granularity=${timeGranularity}&filter_type=${filterType}&entity_id=${entityId}`;
+    // Construct API URL - both endpoints work now
+    const url = `/admin/api/reports/time-based?period=${timePeriod}&granularity=${timeGranularity}&filter_type=${filterType}&entity_id=${entityId}`;
     
     // Fetch data
     fetch(url)
@@ -450,7 +450,7 @@ function exportData() {
         entityName = document.getElementById('category-selector').options[document.getElementById('category-selector').selectedIndex].text;
     }
     
-    // Create export URL
+    // Create export URL - use endpoint that matches backend route
     const exportUrl = `/admin/api/reports/time-based-analysis/export?period=${timePeriod}&granularity=${timeGranularity}&filter_type=${filterType}&entity_id=${entityId}`;
     
     // Show toast notification
